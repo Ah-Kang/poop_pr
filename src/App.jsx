@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import villageToiletImage from './assets/toilet-village.jpg';
 import subwayToiletImage from './assets/toilet-subway.jpg';
 import powderRoomImage from './assets/toilet-powder-room.jpg';
 import hotelToiletImage from './assets/toilet-hotel.jpg';
 import spaceToiletImage from './assets/toilet-space.jpg';
 import goldenPalaceImage from './assets/toilet-golden-palace.jpg';
+import cleanerBrushSwingImage from './assets/cleaner-brush-swing.png';
 
 // ==================== 화장실 데이터 배열 ====================
 // 각 화장실의 정보: 이름, 가격, dps 보너스, 배경색
@@ -77,6 +78,10 @@ const cleaningItems = [
 
 const initialItemLevels = cleaningItems.map(() => 0);
 const getItemPrice = (item, level) => Math.ceil(item.basePrice * Math.pow(1.18, level));
+const cleanerEventDuration = 9;
+const cleanerRequiredBlocks = 6;
+const cleanerPenaltyRate = 0.18;
+const cleanerEventInterval = 60000;
 
 // 똥 캐릭터 진화 단계: 구매 시 클릭 생산량과 초당 생산량이 함께 상승
 const poopCharacters = [
@@ -120,6 +125,11 @@ const App = () => {
   // 저장 데이터를 읽기 전에 초기값이 덮어쓰는 것을 방지
   const [isSaveLoaded, setIsSaveLoaded] = useState(false);
 
+  // 청소 직원 습격 이벤트 상태
+  const [cleanerEvent, setCleanerEvent] = useState(null);
+  const [cleanerMessage, setCleanerMessage] = useState('');
+  const goldRef = useRef(gold);
+
   const localStorageKey = 'poop-pr-save';
 
   const itemDps = cleaningItems.reduce(
@@ -134,6 +144,10 @@ const App = () => {
   const clickPower = currentPoop.clickPower;
   const characterDps = currentPoop.dps;
   const dps = toiletDps + characterDps + itemDps;
+
+  useEffect(() => {
+    goldRef.current = gold;
+  }, [gold]);
 
   // ==================== 로컬 저장/불러오기 ====================
   useEffect(() => {
@@ -192,6 +206,56 @@ const App = () => {
     return () => clearInterval(interval);
   }, [dps]); // dps가 변경될 때마다 useEffect 재실행
 
+  // ==================== 청소 직원 습격 이벤트 ====================
+  useEffect(() => {
+    if (!isSaveLoaded) return;
+
+    const interval = setInterval(() => {
+      setCleanerEvent(prevEvent => {
+        if (prevEvent || goldRef.current < 30) return prevEvent;
+
+        setCleanerMessage('');
+        return {
+          timeLeft: cleanerEventDuration,
+          blocks: 0,
+        };
+      });
+    }, cleanerEventInterval);
+
+    return () => clearInterval(interval);
+  }, [isSaveLoaded]);
+
+  useEffect(() => {
+    if (!cleanerEvent) return;
+
+    const timeout = setTimeout(() => {
+      setCleanerEvent(prevEvent => {
+        if (!prevEvent) return prevEvent;
+
+        const nextTimeLeft = prevEvent.timeLeft - 1;
+
+        if (nextTimeLeft > 0) {
+          return {
+            ...prevEvent,
+            timeLeft: nextTimeLeft,
+          };
+        }
+
+        const penalty = Math.min(
+          goldRef.current,
+          Math.max(5, Math.ceil(goldRef.current * cleanerPenaltyRate))
+        );
+
+        setGold(prevGold => Math.max(0, prevGold - penalty));
+        setCleanerMessage(`청소 직원에게 들켰어요. 영양분 -${formatNumber(penalty)}`);
+        setTimeout(() => setCleanerMessage(''), 2200);
+        return null;
+      });
+    }, 1000);
+
+    return () => clearTimeout(timeout);
+  }, [cleanerEvent]);
+
   // ==================== 클릭 핸들러 함수 ====================
   // 똥 캐릭터 버튼 클릭 시 gold 증가 및 애니메이션 실행
   const handlePoopClick = () => {
@@ -203,6 +267,25 @@ const App = () => {
     
     // 300ms 후 애니메이션 상태 초기화
     setTimeout(() => setIsClicking(false), 300);
+  };
+
+  const handleCleanerBlock = () => {
+    setCleanerEvent(prevEvent => {
+      if (!prevEvent) return prevEvent;
+
+      const nextBlocks = prevEvent.blocks + 1;
+
+      if (nextBlocks >= cleanerRequiredBlocks) {
+        setCleanerMessage('방해 성공! 청소 직원이 그냥 지나갔어요.');
+        setTimeout(() => setCleanerMessage(''), 1800);
+        return null;
+      }
+
+      return {
+        ...prevEvent,
+        blocks: nextBlocks,
+      };
+    });
   };
 
   // ==================== 화장실 매입 핸들러 ====================
@@ -376,6 +459,48 @@ const App = () => {
             );
           })}
         </div>
+
+        {(cleanerEvent || cleanerMessage) && (
+          <div className="relative z-30 mb-3 w-full max-w-[360px] rounded-2xl border border-red-200/80 bg-red-950/85 p-3 text-white shadow-2xl backdrop-blur-md">
+            {cleanerEvent ? (
+              <>
+                <div className="flex items-center justify-between gap-3">
+                  <img
+                    src={cleanerBrushSwingImage}
+                    alt="솔을 휘두르는 청소 직원"
+                    className="h-20 w-20 shrink-0 object-contain drop-shadow-2xl"
+                    style={{ animation: 'cleanerSwing 0.78s ease-in-out infinite' }}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-black">🧽 청소 직원 등장!</p>
+                    <p className="mt-0.5 text-[11px] font-semibold text-red-100">
+                      {cleanerEvent.timeLeft}초 안에 {cleanerRequiredBlocks - cleanerEvent.blocks}번 더 방해하세요
+                    </p>
+                  </div>
+                  <div className="shrink-0 rounded-full bg-white px-2.5 py-1 text-sm font-black text-red-700">
+                    {cleanerEvent.timeLeft}s
+                  </div>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/20">
+                  <div
+                    className="h-full rounded-full bg-red-300 transition-all duration-200"
+                    style={{
+                      width: `${(cleanerEvent.blocks / cleanerRequiredBlocks) * 100}%`,
+                    }}
+                  />
+                </div>
+                <button
+                  onClick={handleCleanerBlock}
+                  className="mt-3 w-full rounded-xl bg-red-500 px-4 py-2.5 text-sm font-black text-white shadow-lg transition-all hover:bg-red-400 active:scale-95"
+                >
+                  🚧 방해하기
+                </button>
+              </>
+            ) : (
+              <p className="text-center text-sm font-black">{cleanerMessage}</p>
+            )}
+          </div>
+        )}
 
         <div className="relative z-20 mb-2 rounded-full border border-white/40 bg-slate-950/70 px-3 py-1 text-xs font-black text-white shadow-lg backdrop-blur-sm">
           {currentPoop.badge} {currentPoop.name} · 클릭 +{formatNumber(clickPower)}
@@ -787,6 +912,14 @@ const App = () => {
           50% {
             transform: scale(1.15) translateY(-4px);
             opacity: 1;
+          }
+        }
+        @keyframes cleanerSwing {
+          0%, 100% {
+            transform: rotate(-5deg) translateY(1px);
+          }
+          50% {
+            transform: rotate(7deg) translateY(-3px);
           }
         }
       `}</style>
