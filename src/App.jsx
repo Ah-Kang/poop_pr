@@ -6,6 +6,12 @@ import hotelToiletImage from './assets/toilet-hotel.jpg';
 import spaceToiletImage from './assets/toilet-space.jpg';
 import goldenPalaceImage from './assets/toilet-golden-palace.jpg';
 import cleanerBrushSwingImage from './assets/cleaner-brush-swing.png';
+import waterPoopImage from './assets/PoopImage/waterpoop.png';
+import softPoopImage from './assets/PoopImage/softpoop.png';
+import healthyPoopImage from './assets/PoopImage/healtypoop.png';
+import firePoopImage from './assets/PoopImage/firepoop.png';
+import diamondPoopImage from './assets/PoopImage/diamondpoop.png';
+import goldPoopImage from './assets/PoopImage/goldpoop.png';
 
 // ==================== 화장실 데이터 배열 ====================
 // 각 화장실의 정보: 이름, 가격, dps 보너스, 배경색
@@ -15,6 +21,7 @@ const toilets = [
     name: '시골 푸세식 화장실',
     price: 0,
     dpsBonus: 0,
+    cleanerPenaltyRate: 0.1,
     bgColor: 'bg-amber-100',
     bgGradient: 'from-amber-200 to-amber-100',
     image: villageToiletImage
@@ -24,6 +31,7 @@ const toilets = [
     name: '지하철 공중화장실',
     price: 100,
     dpsBonus: 5,
+    cleanerPenaltyRate: 0.2,
     bgColor: 'bg-gray-200',
     bgGradient: 'from-gray-300 to-gray-200',
     image: subwayToiletImage
@@ -33,6 +41,7 @@ const toilets = [
     name: '백화점 파우더룸',
     price: 1000,
     dpsBonus: 50,
+    cleanerPenaltyRate: 0.22,
     bgColor: 'bg-pink-200',
     bgGradient: 'from-pink-300 to-pink-200',
     image: powderRoomImage
@@ -42,6 +51,7 @@ const toilets = [
     name: '7성급 호텔 화장실',
     price: 10000,
     dpsBonus: 250,
+    cleanerPenaltyRate: 0.25,
     bgColor: 'bg-slate-300',
     bgGradient: 'from-slate-400 to-slate-300',
     image: hotelToiletImage
@@ -51,6 +61,7 @@ const toilets = [
     name: '우주선 무중력 화장실',
     price: 50000,
     dpsBonus: 1000,
+    cleanerPenaltyRate: 0.27,
     bgColor: 'bg-indigo-300',
     bgGradient: 'from-indigo-400 to-indigo-300',
     image: spaceToiletImage
@@ -60,6 +71,7 @@ const toilets = [
     name: '순금 황제 변기궁전',
     price: 200000,
     dpsBonus: 2500,
+    cleanerPenaltyRate: 0.3,
     bgColor: 'bg-yellow-200',
     bgGradient: 'from-yellow-300 to-yellow-200',
     image: goldenPalaceImage
@@ -80,17 +92,24 @@ const initialItemLevels = cleaningItems.map(() => 0);
 const getItemPrice = (item, level) => Math.ceil(item.basePrice * Math.pow(1.18, level));
 const cleanerEventDuration = 9;
 const cleanerRequiredBlocks = 6;
-const cleanerPenaltyRate = 0.18;
-const cleanerEventInterval = 60000;
+const cleanerEventMinDelay = 45000;
+const cleanerEventMaxDelay = 90000;
+const cleanerEventMinGold = 5000;
+const itemUnlockRequiredLevel = 15;
+const testGoldGrant = 10000000;
+const getRandomCleanerDelay = () =>
+  Math.floor(
+    cleanerEventMinDelay + Math.random() * (cleanerEventMaxDelay - cleanerEventMinDelay)
+  );
 
 // 똥 캐릭터 진화 단계: 구매 시 클릭 생산량과 초당 생산량이 함께 상승
 const poopCharacters = [
-  { id: 0, name: '물똥', badge: '💧', price: 0, clickPower: 1, dps: 0, gradient: 'from-sky-300 to-blue-600', description: '아직 힘이 없는 촉촉한 초보 똥' },
-  { id: 1, name: '말랑똥', badge: '🫧', price: 100, clickPower: 3, dps: 1, gradient: 'from-cyan-300 to-teal-500', description: '형태를 갖추기 시작한 말랑한 똥' },
-  { id: 2, name: '건강똥', badge: '🌿', price: 750, clickPower: 10, dps: 5, gradient: 'from-lime-300 to-emerald-600', description: '균형 잡힌 영양으로 단단해진 똥' },
-  { id: 3, name: '불꽃똥', badge: '🔥', price: 5000, clickPower: 40, dps: 25, gradient: 'from-orange-400 to-red-600', description: '뜨거운 생산력을 뿜어내는 똥' },
-  { id: 4, name: '다이아똥', badge: '💎', price: 30000, clickPower: 180, dps: 120, gradient: 'from-cyan-300 to-violet-600', description: '보석처럼 단단하고 희귀한 똥' },
-  { id: 5, name: '황금똥', badge: '👑', price: 200000, clickPower: 800, dps: 600, gradient: 'from-yellow-300 to-amber-600', description: '모든 변기가 꿈꾸는 전설의 황금똥' },
+  { id: 0, name: '물똥', badge: '💧', price: 0, clickPower: 1, dps: 0, gradient: 'from-sky-300 to-blue-600', image: waterPoopImage, description: '아직 힘이 없는 촉촉한 초보 똥' },
+  { id: 1, name: '말랑똥', badge: '🫧', price: 100, clickPower: 3, dps: 1, gradient: 'from-cyan-300 to-teal-500', image: softPoopImage, description: '형태를 갖추기 시작한 말랑한 똥' },
+  { id: 2, name: '건강똥', badge: '🌿', price: 750, clickPower: 10, dps: 5, gradient: 'from-lime-300 to-emerald-600', image: healthyPoopImage, description: '균형 잡힌 영양으로 단단해진 똥' },
+  { id: 3, name: '불꽃똥', badge: '🔥', price: 5000, clickPower: 40, dps: 25, gradient: 'from-orange-400 to-red-600', image: firePoopImage, description: '뜨거운 생산력을 뿜어내는 똥' },
+  { id: 4, name: '다이아똥', badge: '💎', price: 30000, clickPower: 180, dps: 120, gradient: 'from-cyan-300 to-violet-600', image: diamondPoopImage, description: '보석처럼 단단하고 희귀한 똥' },
+  { id: 5, name: '황금똥', badge: '👑', price: 200000, clickPower: 800, dps: 600, gradient: 'from-yellow-300 to-amber-600', image: goldPoopImage, description: '모든 변기가 꿈꾸는 전설의 황금똥' },
 ];
 
 const App = () => {
@@ -128,9 +147,11 @@ const App = () => {
   // 청소 직원 습격 이벤트 상태
   const [cleanerEvent, setCleanerEvent] = useState(null);
   const [cleanerMessage, setCleanerMessage] = useState('');
+  const [cleanerSpawnAttempt, setCleanerSpawnAttempt] = useState(0);
   const goldRef = useRef(gold);
 
   const localStorageKey = 'poop-pr-save';
+  const isTestMode = import.meta.env.DEV;
 
   const itemDps = cleaningItems.reduce(
     (total, item, index) => total + item.dps * (itemLevels[index] ?? 0),
@@ -140,6 +161,7 @@ const App = () => {
     (_, index) => (itemLevels[index] ?? 0) > 0
   );
   const toiletDps = toilets[currentToiletLevel]?.dpsBonus ?? 0;
+  const currentCleanerPenaltyRate = toilets[currentToiletLevel]?.cleanerPenaltyRate ?? 0.1;
   const currentPoop = poopCharacters[currentPoopLevel] ?? poopCharacters[0];
   const clickPower = currentPoop.clickPower;
   const characterDps = currentPoop.dps;
@@ -208,11 +230,16 @@ const App = () => {
 
   // ==================== 청소 직원 습격 이벤트 ====================
   useEffect(() => {
-    if (!isSaveLoaded) return;
+    if (!isSaveLoaded || cleanerEvent) return;
 
-    const interval = setInterval(() => {
+    const timeout = setTimeout(() => {
+      if (goldRef.current < cleanerEventMinGold) {
+        setCleanerSpawnAttempt(prevAttempt => prevAttempt + 1);
+        return;
+      }
+
       setCleanerEvent(prevEvent => {
-        if (prevEvent || goldRef.current < 30) return prevEvent;
+        if (prevEvent) return prevEvent;
 
         setCleanerMessage('');
         return {
@@ -220,10 +247,10 @@ const App = () => {
           blocks: 0,
         };
       });
-    }, cleanerEventInterval);
+    }, getRandomCleanerDelay());
 
-    return () => clearInterval(interval);
-  }, [isSaveLoaded]);
+    return () => clearTimeout(timeout);
+  }, [isSaveLoaded, cleanerEvent, cleanerSpawnAttempt]);
 
   useEffect(() => {
     if (!cleanerEvent) return;
@@ -243,7 +270,7 @@ const App = () => {
 
         const penalty = Math.min(
           goldRef.current,
-          Math.max(5, Math.ceil(goldRef.current * cleanerPenaltyRate))
+          Math.max(5, Math.ceil(goldRef.current * currentCleanerPenaltyRate))
         );
 
         setGold(prevGold => Math.max(0, prevGold - penalty));
@@ -254,7 +281,7 @@ const App = () => {
     }, 1000);
 
     return () => clearTimeout(timeout);
-  }, [cleanerEvent]);
+  }, [cleanerEvent, currentCleanerPenaltyRate]);
 
   // ==================== 클릭 핸들러 함수 ====================
   // 똥 캐릭터 버튼 클릭 시 gold 증가 및 애니메이션 실행
@@ -312,7 +339,7 @@ const App = () => {
     const item = cleaningItems[itemId];
     const currentLevel = itemLevels[itemId] ?? 0;
     const price = getItemPrice(item, currentLevel);
-    const isUnlocked = itemId === 0 || (itemLevels[itemId - 1] ?? 0) >= 5;
+    const isUnlocked = itemId === 0 || (itemLevels[itemId - 1] ?? 0) >= itemUnlockRequiredLevel;
 
     if (!isUnlocked || gold < price) return;
 
@@ -343,6 +370,10 @@ const App = () => {
     setIsItemShopOpen(false);
     setIsPoopShopOpen(false);
     localStorage.removeItem(localStorageKey);
+  };
+
+  const handleGrantTestGold = () => {
+    setGold(prevGold => prevGold + testGoldGrant);
   };
 
   // ==================== 마지막 구매 가능 화장실 인덱스 계산 ====================
@@ -427,6 +458,15 @@ const App = () => {
             변기 +{formatNumber(toiletDps)} · 캐릭터 +{formatNumber(characterDps)} · 장비 +{formatNumber(itemDps)}
           </p>
         </div>
+
+        {isTestMode && (
+          <button
+            onClick={handleGrantTestGold}
+            className="w-full border-t border-amber-200/30 bg-amber-400/95 px-3 py-2 text-xs font-black text-slate-950 transition-all hover:bg-amber-300 active:scale-[0.99]"
+          >
+            테스트 머니 +{formatNumber(testGoldGrant)}
+          </button>
+        )}
       </div>
 
       {/* ==================== 중앙: 똥 클릭 버튼 ==================== */}
@@ -461,7 +501,7 @@ const App = () => {
         </div>
 
         {(cleanerEvent || cleanerMessage) && (
-          <div className="relative z-30 mb-3 w-full max-w-[360px] rounded-2xl border border-red-200/80 bg-red-950/85 p-3 text-white shadow-2xl backdrop-blur-md">
+          <div className="absolute left-1/2 top-2 z-40 w-[min(100%,360px)] -translate-x-1/2 rounded-2xl border border-red-200/80 bg-red-950/85 p-3 text-white shadow-2xl backdrop-blur-md">
             {cleanerEvent ? (
               <>
                 <div className="flex items-center justify-between gap-3">
@@ -475,6 +515,9 @@ const App = () => {
                     <p className="text-sm font-black">🧽 청소 직원 등장!</p>
                     <p className="mt-0.5 text-[11px] font-semibold text-red-100">
                       {cleanerEvent.timeLeft}초 안에 {cleanerRequiredBlocks - cleanerEvent.blocks}번 더 방해하세요
+                    </p>
+                    <p className="mt-0.5 text-[10px] font-bold text-red-200">
+                      실패 시 영양분 {Math.round(currentCleanerPenaltyRate * 100)}% 차감
                     </p>
                   </div>
                   <div className="shrink-0 rounded-full bg-white px-2.5 py-1 text-sm font-black text-red-700">
@@ -509,8 +552,7 @@ const App = () => {
           onClick={handlePoopClick}
           className={`
             relative z-20 flex h-56 w-56 cursor-pointer touch-manipulation items-center justify-center rounded-full
-            bg-gradient-to-br ${currentPoop.gradient} text-8xl transition-transform duration-300 ease-out
-            border-4 border-white/70 shadow-2xl
+            text-8xl transition-transform duration-300 ease-out
             filter drop-shadow-lg hover:drop-shadow-2xl
             ${isClicking ? 'scale-125' : 'scale-100'}
           `}
@@ -534,7 +576,16 @@ const App = () => {
           {activeCleaningItems.length >= 5 && (
             <span className="absolute -left-5 bottom-8 text-2xl" style={{ animation: 'cleaningSparkle 1.2s ease-in-out infinite .4s' }} aria-hidden="true">💨</span>
           )}
-          <span aria-label={currentPoop.name}>💩</span>
+          {currentPoop.image ? (
+            <img
+              src={currentPoop.image}
+              alt={currentPoop.name}
+              className="h-48 w-48 object-contain"
+              draggable="false"
+            />
+          ) : (
+            <span aria-label={currentPoop.name}>💩</span>
+          )}
           <span className="absolute -right-1 -top-2 text-4xl drop-shadow-lg" aria-hidden="true">
             {currentPoop.badge}
           </span>
@@ -635,8 +686,17 @@ const App = () => {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${poop.gradient} text-4xl shadow-md`}>
-                        💩
+                      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center text-4xl">
+                        {poop.image ? (
+                          <img
+                            src={poop.image}
+                            alt={poop.name}
+                            className="h-14 w-14 object-contain"
+                            draggable="false"
+                          />
+                        ) : (
+                          '💩'
+                        )}
                         <span className="absolute -right-1 -top-1 text-xl">{poop.badge}</span>
                       </div>
                       <div className="min-w-0 flex-1">
@@ -706,7 +766,7 @@ const App = () => {
               {cleaningItems.map((item, index) => {
                 const level = itemLevels[index] ?? 0;
                 const price = getItemPrice(item, level);
-                const isUnlocked = index === 0 || (itemLevels[index - 1] ?? 0) >= 5;
+                const isUnlocked = index === 0 || (itemLevels[index - 1] ?? 0) >= itemUnlockRequiredLevel;
                 const canPurchase = isUnlocked && gold >= price;
 
                 return (
@@ -739,7 +799,7 @@ const App = () => {
 
                     {!isUnlocked ? (
                       <div className="mt-3 rounded-lg bg-gray-200 py-2 text-center text-sm font-bold text-gray-600">
-                        🔒 {cleaningItems[index - 1].name} Lv.5 필요
+                        🔒 {cleaningItems[index - 1].name} Lv.{itemUnlockRequiredLevel} 필요
                       </div>
                     ) : (
                       <button
