@@ -149,8 +149,8 @@ const App = () => {
   // 클릭 애니메이션 트리거 (팝핑 효과)
   const [isClicking, setIsClicking] = useState(false);
 
-  // 숨겨진 리셋 버튼 노출 상태
-  const [showResetButton, setShowResetButton] = useState(false);
+  // 게임 초기화 확인 팝업 노출 상태
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
   // 저장 데이터를 읽기 전에 초기값이 덮어쓰는 것을 방지
   const [isSaveLoaded, setIsSaveLoaded] = useState(false);
@@ -407,6 +407,7 @@ const App = () => {
     setIsShopOpen(false);
     setIsItemShopOpen(false);
     setIsPoopShopOpen(false);
+    setIsResetConfirmOpen(false);
     localStorage.removeItem(localStorageKey);
   };
 
@@ -432,10 +433,6 @@ const App = () => {
   const currentBgGradient = currentToilet.bgGradient;
   const currentBgImage = currentToilet.image;
 
-  const handleSecretDoubleClick = () => {
-    setShowResetButton(true);
-  };
-
   // ==================== JSX 렌더링 ====================
   return (
     <div
@@ -455,14 +452,13 @@ const App = () => {
         backgroundRepeat: currentBgImage ? 'no-repeat' : undefined,
       }}
     >
-      <div
-        className="absolute right-0 top-0 z-30 h-8 w-8"
-        onDoubleClick={handleSecretDoubleClick}
-      />
       {/* ==================== 상단: 고정형 게임 HUD ==================== */}
       <div className="w-full shrink-0 overflow-hidden rounded-2xl border border-white/20 bg-slate-950/85 text-white shadow-2xl backdrop-blur-md">
         <div className="grid grid-cols-2 divide-x divide-white/15">
-          <div className="px-3 py-2.5 sm:px-4 sm:py-3">
+          <div
+            className="px-3 py-2.5 sm:px-4 sm:py-3"
+            onDoubleClick={() => setIsResetConfirmOpen(true)}
+          >
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-200">
               <span aria-hidden="true">💰</span>
               <span>영양분</span>
@@ -496,7 +492,10 @@ const App = () => {
       </div>
 
       {/* ==================== 중앙: 똥 클릭 버튼 ==================== */}
-      <div className="relative flex min-h-0 w-full flex-1 flex-col items-center justify-center py-1">
+      <div
+        className="relative flex min-h-0 w-full flex-1 cursor-pointer flex-col items-center justify-center py-1"
+        onClick={handlePoopClick}
+      >
         {/* 구매한 청소 장비가 변기 주변 슬롯에 나타나는 전시 레이어 */}
         <div className="pointer-events-none absolute inset-0 z-10" aria-label="사용 중인 청소 장비">
           {activeCleaningItems.map((item) => {
@@ -559,7 +558,10 @@ const App = () => {
                   />
                 </div>
                 <button
-                  onClick={handleCleanerBlock}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleCleanerBlock();
+                  }}
                   className="mt-3 w-full rounded-xl bg-red-500 px-4 py-2.5 text-sm font-black text-white shadow-lg transition-all hover:bg-red-400 active:scale-95"
                 >
                   🚧 방해하기
@@ -575,7 +577,10 @@ const App = () => {
           {currentPoop.badge} {currentPoop.name} Lv.{poopLevel} · 클릭 +{formatNumber(clickPower)}
         </div>
         <button
-          onClick={handlePoopClick}
+          onClick={(event) => {
+            event.stopPropagation();
+            handlePoopClick();
+          }}
           className={`
             relative z-20 flex h-56 w-56 cursor-pointer touch-manipulation items-center justify-center rounded-full
             text-8xl transition-transform duration-300 ease-out
@@ -658,14 +663,34 @@ const App = () => {
         </button>
       </div>
 
-      {showResetButton && (
-        <div className="w-full space-y-3">
-          <button
-            onClick={handleResetGame}
-            className="w-full py-4 px-6 rounded-lg font-bold text-lg bg-white text-gray-900 border border-gray-200 hover:bg-gray-100 transition-all duration-300"
+      {isResetConfirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setIsResetConfirmOpen(false)}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl bg-white p-5 text-gray-900 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
           >
-            ♻️ 게임 리셋
-          </button>
+            <h2 className="text-lg font-black">게임 초기화</h2>
+            <p className="mt-2 text-sm font-semibold text-gray-600">
+              저장된 영양분, 똥 레벨, 장비, 화장실을 모두 처음으로 되돌릴까요?
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setIsResetConfirmOpen(false)}
+                className="rounded-xl bg-gray-200 px-4 py-3 text-sm font-bold text-gray-800 transition-colors hover:bg-gray-300"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleResetGame}
+                className="rounded-xl bg-red-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-red-600"
+              >
+                초기화
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
