@@ -29,7 +29,7 @@ const toilets = [
   {
     id: 1,
     name: '지하철 공중화장실',
-    price: 100,
+    price: 300,
     dpsBonus: 5,
     cleanerPenaltyRate: 0.2,
     bgColor: 'bg-gray-200',
@@ -39,7 +39,7 @@ const toilets = [
   {
     id: 2,
     name: '백화점 파우더룸',
-    price: 1000,
+    price: 3000,
     dpsBonus: 50,
     cleanerPenaltyRate: 0.22,
     bgColor: 'bg-pink-200',
@@ -49,7 +49,7 @@ const toilets = [
   {
     id: 3,
     name: '7성급 호텔 화장실',
-    price: 10000,
+    price: 45000,
     dpsBonus: 250,
     cleanerPenaltyRate: 0.25,
     bgColor: 'bg-slate-300',
@@ -59,7 +59,7 @@ const toilets = [
   {
     id: 4,
     name: '우주선 무중력 화장실',
-    price: 50000,
+    price: 750000,
     dpsBonus: 1000,
     cleanerPenaltyRate: 0.27,
     bgColor: 'bg-indigo-300',
@@ -69,7 +69,7 @@ const toilets = [
   {
     id: 5,
     name: '순금 황제 변기궁전',
-    price: 200000,
+    price: 12000000,
     dpsBonus: 2500,
     cleanerPenaltyRate: 0.3,
     bgColor: 'bg-yellow-200',
@@ -131,6 +131,9 @@ const App = () => {
   // 현재 똥 강화 레벨
   const [poopLevel, setPoopLevel] = useState(1);
 
+  // 현재 사용 중인 똥 단계. 해금된 이전 단계도 선택 가능
+  const [selectedPoopId, setSelectedPoopId] = useState(0);
+
   // 청소 장비별 보유 레벨
   const [itemLevels, setItemLevels] = useState(initialItemLevels);
   
@@ -169,8 +172,10 @@ const App = () => {
   );
   const toiletDps = toilets[currentToiletLevel]?.dpsBonus ?? 0;
   const currentCleanerPenaltyRate = toilets[currentToiletLevel]?.cleanerPenaltyRate ?? 0.1;
-  const currentPoop = getPoopStageByLevel(poopLevel);
-  const currentPoopLevel = currentPoop.id;
+  const unlockedPoop = getPoopStageByLevel(poopLevel);
+  const currentPoopLevel = unlockedPoop.id;
+  const selectedPoop = poopCharacters.find((poop) => poop.id === selectedPoopId) ?? unlockedPoop;
+  const currentPoop = selectedPoop.requiredLevel <= poopLevel ? selectedPoop : unlockedPoop;
   const currentPoopStageLevel = Math.max(0, poopLevel - currentPoop.requiredLevel);
   const nextPoop = poopCharacters.find((poop) => poop.requiredLevel > poopLevel);
   const poopUpgradePrice = getPoopUpgradePrice(poopLevel);
@@ -193,7 +198,18 @@ const App = () => {
 
       setGold(parsed.gold ?? 0);
       setCurrentToiletLevel(savedToiletLevel);
-      setPoopLevel(getSavedPoopLevel(parsed));
+      const savedPoopLevel = getSavedPoopLevel(parsed);
+      const savedUnlockedPoop = getPoopStageByLevel(savedPoopLevel);
+      const savedSelectedPoopId = Number.isFinite(parsed.selectedPoopId)
+        ? parsed.selectedPoopId
+        : savedUnlockedPoop.id;
+
+      setPoopLevel(savedPoopLevel);
+      setSelectedPoopId(
+        poopCharacters.some((poop) => poop.id === savedSelectedPoopId && savedPoopLevel >= poop.requiredLevel)
+          ? savedSelectedPoopId
+          : savedUnlockedPoop.id
+      );
       setItemLevels(
         Array.isArray(parsed.itemLevels)
           ? cleaningItems.map((_, index) => parsed.itemLevels[index] ?? 0)
@@ -215,13 +231,20 @@ const App = () => {
         currentToiletLevel,
         currentPoopLevel,
         poopLevel,
+        selectedPoopId: currentPoop.id,
         itemLevels,
       };
       localStorage.setItem(localStorageKey, JSON.stringify(saveData));
     } catch (error) {
       console.warn('게임 데이터를 저장하는 중 오류가 발생했습니다.', error);
     }
-  }, [gold, currentToiletLevel, currentPoopLevel, poopLevel, itemLevels, isSaveLoaded]);
+  }, [gold, currentToiletLevel, currentPoopLevel, poopLevel, currentPoop.id, itemLevels, isSaveLoaded]);
+
+  useEffect(() => {
+    if (currentPoop.requiredLevel > poopLevel) {
+      setSelectedPoopId(unlockedPoop.id);
+    }
+  }, [currentPoop.requiredLevel, poopLevel, unlockedPoop.id]);
 
   // ==================== useEffect: 자동 수집 시스템 ====================
   // 1초마다 dps만큼 gold를 자동으로 증가시키는 타이머 로직
@@ -367,11 +390,19 @@ const App = () => {
     setPoopLevel(prevLevel => prevLevel + 1);
   };
 
+  const handlePoopSelect = (poopId) => {
+    const poop = poopCharacters[poopId];
+    if (!poop || poopLevel < poop.requiredLevel) return;
+
+    setSelectedPoopId(poopId);
+  };
+
   // ==================== 게임 초기화 리셋 핸들러 ====================
   const handleResetGame = () => {
     setGold(0);
     setCurrentToiletLevel(0);
     setPoopLevel(1);
+    setSelectedPoopId(0);
     setItemLevels(initialItemLevels);
     setIsShopOpen(false);
     setIsItemShopOpen(false);
@@ -710,13 +741,16 @@ const App = () => {
 
               {poopCharacters.map((poop) => {
                 const isOwned = poopLevel >= poop.requiredLevel;
-                const isCurrent = currentPoopLevel === poop.id;
+                const isSelected = currentPoop.id === poop.id;
+                const stageLevel = Math.max(0, poopLevel - poop.requiredLevel);
+                const stageClickPower = poop.baseClickPower + poop.clickGrowth * stageLevel;
+                const stageDps = poop.baseDps + poop.dpsGrowth * stageLevel;
 
                 return (
                   <div
                     key={poop.id}
                     className={`rounded-xl border-2 p-4 ${
-                      isCurrent
+                      isSelected
                         ? 'border-amber-400 bg-amber-50'
                         : isOwned
                         ? 'border-emerald-200 bg-emerald-50'
@@ -740,16 +774,27 @@ const App = () => {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <h3 className="font-black text-gray-900">{poop.name}</h3>
-                          {isCurrent && <span className="rounded-full bg-amber-500 px-2 py-1 text-[10px] font-bold text-white">현재</span>}
-                          {!isCurrent && isOwned && <span className="text-xs font-bold text-emerald-600">✓ 달성</span>}
+                          {isSelected && <span className="rounded-full bg-amber-500 px-2 py-1 text-[10px] font-bold text-white">사용 중</span>}
+                          {!isSelected && isOwned && <span className="text-xs font-bold text-emerald-600">✓ 해금</span>}
                         </div>
                         <p className="mt-1 text-xs text-gray-500">{poop.description}</p>
                         <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-bold">
                           <span className="rounded bg-amber-50 px-2 py-1 text-amber-700">Lv.{poop.requiredLevel} 진화</span>
-                          <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">기본 클릭 +{formatNumber(poop.baseClickPower)}</span>
+                          <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">
+                            {isOwned ? `클릭 +${formatNumber(stageClickPower)}` : `기본 클릭 +${formatNumber(poop.baseClickPower)}`}
+                          </span>
                         </div>
                       </div>
                     </div>
+
+                    {isOwned && !isSelected && (
+                      <button
+                        onClick={() => handlePoopSelect(poop.id)}
+                        className="mt-3 w-full rounded-lg bg-emerald-500 py-2 text-sm font-bold text-white transition-all hover:bg-emerald-600 active:scale-95"
+                      >
+                        이 똥 사용하기 · 자동 +{formatNumber(stageDps)}/초
+                      </button>
+                    )}
 
                     {!isOwned && (
                       <div className="mt-3 rounded-lg bg-gray-200 py-2 text-center text-xs font-bold text-gray-500">
