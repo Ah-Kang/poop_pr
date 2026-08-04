@@ -81,13 +81,38 @@ npm run dev:server
 
 - Supabase 프로젝트는 생성했습니다.
 - Session pooler 주소 형식은 확인했습니다.
-- DB 비밀번호 인증이 실패해 온라인 DB 연결은 아직 완료되지 않았습니다.
+- Supabase Session pooler 연결은 macOS 로컬 `.env` 기준으로 성공했습니다.
 - PostgreSQL 드라이버 `pg`는 설치되어 있습니다.
 - 온라인 테이블 생성 SQL은 `supabase/schema.sql`에 있습니다.
 - `server/database.js`는 PostgreSQL 우선, SQLite fallback 구조로 전환했습니다.
 - 서버 시작 시 PostgreSQL 모드에서는 `users`, `scores`, `game_saves` 기본 테이블을 자동 생성합니다.
-- 다음 작업자는 새 DB 비밀번호를 발급하고 Session pooler 연결을 다시 검증해야 합니다.
-- 연결 성공 후 `npm run db:migrate:sqlite`로 기존 SQLite 데이터를 한 번만 이전합니다.
+- 로컬 카카오 로그인 후 Supabase `users`, `scores`, `game_saves` 저장과 랭킹 표시를 확인했습니다.
+- 기존 SQLite DB에는 이전할 데이터가 없었습니다.
+
+## 서버 배포
+
+현재 서버는 Express가 `dist/` 정적 프런트엔드와 `/api`, `/auth` 백엔드를 함께 제공합니다. Render 같은 Node Web Service에 배포하기 적합합니다.
+
+Render 배포 기본값은 `render.yaml`에 있습니다.
+
+- Build command: `npm install && npm run build`
+- Start command: `npm start`
+- Health check path: `/api/health`
+
+배포 서비스 환경변수에 아래 값을 직접 입력합니다. 실제 비밀값은 GitHub나 문서에 쓰지 않습니다.
+
+- `NODE_ENV=production`
+- `KAKAO_REST_API_KEY`
+- `KAKAO_CLIENT_SECRET`
+- `KAKAO_REDIRECT_URI=https://배포도메인/auth/kakao/callback`
+- `FRONTEND_URL=https://배포도메인`
+- `SESSION_SECRET`
+- `DATABASE_URL`
+- `DATABASE_SSL=true`
+
+배포 후 Kakao Developers에도 아래 Redirect URI를 추가해야 합니다.
+
+- `https://배포도메인/auth/kakao/callback`
 
 ## 다음 구현 순서
 
@@ -97,9 +122,11 @@ npm run dev:server
 4. 필요한 경우 Supabase SQL Editor에서 `supabase/schema.sql` 적용
 5. SQLite 데이터를 Supabase PostgreSQL로 일회성 이전: `npm run db:migrate:sqlite`
 6. 온라인 저장·전체 랭킹을 실제 여러 기기에서 검증
-7. 친구 코드 기반 친구 추가와 친구 랭킹 구현
-8. 서비스 완성 후 카카오 친구 목록 권한 신청
-9. Capacitor로 Android/iOS 앱 패키징
+7. Render 또는 다른 Node 호스팅에 Web Service 배포
+8. 배포 도메인을 Kakao Redirect URI와 환경변수에 반영
+9. 친구 코드 기반 친구 추가와 친구 랭킹 구현
+10. 서비스 완성 후 카카오 친구 목록 권한 신청
+11. Capacitor로 Android/iOS 앱 패키징
 
 ## 검증 명령
 

@@ -19,8 +19,10 @@ const port = Number(process.env.PORT || 3001);
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 const redirectUri = process.env.KAKAO_REDIRECT_URI || `http://localhost:${port}/auth/kakao/callback`;
 const sessionSecret = process.env.SESSION_SECRET;
-const sessions = new Map();
+const isProduction = process.env.NODE_ENV === 'production';
+const sessionMaxAge = 7 * 24 * 60 * 60 * 1000;
 
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use(cookieParser(sessionSecret || 'local-development-only'));
 
@@ -53,6 +55,42 @@ const isValidOAuthState = (state) => {
     && crypto.timingSafeEqual(Buffer.from(providedSignature), Buffer.from(expectedSignature));
   const age = Date.now() - Number(timestamp);
   return signatureIsValid && Number.isFinite(age) && age >= 0 && age <= 10 * 60 * 1000;
+};
+
+const encodeSession = (session) =>
+  Buffer.from(JSON.stringify(session)).toString('base64url');
+
+const decodeSession = (value) => {
+  if (!value) return null;
+
+  try {
+    const session = JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
+    const age = Date.now() - Number(session.createdAt);
+    const user = session.user;
+
+    if (!Number.isFinite(age) || age < 0 || age > sessionMaxAge) return null;
+    if (!user?.id || !user?.nickname) return null;
+
+    return {
+      user: {
+        id: String(user.id),
+        nickname: String(user.nickname),
+        profileImage: user.profileImage || null,
+      },
+      createdAt: session.createdAt,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const getSession = (request) => decodeSession(request.signedCookies.game_session);
+const sessionCookieOptions = {
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: isProduction,
+  maxAge: sessionMaxAge,
+  signed: true,
 };
 
 app.get('/api/health', (_request, response) => {
@@ -115,15 +153,7 @@ app.get('/auth/kakao/callback', async (request, response) => {
     };
     await saveUser(user);
 
-    const sessionId = crypto.randomBytes(32).toString('hex');
-    sessions.set(sessionId, { user, createdAt: Date.now() });
-    response.cookie('game_session', sessionId, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      signed: true,
-    });
+    response.cookie('game_session', encodeSession({ user, createdAt: Date.now() }), sessionCookieOptions);
     return response.redirect(`${frontendUrl}/?login=success`);
   } catch (loginError) {
     console.error(loginError);
@@ -132,22 +162,23 @@ app.get('/auth/kakao/callback', async (request, response) => {
 });
 
 app.get('/api/me', (request, response) => {
-  const sessionId = request.signedCookies.game_session;
-  const session = sessionId ? sessions.get(sessionId) : null;
+  const session = getSession(request);
   if (!session) return response.status(401).json({ user: null });
   return response.json({ user: session.user });
 });
 
 app.post('/api/logout', (request, response) => {
-  const sessionId = request.signedCookies.game_session;
-  if (sessionId) sessions.delete(sessionId);
-  response.clearCookie('game_session');
+  response.clearCookie('game_session', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProduction,
+    signed: true,
+  });
   response.status(204).end();
 });
 
 const requireUser = (request, response, next) => {
-  const sessionId = request.signedCookies.game_session;
-  const session = sessionId ? sessions.get(sessionId) : null;
+  const session = getSession(request);
   if (!session) return response.status(401).json({ error: 'login_required' });
   request.authUser = session.user;
   return next();

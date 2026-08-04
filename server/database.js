@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
 import pg from 'pg';
 
 const { Pool, types } = pg;
@@ -76,7 +75,8 @@ const shouldUseSsl = () => {
   return databaseUrl?.includes('supabase.') || databaseUrl?.includes('sslmode=require');
 };
 
-const initializeSqlite = () => {
+const initializeSqlite = async () => {
+  const { DatabaseSync } = await import('node:sqlite');
   const dataDirectory = path.resolve('data');
   fs.mkdirSync(dataDirectory, { recursive: true });
 
@@ -169,7 +169,7 @@ const normalizePostgresRow = (row) => ({
 
 export const initializeDatabase = async () => {
   if (!usePostgres) {
-    initializeSqlite();
+    await initializeSqlite();
     return { mode: databaseMode };
   }
 
