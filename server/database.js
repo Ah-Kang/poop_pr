@@ -8,6 +8,7 @@ types.setTypeParser(types.builtins.INT8, (value) => Number(value));
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 const usePostgres = Boolean(databaseUrl);
+const isProduction = process.env.NODE_ENV === 'production';
 let sqliteDatabase = null;
 let sqliteStatements = null;
 let postgresPool = null;
@@ -169,6 +170,10 @@ const normalizePostgresRow = (row) => ({
 
 export const initializeDatabase = async () => {
   if (!usePostgres) {
+    if (isProduction) {
+      throw new Error('DATABASE_URL is required when NODE_ENV=production.');
+    }
+
     await initializeSqlite();
     return { mode: databaseMode };
   }
