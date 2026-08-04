@@ -509,18 +509,15 @@ const App = () => {
   const currentToilet = toilets[currentToiletLevel];
   const currentBgGradient = currentToilet.bgGradient;
   const currentBgImage = currentToilet.image;
-  const evolutionProgress = currentPoop.evolutionLevel
-    ? Math.min(100, (poopLevel / currentPoop.evolutionLevel) * 100)
-    : 100;
 
   // ==================== JSX 렌더링 ====================
   return (
     <div
       className={`
-        min-h-[100svh] h-[100svh] w-full max-w-[440px] mx-auto
+        min-h-[100svh] h-[100svh] w-full max-w-[430px] mx-auto
         bg-gradient-to-b ${currentBgGradient}
         relative flex flex-col items-center justify-between
-        p-4 transition-all duration-500 ease-in-out
+        p-3 sm:p-5 transition-all duration-500 ease-in-out
         overflow-hidden
       `}
       style={{
@@ -532,66 +529,48 @@ const App = () => {
         backgroundRepeat: currentBgImage ? 'no-repeat' : undefined,
       }}
     >
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/45 via-slate-900/10 to-slate-950/75" />
-
       {/* ==================== 상단: 고정형 게임 HUD ==================== */}
-      <div className="relative z-30 w-full shrink-0 overflow-hidden rounded-lg border border-white/20 bg-slate-950/70 text-white shadow-xl backdrop-blur-md">
-        <div className="grid grid-cols-2 divide-x divide-white/10">
+      <div className="w-full shrink-0 overflow-hidden rounded-2xl border border-white/20 bg-slate-950/85 text-white shadow-2xl backdrop-blur-md">
+        <div className="grid grid-cols-2 divide-x divide-white/15">
           <div
-            className="px-3 py-2.5"
+            className="px-3 py-2.5 sm:px-4 sm:py-3"
             onDoubleClick={handleResetModalOpen}
           >
-            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-amber-200">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-200">
               <span aria-hidden="true">💰</span>
               <span>영양분</span>
             </div>
-            <p className="mt-0.5 truncate text-xl font-black text-white">
+            <p className="mt-1 truncate text-xl font-black tracking-tight text-white sm:text-2xl">
               {formatNumber(gold)}
             </p>
           </div>
 
-          <div className="px-3 py-2.5">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-emerald-200">
+          <div className="px-3 py-2.5 sm:px-4 sm:py-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-200">
               <span aria-hidden="true">⚡</span>
               <span>초당 생산량</span>
             </div>
-            <p className="mt-0.5 truncate text-xl font-black text-emerald-300">
+            <p className="mt-1 truncate text-xl font-black tracking-tight text-emerald-300 sm:text-2xl">
               +{formatNumber(dps)}
               <span className="ml-1 text-xs font-bold text-emerald-100">/초</span>
             </p>
           </div>
         </div>
 
-        <div className="border-t border-white/10 bg-white/10 px-3 py-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="min-w-0 truncate text-xs font-bold text-slate-100">
-              {currentPoop.badge} {currentPoop.name} Lv.{poopLevel}
-            </p>
-            <p className="shrink-0 text-[10px] font-black text-amber-200">
-              클릭 +{formatNumber(clickPower)}
-            </p>
-          </div>
-          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/15">
-            <div
-              className="h-full rounded-full bg-amber-300 transition-all duration-300"
-              style={{ width: `${evolutionProgress}%` }}
-            />
-          </div>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <p className="min-w-0 truncate text-[10px] font-bold text-slate-300">
-              📍 {toilets[currentToiletLevel].name}
-            </p>
-            <p className="shrink-0 text-[9px] font-semibold text-slate-300">
-              변기 +{formatNumber(toiletDps)} · 캐릭터 +{formatNumber(characterDps)} · 장비 {activeCleaningItems.length}종 +{formatNumber(itemDps)}/초
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-2 border-t border-white/15 bg-white/5 px-3 py-2 sm:px-4 sm:py-2.5">
+          <p className="min-w-0 truncate text-xs font-bold text-slate-100">
+            📍 {toilets[currentToiletLevel].name}
+          </p>
+          <p className="shrink-0 text-[9px] font-semibold text-slate-300 sm:text-[10px]">
+            변기 +{formatNumber(toiletDps)} · 캐릭터 +{formatNumber(characterDps)} · 장비 +{formatNumber(itemDps)}
+          </p>
         </div>
 
       </div>
 
       {/* ==================== 중앙: 똥 클릭 버튼 ==================== */}
       <div
-        className="relative z-20 flex min-h-0 w-full flex-1 cursor-pointer flex-col items-center justify-center py-2"
+        className="relative flex min-h-0 w-full flex-1 cursor-pointer flex-col items-center justify-center py-1"
         onClick={handlePoopClick}
       >
         {/* 구매한 청소 장비가 변기 주변 슬롯에 나타나는 전시 레이어 */}
@@ -609,14 +588,14 @@ const App = () => {
                   animationDelay: `${item.id * -0.35}s`,
                 }}
               >
-                <span
-                  className="text-4xl drop-shadow-[0_8px_10px_rgba(0,0,0,0.45)] sm:text-5xl"
-                  aria-hidden="true"
-                >
-                  {item.emoji}
-                </span>
-                <span className="mt-0.5 max-w-20 truncate rounded bg-slate-950/65 px-2 py-0.5 text-[9px] font-black text-white shadow-lg backdrop-blur-sm">
-                  Lv.{level} · {item.name}
+                <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/70 bg-slate-950/75 text-2xl shadow-xl backdrop-blur-md sm:h-14 sm:w-14 sm:text-3xl">
+                  <span aria-hidden="true">{item.emoji}</span>
+                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-white/60 bg-emerald-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow">
+                    Lv.{level}
+                  </span>
+                </div>
+                <span className="mt-1 max-w-16 truncate rounded-full bg-black/60 px-2 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
+                  {item.name}
                 </span>
               </div>
             );
@@ -624,7 +603,7 @@ const App = () => {
         </div>
 
         {(cleanerEvent || cleanerMessage) && (
-          <div className="absolute left-1/2 top-2 z-40 w-[min(100%,360px)] -translate-x-1/2 rounded-lg border border-red-200/80 bg-red-950/85 p-3 text-white shadow-2xl backdrop-blur-md">
+          <div className="absolute left-1/2 top-2 z-40 w-[min(100%,360px)] -translate-x-1/2 rounded-2xl border border-red-200/80 bg-red-950/85 p-3 text-white shadow-2xl backdrop-blur-md">
             {cleanerEvent ? (
               <>
                 <div className="flex items-center justify-between gap-3">
@@ -671,6 +650,9 @@ const App = () => {
           </div>
         )}
 
+        <div className="relative z-20 mb-2 rounded-full border border-white/40 bg-slate-950/70 px-3 py-1 text-xs font-black text-white shadow-lg backdrop-blur-sm">
+          {currentPoop.badge} {currentPoop.name} Lv.{poopLevel} · 클릭 +{formatNumber(clickPower)}
+        </div>
         <button
           onClick={(event) => {
             event.stopPropagation();
@@ -717,6 +699,12 @@ const App = () => {
           </span>
         </button>
 
+        {activeCleaningItems.length > 0 && (
+          <div className="relative z-20 mt-3 rounded-full border border-emerald-200/60 bg-emerald-950/75 px-3 py-1 text-[10px] font-bold text-emerald-100 shadow-lg backdrop-blur-sm">
+            🧼 장비 {activeCleaningItems.length}종 작동 중 · +{formatNumber(itemDps)}/초
+          </div>
+        )}
+
         {/* 클릭 시 떠오르는 텍스트 효과 (선택사항) */}
         {isClicking && (
           <div
@@ -731,22 +719,22 @@ const App = () => {
       </div>
 
       {/* ==================== 하단: 성장 상점 버튼 ==================== */}
-      <div className="relative z-30 grid w-full shrink-0 grid-cols-3 gap-1 rounded-lg border border-white/20 bg-slate-950/75 p-1 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] shadow-xl backdrop-blur-md">
+      <div className="grid w-full shrink-0 grid-cols-3 gap-2 pb-[env(safe-area-inset-bottom)]">
         <button
           onClick={() => setIsPoopShopOpen(true)}
-          className="rounded-md bg-amber-400 px-2 py-3 text-[11px] font-black text-slate-950 transition-all hover:bg-amber-300 active:scale-95"
+          className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-3 text-[11px] font-bold text-white shadow-lg transition-all hover:from-amber-600 hover:to-orange-600 active:scale-95 sm:py-4 sm:text-xs"
         >
           💩 똥 강화
         </button>
         <button
           onClick={() => setIsItemShopOpen(true)}
-          className="rounded-md bg-emerald-400 px-2 py-3 text-[11px] font-black text-slate-950 transition-all hover:bg-emerald-300 active:scale-95"
+          className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-2 py-3 text-[11px] font-bold text-white shadow-lg transition-all hover:from-emerald-600 hover:to-teal-600 active:scale-95 sm:py-4 sm:text-xs"
         >
           🧰 청소 장비
         </button>
         <button
           onClick={() => setIsShopOpen(true)}
-          className="rounded-md bg-sky-400 px-2 py-3 text-[11px] font-black text-slate-950 transition-all hover:bg-sky-300 active:scale-95"
+          className="rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 px-2 py-3 text-[11px] font-bold text-white shadow-lg transition-all hover:from-purple-600 hover:to-pink-600 active:scale-95 sm:py-4 sm:text-xs"
         >
           🏢 화장실 매입
         </button>
@@ -782,13 +770,13 @@ const App = () => {
             <div className="mt-5 grid grid-cols-2 gap-2">
               <button
                 onClick={handleResetModalClose}
-                className="rounded-lg bg-gray-200 px-4 py-3 text-sm font-bold text-gray-800 transition-colors hover:bg-gray-300"
+                className="rounded-xl bg-gray-200 px-4 py-3 text-sm font-bold text-gray-800 transition-colors hover:bg-gray-300"
               >
                 취소
               </button>
               <button
                 onClick={handleResetButtonClick}
-                className="rounded-lg bg-red-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-red-600"
+                className="rounded-xl bg-red-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-red-600"
               >
                 {isDeveloperModeOpen ? '게임 초기화' : '초기화'}
               </button>
@@ -799,30 +787,30 @@ const App = () => {
 
       {/* ==================== 모달: 똥 레벨 강화 ==================== */}
       {isPoopShopOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3">
-          <div className="flex max-h-[86vh] w-full max-w-[440px] flex-col overflow-hidden rounded-lg bg-slate-50 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-950 p-4 text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="flex max-h-[82vh] w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white">
               <div>
-                <h2 className="text-xl font-black">💩 똥 강화</h2>
-                <p className="mt-1 text-xs text-slate-300">각 똥은 Lv.1부터 성장하고 조건 달성 시 진화해요</p>
+                <h2 className="text-2xl font-black">💩 똥 강화</h2>
+                <p className="mt-1 text-xs text-amber-50">각 똥은 Lv.1부터 성장하고 조건 달성 시 진화해요</p>
               </div>
               <button
                 onClick={() => setIsPoopShopOpen(false)}
-                className="rounded-md bg-white/10 px-2.5 py-1 text-xl font-bold hover:bg-white/15"
+                className="text-2xl font-bold hover:text-amber-100"
                 aria-label="똥 강화 상점 닫기"
               >
                 ✕
               </button>
             </div>
 
-            <div className="border-b border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900">
+            <div className="border-b bg-amber-50 px-5 py-4 text-sm font-bold text-amber-900">
               <div className="flex items-center justify-between gap-3">
                 <span>현재 {currentPoop.badge} {currentPoop.name} Lv.{poopLevel}</span>
-                <span className="shrink-0 rounded bg-amber-400 px-2.5 py-1 text-xs text-slate-950">
+                <span className="shrink-0 rounded-full bg-amber-500 px-2.5 py-1 text-xs text-white">
                   +{formatNumber(clickPower)} 클릭
                 </span>
               </div>
-              <div className="mt-2 flex items-center justify-between gap-2 text-xs text-slate-500">
+              <div className="mt-2 flex items-center justify-between gap-2 text-xs text-amber-800">
                 <span>자동 +{formatNumber(characterDps)}/초</span>
                 <span>
                   {nextPoop
@@ -835,7 +823,7 @@ const App = () => {
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
-              <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 shadow-sm">
+              <div className="rounded-xl border-2 border-orange-300 bg-orange-50 p-4">
                 <div className="flex items-center gap-3">
                   <div className="relative flex h-20 w-20 shrink-0 items-center justify-center">
                     <img
@@ -854,7 +842,7 @@ const App = () => {
                       다음 강화 비용 {formatNumber(poopUpgradePrice)} 💰
                     </p>
                     <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-bold">
-                      <span className="rounded bg-sky-50 px-2 py-1 text-sky-700">클릭 +{formatNumber(clickPower)}</span>
+                      <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">클릭 +{formatNumber(clickPower)}</span>
                       <span className="rounded bg-emerald-50 px-2 py-1 text-emerald-700">자동 +{formatNumber(characterDps)}/초</span>
                     </div>
                   </div>
@@ -863,7 +851,7 @@ const App = () => {
                 {canEvolvePoop ? (
                   <button
                     onClick={handlePoopEvolve}
-                    className="mt-4 w-full rounded-lg bg-amber-400 py-2.5 font-black text-slate-950 transition-all hover:bg-amber-300 active:scale-95"
+                    className="mt-4 w-full rounded-lg bg-yellow-500 py-2.5 font-bold text-white transition-all hover:bg-yellow-600 active:scale-95"
                   >
                     {nextPoop.badge} {nextPoop.name}으로 진화하기
                   </button>
@@ -891,13 +879,13 @@ const App = () => {
                 return (
                   <div
                     key={poop.id}
-	                    className={`rounded-lg border p-4 shadow-sm ${
-	                      isSelected
-	                        ? 'border-amber-300 bg-amber-50'
-	                        : isOwned
-	                        ? 'border-emerald-200 bg-white'
-	                        : 'border-slate-200 bg-slate-100 opacity-70'
-	                    }`}
+                    className={`rounded-xl border-2 p-4 ${
+                      isSelected
+                        ? 'border-amber-400 bg-amber-50'
+                        : isOwned
+                        ? 'border-emerald-200 bg-emerald-50'
+                        : 'border-gray-200 bg-gray-100 opacity-70'
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className="relative flex h-16 w-16 shrink-0 items-center justify-center text-4xl">
@@ -934,7 +922,7 @@ const App = () => {
                     {isOwned && !isSelected && (
                       <button
                         onClick={() => handlePoopSelect(poop.id)}
-	                        className="mt-3 w-full rounded-lg bg-emerald-500 py-2 text-sm font-bold text-white transition-all hover:bg-emerald-600 active:scale-95"
+                        className="mt-3 w-full rounded-lg bg-emerald-500 py-2 text-sm font-bold text-white transition-all hover:bg-emerald-600 active:scale-95"
                       >
                         이 똥 사용하기 · 자동 +{formatNumber(stageStats.dps)}/초
                       </button>
@@ -955,23 +943,23 @@ const App = () => {
 
       {/* ==================== 모달: 청소 장비 상점 ==================== */}
       {isItemShopOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3">
-          <div className="flex max-h-[86vh] w-full max-w-[440px] flex-col overflow-hidden rounded-lg bg-slate-50 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-950 p-4 text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="flex max-h-[80vh] w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between bg-gradient-to-r from-emerald-500 to-teal-500 p-5 text-white">
               <div>
-                <h2 className="text-xl font-black">🧰 청소 장비</h2>
-                <p className="mt-1 text-xs text-slate-300">장비를 강화해 초당 생산량을 늘리세요</p>
+                <h2 className="text-2xl font-bold">🧰 청소 장비</h2>
+                <p className="mt-1 text-xs text-emerald-50">장비를 강화해 초당 생산량을 늘리세요</p>
               </div>
               <button
                 onClick={() => setIsItemShopOpen(false)}
-                className="rounded-md bg-white/10 px-2.5 py-1 text-xl font-bold transition-colors hover:bg-white/15"
+                className="text-2xl font-bold transition-colors hover:text-emerald-100"
                 aria-label="청소 장비 상점 닫기"
               >
                 ✕
               </button>
             </div>
 
-            <div className="border-b border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900">
+            <div className="border-b bg-emerald-50 px-5 py-3 text-sm font-bold text-emerald-800">
               장비 생산량 +{formatNumber(itemDps)} / sec
             </div>
 
@@ -985,13 +973,13 @@ const App = () => {
                 return (
                   <div
                     key={item.id}
-	                    className={`rounded-lg border p-4 shadow-sm transition-all ${
-	                      !isUnlocked
-	                        ? 'border-slate-200 bg-slate-100 opacity-70'
-	                        : canPurchase
-	                        ? 'border-emerald-300 bg-emerald-50'
-	                        : 'border-slate-200 bg-white'
-	                    }`}
+                    className={`rounded-xl border-2 p-4 transition-all ${
+                      !isUnlocked
+                        ? 'border-gray-200 bg-gray-100 opacity-70'
+                        : canPurchase
+                        ? 'border-emerald-300 bg-emerald-50'
+                        : 'border-gray-200 bg-white'
+                    }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className="text-4xl" aria-hidden="true">{item.emoji}</div>
@@ -1037,25 +1025,21 @@ const App = () => {
 
       {/* ==================== 모달: 화장실 매입 상점 팝업 ==================== */}
       {isShopOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3">
-          <div className="flex max-h-[86vh] w-full max-w-[440px] flex-col overflow-hidden rounded-lg bg-slate-50 shadow-2xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full max-h-96 flex flex-col">
             {/* 모달 헤더 */}
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-950 p-4 text-white">
-              <div>
-                <h2 className="text-xl font-black">🏢 화장실 매입</h2>
-                <p className="mt-1 text-xs text-slate-300">배경과 기본 생산량을 업그레이드해요</p>
-              </div>
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-t-2xl flex justify-between items-center">
+              <h2 className="text-2xl font-bold">🏢 화장실 매입</h2>
               <button
                 onClick={() => setIsShopOpen(false)}
-                className="rounded-md bg-white/10 px-2.5 py-1 text-xl font-bold transition-colors hover:bg-white/15"
-                aria-label="화장실 매입 상점 닫기"
+                className="text-2xl font-bold hover:text-gray-200 transition-colors"
               >
                 ✕
               </button>
             </div>
 
             {/* 모달 콘텐츠 (스크롤 가능) */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="overflow-y-auto flex-1 p-4">
               {toilets.map((toilet) => {
                 // 해당 화장실을 구매할 수 있는지 판단
                 const canPurchase =
@@ -1067,72 +1051,72 @@ const App = () => {
                 const isOwned = currentToiletLevel >= toilet.id;
 
                 return (
-	                  <div
-	                    key={toilet.id}
-	                    className={`
-	                      mb-3 rounded-lg border p-3 shadow-sm transition-all
-	                      ${isOwned
-	                        ? 'border-emerald-300 bg-emerald-50'
-	                        : canPurchase
-	                        ? 'border-amber-300 bg-amber-50'
-	                        : 'border-slate-200 bg-white'
-	                      }
-	                    `}
-	                  >
-	                    {toilet.image && (
-	                      <img
-	                        src={toilet.image}
-	                        alt={toilet.name}
-	                        className="mb-3 h-28 w-full rounded-lg object-cover"
-	                      />
-	                    )}
-	                    {/* 화장실 이름 및 상태 배지 */}
-	                    <div className="mb-2 flex items-center justify-between gap-2">
-	                      <h3 className="min-w-0 truncate text-base font-black text-slate-900">
-	                        {toilet.name}
-	                      </h3>
-	                      {isOwned && (
-	                        <span className="shrink-0 rounded bg-emerald-500 px-2 py-1 text-xs font-bold text-white">
-	                          ✓ 보유중
-	                        </span>
-	                      )}
+                  <div
+                    key={toilet.id}
+                    className={`
+                      mb-4 p-4 rounded-lg border-2 transition-all
+                      ${isOwned 
+                        ? 'bg-green-50 border-green-300' 
+                        : canPurchase 
+                        ? 'bg-yellow-50 border-yellow-300' 
+                        : 'bg-gray-50 border-gray-300'
+                      }
+                    `}
+                  >
+                    {toilet.image && (
+                      <img
+                        src={toilet.image}
+                        alt={toilet.name}
+                        className="w-full h-32 object-cover rounded-xl mb-4"
+                      />
+                    )}
+                    {/* 화장실 이름 및 상태 배지 */}
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {toilet.name}
+                      </h3>
+                      {isOwned && (
+                        <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                          ✓ 보유중
+                        </span>
+                      )}
                     </div>
 
                     {/* 화장실 정보 */}
-	                    <div className="mb-3 grid grid-cols-2 gap-2 text-sm">
-	                      <div>
-	                        <p className="text-xs font-bold text-slate-500">가격</p>
-	                        <p className={`font-black ${gold >= toilet.price && !isOwned ? 'text-emerald-600' : 'text-slate-900'}`}>
-	                          {formatNumber(toilet.price)} 💰
-	                        </p>
-	                      </div>
-	                      <div>
-	                        <p className="text-xs font-bold text-slate-500">DPS 보너스</p>
-	                        <p className="font-black text-sky-600">
-	                          +{formatNumber(toilet.dpsBonus)}
-	                        </p>
-	                      </div>
+                    <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+                      <div>
+                        <p className="text-gray-600">가격</p>
+                        <p className={`font-bold ${gold >= toilet.price && !isOwned ? 'text-green-600' : 'text-gray-900'}`}>
+                          {formatNumber(toilet.price)} 💰
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">DPS 보너스</p>
+                        <p className="font-bold text-blue-600">
+                          +{formatNumber(toilet.dpsBonus)}
+                        </p>
+                      </div>
                     </div>
 
                     {/* 매입하기 버튼 또는 소유 표시 */}
                     {isOwned ? (
-	                      <button
-	                        disabled
-	                        className="w-full cursor-default rounded-lg bg-emerald-500 py-2 font-bold text-white opacity-70"
-	                      >
-	                        ✓ 이미 구매함
-	                      </button>
+                      <button
+                        disabled
+                        className="w-full py-2 bg-green-500 text-white font-bold rounded-lg cursor-default opacity-60"
+                      >
+                        ✓ 이미 구매함
+                      </button>
                     ) : (
                       <button
                         onClick={() => handleToiletPurchase(toilet.id)}
                         disabled={!canPurchase}
                         className={`
-	                          w-full rounded-lg py-2 font-bold transition-all
-	                          ${canPurchase
-	                            ? 'cursor-pointer bg-sky-500 text-white hover:bg-sky-600 active:scale-95'
-	                            : 'cursor-not-allowed bg-slate-200 text-slate-500 opacity-70'
-	                          }
-	                        `}
+                          w-full py-2 font-bold rounded-lg transition-all
+                          ${canPurchase
+                            ? 'bg-purple-500 text-white hover:bg-purple-600 active:scale-95 cursor-pointer'
+                            : 'bg-gray-300 text-gray-600 cursor-not-allowed opacity-50'
+                          }
+                        `}
                       >
                         {toilet.price === 0
                           ? '선택'
@@ -1149,10 +1133,10 @@ const App = () => {
             </div>
 
             {/* 모달 푸터 */}
-            <div className="border-t border-slate-200 bg-white p-3">
+            <div className="border-t p-4 bg-gray-50 rounded-b-2xl">
               <button
                 onClick={() => setIsShopOpen(false)}
-                className="w-full rounded-lg bg-slate-200 px-4 py-2 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-300"
+                className="w-full py-2 px-4 bg-gray-300 text-gray-900 font-bold rounded-lg hover:bg-gray-400 transition-colors"
               >
                 닫기
               </button>
