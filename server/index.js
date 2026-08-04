@@ -2,11 +2,17 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import express from 'express';
-import { getGameSave, getRanking, saveGame, saveScore, saveUser } from './database.js';
-
-dotenv.config();
+import {
+  getDatabaseMode,
+  getGameSave,
+  getRanking,
+  initializeDatabase,
+  saveGame,
+  saveScore,
+  saveUser,
+} from './database.js';
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
@@ -50,7 +56,7 @@ const isValidOAuthState = (state) => {
 };
 
 app.get('/api/health', (_request, response) => {
-  response.json({ ok: true, kakaoConfigured: isConfigured() });
+  response.json({ ok: true, kakaoConfigured: isConfigured(), database: getDatabaseMode() });
 });
 
 app.get('/auth/kakao', (_request, response) => {
@@ -107,7 +113,7 @@ app.get('/auth/kakao/callback', async (request, response) => {
       nickname: profile.nickname || kakaoUser.properties?.nickname || '카카오 사용자',
       profileImage: profile.profile_image_url || kakaoUser.properties?.profile_image || null,
     };
-    saveUser(user);
+    await saveUser(user);
 
     const sessionId = crypto.randomBytes(32).toString('hex');
     sessions.set(sessionId, { user, createdAt: Date.now() });
@@ -153,7 +159,7 @@ const normalizeScoreNumber = (value, max) => {
   return Math.min(max, Math.max(0, Math.floor(number)));
 };
 
-app.post('/api/score', requireUser, (request, response) => {
+app.post('/api/score', requireUser, async (request, response) => {
   const score = {
     gold: normalizeScoreNumber(request.body.gold, Number.MAX_SAFE_INTEGER),
     dps: normalizeScoreNumber(request.body.dps, Number.MAX_SAFE_INTEGER),
@@ -163,12 +169,22 @@ app.post('/api/score', requireUser, (request, response) => {
   if (Object.values(score).some((value) => value === null)) {
     return response.status(400).json({ error: 'invalid_score' });
   }
-  saveScore(request.authUser.id, score);
-  return response.status(204).end();
+  try {
+    await saveScore(request.authUser.id, score);
+    return response.status(204).end();
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({ error: 'score_save_failed' });
+  }
 });
 
-app.get('/api/ranking', (_request, response) => {
-  return response.json({ ranking: getRanking(50) });
+app.get('/api/ranking', async (_request, response) => {
+  try {
+    return response.json({ ranking: await getRanking(50) });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({ error: 'ranking_load_failed' });
+  }
 });
 
 const normalizeLevelArray = (value, maxLength) => {
@@ -177,11 +193,16 @@ const normalizeLevelArray = (value, maxLength) => {
   return normalized.some((level) => level === null) ? null : normalized;
 };
 
-app.get('/api/game-save', requireUser, (request, response) => {
-  return response.json({ save: getGameSave(request.authUser.id) });
+app.get('/api/game-save', requireUser, async (request, response) => {
+  try {
+    return response.json({ save: await getGameSave(request.authUser.id) });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({ error: 'game_save_load_failed' });
+  }
 });
 
-app.post('/api/game-save', requireUser, (request, response) => {
+app.post('/api/game-save', requireUser, async (request, response) => {
   const save = {
     gold: normalizeScoreNumber(request.body.gold, Number.MAX_SAFE_INTEGER),
     toiletLevel: normalizeScoreNumber(request.body.toiletLevel, 100),
@@ -192,8 +213,13 @@ app.post('/api/game-save', requireUser, (request, response) => {
   if (Object.values(save).some((value) => value === null)) {
     return response.status(400).json({ error: 'invalid_game_save' });
   }
-  saveGame(request.authUser.id, save);
-  return response.status(204).end();
+  try {
+    await saveGame(request.authUser.id, save);
+    return response.status(204).end();
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({ error: 'game_save_store_failed' });
+  }
 });
 
 const currentFile = fileURLToPath(import.meta.url);
@@ -201,7 +227,14 @@ const distPath = path.resolve(path.dirname(currentFile), '..', 'dist');
 app.use(express.static(distPath));
 app.use((_request, response) => response.sendFile(path.join(distPath, 'index.html')));
 
-app.listen(port, () => {
-  console.log(`Game server running at http://localhost:${port}`);
-  if (!isConfigured()) console.log('Kakao login is waiting for values in .env');
-});
+try {
+  const { mode } = await initializeDatabase();
+  app.listen(port, () => {
+    console.log(`Game server running at http://localhost:${port}`);
+    console.log(`Database mode: ${mode}`);
+    if (!isConfigured()) console.log('Kakao login is waiting for values in .env');
+  });
+} catch (error) {
+  console.error('Failed to initialize database:', error);
+  process.exit(1);
+}

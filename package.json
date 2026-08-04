@@ -5,8 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:server": "node --watch server/index.js",
+    "dev:server": "node server/index.js",
+    "dev:server:watch": "node --watch server/index.js",
     "start": "node server/index.js",
+    "check:server": "node --check server/index.js && node --check server/database.js",
+    "db:check": "node server/check-database.js",
+    "db:migrate:sqlite": "node server/migrate-sqlite-to-postgres.js",
     "build": "vite build",
     "preview": "vite preview"
   },

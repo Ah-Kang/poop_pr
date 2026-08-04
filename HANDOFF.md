@@ -43,7 +43,7 @@ npm install
 cp .env.example .env
 ```
 
-`.env`에 재발급한 값을 직접 입력합니다. Node.js 24 이상을 권장합니다. `server/database.js`가 Node 내장 `node:sqlite`를 사용합니다.
+`.env`에 재발급한 값을 직접 입력합니다. Node.js 24 이상을 권장합니다. `DATABASE_URL`이 없으면 `server/database.js`가 Node 내장 `node:sqlite`로 로컬 저장소를 사용하고, `DATABASE_URL`이 있으면 Supabase PostgreSQL을 우선 사용합니다.
 
 프런트엔드와 백엔드를 서로 다른 터미널에서 실행합니다.
 
@@ -67,6 +67,7 @@ npm run dev:server
 - `SESSION_SECRET`
 - `PORT`
 - `DATABASE_URL`
+- `DATABASE_SSL`
 - `SUPABASE_URL` / `SUPABASE_SECRET_KEY`는 Secret Key 방식으로 전환할 때 사용
 
 ## 현재 데이터 저장 구조
@@ -83,16 +84,18 @@ npm run dev:server
 - DB 비밀번호 인증이 실패해 온라인 DB 연결은 아직 완료되지 않았습니다.
 - PostgreSQL 드라이버 `pg`는 설치되어 있습니다.
 - 온라인 테이블 생성 SQL은 `supabase/schema.sql`에 있습니다.
+- `server/database.js`는 PostgreSQL 우선, SQLite fallback 구조로 전환했습니다.
+- 서버 시작 시 PostgreSQL 모드에서는 `users`, `scores`, `game_saves` 기본 테이블을 자동 생성합니다.
 - 다음 작업자는 새 DB 비밀번호를 발급하고 Session pooler 연결을 다시 검증해야 합니다.
-- 연결 성공 후 `server/database.js`를 PostgreSQL 우선, SQLite fallback 구조로 전환하고 기존 SQLite 데이터를 한 번만 이전해야 합니다.
+- 연결 성공 후 `npm run db:migrate:sqlite`로 기존 SQLite 데이터를 한 번만 이전합니다.
 
 ## 다음 구현 순서
 
 1. 노출된 카카오 Client Secret과 Supabase DB 비밀번호 재발급
 2. macOS `.env` 구성 및 카카오 로그인 재검증
-3. Supabase Session pooler 연결 성공 확인
-4. `supabase/schema.sql` 적용
-5. SQLite 데이터를 Supabase PostgreSQL로 일회성 이전
+3. Supabase Session pooler 연결 성공 확인: `npm run db:check`
+4. 필요한 경우 Supabase SQL Editor에서 `supabase/schema.sql` 적용
+5. SQLite 데이터를 Supabase PostgreSQL로 일회성 이전: `npm run db:migrate:sqlite`
 6. 온라인 저장·전체 랭킹을 실제 여러 기기에서 검증
 7. 친구 코드 기반 친구 추가와 친구 랭킹 구현
 8. 서비스 완성 후 카카오 친구 목록 권한 신청
@@ -102,6 +105,8 @@ npm run dev:server
 
 ```bash
 npm run build
+npm run check:server
+npm run db:check
 node --check server/index.js
 node --check server/database.js
 ```
