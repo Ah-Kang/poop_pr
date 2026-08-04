@@ -40,6 +40,19 @@ const sqliteSchema = `
     item_levels TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS user_activity (
+    kakao_id TEXT PRIMARY KEY REFERENCES users(kakao_id) ON DELETE CASCADE,
+    total_play_seconds INTEGER NOT NULL DEFAULT 0,
+    session_count INTEGER NOT NULL DEFAULT 0,
+    last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS daily_activity (
+    kakao_id TEXT NOT NULL REFERENCES users(kakao_id) ON DELETE CASCADE,
+    activity_date TEXT NOT NULL,
+    play_seconds INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (kakao_id, activity_date)
+  );
 `;
 
 const postgresSchema = `
@@ -68,6 +81,21 @@ const postgresSchema = `
     selected_poop_id integer NOT NULL DEFAULT 0,
     item_levels jsonb NOT NULL DEFAULT '[]'::jsonb,
     updated_at timestamptz NOT NULL DEFAULT now()
+  );
+
+  CREATE TABLE IF NOT EXISTS public.user_activity (
+    kakao_id text PRIMARY KEY REFERENCES public.users(kakao_id) ON DELETE CASCADE,
+    total_play_seconds bigint NOT NULL DEFAULT 0,
+    session_count integer NOT NULL DEFAULT 0,
+    last_seen_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+  );
+
+  CREATE TABLE IF NOT EXISTS public.daily_activity (
+    kakao_id text NOT NULL REFERENCES public.users(kakao_id) ON DELETE CASCADE,
+    activity_date date NOT NULL DEFAULT current_date,
+    play_seconds bigint NOT NULL DEFAULT 0,
+    PRIMARY KEY (kakao_id, activity_date)
   );
 `;
 
@@ -143,6 +171,62 @@ const initializeSqlite = async () => {
         selected_poop_id = excluded.selected_poop_id,
         item_levels = excluded.item_levels,
         updated_at = CURRENT_TIMESTAMP
+    `),
+    recordActivity: sqliteDatabase.prepare(`
+      INSERT INTO user_activity (
+        kakao_id, total_play_seconds, session_count, last_seen_at
+      ) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(kakao_id) DO UPDATE SET
+        total_play_seconds = total_play_seconds + excluded.total_play_seconds,
+        session_count = session_count + excluded.session_count,
+        last_seen_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+    `),
+    recordDailyActivity: sqliteDatabase.prepare(`
+      INSERT INTO daily_activity (kakao_id, activity_date, play_seconds)
+      VALUES (?, date('now'), ?)
+      ON CONFLICT(kakao_id, activity_date) DO UPDATE SET
+        play_seconds = play_seconds + excluded.play_seconds
+    `),
+    adminSummary: sqliteDatabase.prepare(`
+      SELECT
+        (SELECT COUNT(*) FROM users) AS totalUsers,
+        (SELECT COUNT(*) FROM users WHERE date(created_at) = date('now')) AS newUsersToday,
+        (SELECT COUNT(*) FROM user_activity WHERE datetime(last_seen_at) >= datetime('now', '-7 days')) AS activeUsers7d,
+        (SELECT COALESCE(SUM(total_play_seconds), 0) FROM user_activity) AS totalPlaySeconds,
+        (SELECT COALESCE(AVG(total_play_seconds), 0) FROM user_activity) AS averagePlaySeconds,
+        (SELECT COALESCE(MAX(gold), 0) FROM scores) AS topGold,
+        (SELECT COALESCE(MAX(dps), 0) FROM scores) AS topDps
+    `),
+    adminUsers: sqliteDatabase.prepare(`
+      SELECT
+        users.kakao_id AS id,
+        users.nickname,
+        users.profile_image AS profileImage,
+        users.created_at AS createdAt,
+        users.updated_at AS updatedAt,
+        COALESCE(user_activity.total_play_seconds, 0) AS totalPlaySeconds,
+        COALESCE(user_activity.session_count, 0) AS sessionCount,
+        user_activity.last_seen_at AS lastSeenAt,
+        COALESCE(scores.gold, 0) AS gold,
+        COALESCE(scores.dps, 0) AS dps,
+        COALESCE(scores.toilet_level, 0) AS toiletLevel,
+        COALESCE(scores.poop_level, 1) AS poopLevel
+      FROM users
+      LEFT JOIN user_activity ON user_activity.kakao_id = users.kakao_id
+      LEFT JOIN scores ON scores.kakao_id = users.kakao_id
+      ORDER BY user_activity.last_seen_at DESC NULLS LAST, users.created_at DESC
+      LIMIT ?
+    `),
+    adminDailyActivity: sqliteDatabase.prepare(`
+      SELECT
+        activity_date AS date,
+        COUNT(*) AS activeUsers,
+        COALESCE(SUM(play_seconds), 0) AS playSeconds
+      FROM daily_activity
+      WHERE date(activity_date) >= date('now', '-13 days')
+      GROUP BY activity_date
+      ORDER BY activity_date ASC
     `),
   };
   databaseMode = 'sqlite';
@@ -324,4 +408,95 @@ export const saveGame = async (kakaoId, save) => {
     save.selectedPoopId,
     JSON.stringify(save.itemLevels),
   );
+};
+
+export const recordActivity = async (kakaoId, activity) => {
+  const seconds = Math.min(300, Math.max(0, Math.floor(activity.seconds)));
+  const sessionStart = activity.sessionStart ? 1 : 0;
+  if (seconds <= 0 && sessionStart === 0) return;
+
+  if (postgresPool) {
+    await postgresPool.query(`
+      INSERT INTO public.user_activity (
+        kakao_id, total_play_seconds, session_count, last_seen_at
+      ) VALUES ($1, $2, $3, now())
+      ON CONFLICT(kakao_id) DO UPDATE SET
+        total_play_seconds = public.user_activity.total_play_seconds + excluded.total_play_seconds,
+        session_count = public.user_activity.session_count + excluded.session_count,
+        last_seen_at = now(),
+        updated_at = now()
+    `, [kakaoId, seconds, sessionStart]);
+
+    if (seconds > 0) {
+      await postgresPool.query(`
+        INSERT INTO public.daily_activity (kakao_id, activity_date, play_seconds)
+        VALUES ($1, current_date, $2)
+        ON CONFLICT(kakao_id, activity_date) DO UPDATE SET
+          play_seconds = public.daily_activity.play_seconds + excluded.play_seconds
+      `, [kakaoId, seconds]);
+    }
+    return;
+  }
+
+  sqliteStatements.recordActivity.run(kakaoId, seconds, sessionStart);
+  if (seconds > 0) sqliteStatements.recordDailyActivity.run(kakaoId, seconds);
+};
+
+export const getAdminAnalytics = async () => {
+  if (postgresPool) {
+    const [summaryResult, usersResult, dailyResult] = await Promise.all([
+      postgresPool.query(`
+        SELECT
+          (SELECT COUNT(*) FROM public.users) AS "totalUsers",
+          (SELECT COUNT(*) FROM public.users WHERE created_at >= date_trunc('day', now())) AS "newUsersToday",
+          (SELECT COUNT(*) FROM public.user_activity WHERE last_seen_at >= now() - interval '7 days') AS "activeUsers7d",
+          (SELECT COALESCE(SUM(total_play_seconds), 0) FROM public.user_activity) AS "totalPlaySeconds",
+          (SELECT COALESCE(AVG(total_play_seconds), 0) FROM public.user_activity) AS "averagePlaySeconds",
+          (SELECT COALESCE(MAX(gold), 0) FROM public.scores) AS "topGold",
+          (SELECT COALESCE(MAX(dps), 0) FROM public.scores) AS "topDps"
+      `),
+      postgresPool.query(`
+        SELECT
+          users.kakao_id AS id,
+          users.nickname,
+          users.profile_image AS "profileImage",
+          users.created_at AS "createdAt",
+          users.updated_at AS "updatedAt",
+          COALESCE(user_activity.total_play_seconds, 0) AS "totalPlaySeconds",
+          COALESCE(user_activity.session_count, 0) AS "sessionCount",
+          user_activity.last_seen_at AS "lastSeenAt",
+          COALESCE(scores.gold, 0) AS gold,
+          COALESCE(scores.dps, 0) AS dps,
+          COALESCE(scores.toilet_level, 0) AS "toiletLevel",
+          COALESCE(scores.poop_level, 1) AS "poopLevel"
+        FROM public.users
+        LEFT JOIN public.user_activity ON user_activity.kakao_id = users.kakao_id
+        LEFT JOIN public.scores ON scores.kakao_id = users.kakao_id
+        ORDER BY user_activity.last_seen_at DESC NULLS LAST, users.created_at DESC
+        LIMIT 100
+      `),
+      postgresPool.query(`
+        SELECT
+          activity_date AS date,
+          COUNT(*) AS "activeUsers",
+          COALESCE(SUM(play_seconds), 0) AS "playSeconds"
+        FROM public.daily_activity
+        WHERE activity_date >= current_date - interval '13 days'
+        GROUP BY activity_date
+        ORDER BY activity_date ASC
+      `),
+    ]);
+
+    return {
+      summary: summaryResult.rows[0],
+      users: usersResult.rows,
+      daily: dailyResult.rows,
+    };
+  }
+
+  return {
+    summary: sqliteStatements.adminSummary.get(),
+    users: sqliteStatements.adminUsers.all(100),
+    daily: sqliteStatements.adminDailyActivity.all(),
+  };
 };

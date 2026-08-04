@@ -7,8 +7,10 @@ import express from 'express';
 import {
   getDatabaseMode,
   getGameSave,
+  getAdminAnalytics,
   getRanking,
   initializeDatabase,
+  recordActivity,
   saveGame,
   saveScore,
   saveUser,
@@ -21,6 +23,7 @@ const redirectUri = process.env.KAKAO_REDIRECT_URI || `http://localhost:${port}/
 const sessionSecret = process.env.SESSION_SECRET;
 const isProduction = process.env.NODE_ENV === 'production';
 const sessionMaxAge = 7 * 24 * 60 * 60 * 1000;
+const adminToken = process.env.ADMIN_TOKEN;
 
 app.set('trust proxy', 1);
 app.use(express.json());
@@ -184,6 +187,14 @@ const requireUser = (request, response, next) => {
   return next();
 };
 
+const requireAdmin = (request, response, next) => {
+  const providedToken = request.get('x-admin-token') || request.query.token;
+  if (!adminToken || providedToken !== adminToken) {
+    return response.status(403).json({ error: 'admin_forbidden' });
+  }
+  return next();
+};
+
 const normalizeScoreNumber = (value, max) => {
   const number = Number(value);
   if (!Number.isFinite(number)) return null;
@@ -215,6 +226,31 @@ app.get('/api/ranking', async (_request, response) => {
   } catch (error) {
     console.error(error);
     return response.status(500).json({ error: 'ranking_load_failed' });
+  }
+});
+
+app.post('/api/activity', requireUser, async (request, response) => {
+  const seconds = normalizeScoreNumber(request.body.seconds, 300);
+  const sessionStart = Boolean(request.body.sessionStart);
+  if (seconds === null) {
+    return response.status(400).json({ error: 'invalid_activity' });
+  }
+
+  try {
+    await recordActivity(request.authUser.id, { seconds, sessionStart });
+    return response.status(204).end();
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({ error: 'activity_save_failed' });
+  }
+});
+
+app.get('/api/admin/analytics', requireAdmin, async (_request, response) => {
+  try {
+    return response.json(await getAdminAnalytics());
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({ error: 'admin_analytics_failed' });
   }
 });
 

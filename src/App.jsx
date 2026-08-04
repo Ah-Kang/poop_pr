@@ -151,7 +151,233 @@ const getSavedPoopLevels = (parsed) => {
   });
 };
 
+const formatDuration = (seconds) => {
+  const totalSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const remainingSeconds = totalSeconds % 60;
+
+  if (hours > 0) return `${hours}시간 ${minutes}분`;
+  if (minutes > 0) return `${minutes}분 ${remainingSeconds}초`;
+  return `${remainingSeconds}초`;
+};
+
+const formatDateTime = (value) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('ko-KR', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const AdminDashboard = () => {
+  const [token, setToken] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('token') || localStorage.getItem('poop-pr-admin-token') || '';
+  });
+  const [draftToken, setDraftToken] = useState(token);
+  const [analytics, setAnalytics] = useState(null);
+  const [status, setStatus] = useState('idle');
+
+  const loadAnalytics = async (activeToken = token) => {
+    if (!activeToken) {
+      setStatus('missing-token');
+      return;
+    }
+
+    setStatus('loading');
+    try {
+      const response = await fetch('/api/admin/analytics', {
+        headers: { 'x-admin-token': activeToken },
+      });
+      if (!response.ok) throw new Error('analytics_load_failed');
+      const data = await response.json();
+      setAnalytics(data);
+      setStatus('ready');
+      localStorage.setItem('poop-pr-admin-token', activeToken);
+    } catch {
+      setAnalytics(null);
+      setStatus('error');
+    }
+  };
+
+  useEffect(() => {
+    loadAnalytics(token);
+  }, []);
+
+  const summary = analytics?.summary ?? {};
+  const users = analytics?.users ?? [];
+  const daily = analytics?.daily ?? [];
+  const maxDailySeconds = Math.max(1, ...daily.map((day) => Number(day.playSeconds) || 0));
+
+  return (
+    <main className="min-h-screen bg-[#f4efe7] px-4 py-6 text-slate-900">
+      <div className="mx-auto max-w-6xl">
+        <section className="flex flex-col gap-4 border-b border-slate-300 pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-wide text-teal-700">Poop PR 운영자</p>
+            <h1 className="mt-1 text-3xl font-black">게임 분석 대시보드</h1>
+            <p className="mt-2 text-sm font-semibold text-slate-600">
+              가입자, 활성 유저, 누적 사용시간, 유저별 성장 데이터를 확인합니다.
+            </p>
+          </div>
+          <a
+            href="/"
+            className="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-4 text-sm font-black text-white"
+          >
+            게임으로 이동
+          </a>
+        </section>
+
+        <section className="mt-5 flex flex-col gap-2 rounded-lg border border-slate-300 bg-white p-4 sm:flex-row">
+          <input
+            type="password"
+            value={draftToken}
+            onChange={(event) => setDraftToken(event.target.value)}
+            placeholder="ADMIN_TOKEN 입력"
+            className="min-h-11 flex-1 rounded-md border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-teal-600"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setToken(draftToken);
+              loadAnalytics(draftToken);
+            }}
+            className="min-h-11 rounded-md bg-teal-600 px-5 text-sm font-black text-white"
+          >
+            조회
+          </button>
+          <button
+            type="button"
+            onClick={() => loadAnalytics(token)}
+            className="min-h-11 rounded-md border border-slate-300 px-5 text-sm font-black text-slate-800"
+          >
+            새로고침
+          </button>
+        </section>
+
+        {status === 'missing-token' && (
+          <p className="mt-4 rounded-lg bg-amber-100 px-4 py-3 text-sm font-bold text-amber-900">
+            Render 환경변수에 넣은 ADMIN_TOKEN을 입력하면 운영자 데이터를 볼 수 있어요.
+          </p>
+        )}
+        {status === 'error' && (
+          <p className="mt-4 rounded-lg bg-red-100 px-4 py-3 text-sm font-bold text-red-800">
+            조회에 실패했어요. 토큰이 맞는지, Render 환경변수에 ADMIN_TOKEN이 들어갔는지 확인해주세요.
+          </p>
+        )}
+
+        <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ['전체 가입자', `${summary.totalUsers ?? 0}명`],
+            ['오늘 가입자', `${summary.newUsersToday ?? 0}명`],
+            ['7일 활성 유저', `${summary.activeUsers7d ?? 0}명`],
+            ['누적 사용시간', formatDuration(summary.totalPlaySeconds)],
+            ['평균 사용시간', formatDuration(summary.averagePlaySeconds)],
+            ['최고 영양분', Number(summary.topGold ?? 0).toLocaleString('ko-KR')],
+            ['최고 초당 생산량', `+${Number(summary.topDps ?? 0).toLocaleString('ko-KR')}/초`],
+            ['최근 집계 일수', `${daily.length}일`],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-lg border border-slate-300 bg-white p-4">
+              <p className="text-xs font-black text-slate-500">{label}</p>
+              <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
+            </div>
+          ))}
+        </section>
+
+        <section className="mt-5 rounded-lg border border-slate-300 bg-white p-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-black">최근 14일 사용시간</h2>
+            <p className="text-xs font-bold text-slate-500">일별 합산</p>
+          </div>
+          <div className="mt-4 grid min-h-44 grid-cols-7 items-end gap-2 sm:grid-cols-14">
+            {daily.length === 0 ? (
+              <p className="col-span-full py-10 text-center text-sm font-bold text-slate-500">아직 사용시간 데이터가 없어요.</p>
+            ) : daily.map((day) => {
+              const seconds = Number(day.playSeconds) || 0;
+              const height = Math.max(8, Math.round((seconds / maxDailySeconds) * 140));
+              return (
+                <div key={day.date} className="flex min-w-0 flex-col items-center gap-2">
+                  <div
+                    className="w-full rounded-t-md bg-teal-500"
+                    style={{ height }}
+                    title={`${day.date}: ${formatDuration(seconds)}`}
+                  />
+                  <p className="w-full truncate text-center text-[10px] font-bold text-slate-500">
+                    {String(day.date).slice(5)}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="mt-5 overflow-hidden rounded-lg border border-slate-300 bg-white">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+            <h2 className="text-lg font-black">가입자별 데이터</h2>
+            <p className="text-xs font-bold text-slate-500">최근 접속순 최대 100명</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[840px] text-left text-sm">
+              <thead className="bg-slate-100 text-xs font-black text-slate-600">
+                <tr>
+                  <th className="px-4 py-3">유저</th>
+                  <th className="px-4 py-3">가입일</th>
+                  <th className="px-4 py-3">마지막 접속</th>
+                  <th className="px-4 py-3">사용시간</th>
+                  <th className="px-4 py-3">세션</th>
+                  <th className="px-4 py-3">영양분</th>
+                  <th className="px-4 py-3">DPS</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {users.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-4 py-10 text-center font-bold text-slate-500">
+                      아직 가입자 데이터가 없어요.
+                    </td>
+                  </tr>
+                ) : users.map((user) => (
+                  <tr key={user.id} className="hover:bg-teal-50/60">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {user.profileImage ? (
+                          <img src={user.profileImage} alt="" className="h-8 w-8 rounded-full object-cover" />
+                        ) : (
+                          <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-200 text-xs">유저</span>
+                        )}
+                        <div className="min-w-0">
+                          <p className="truncate font-black">{user.nickname}</p>
+                          <p className="truncate text-xs text-slate-500">{user.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-semibold">{formatDateTime(user.createdAt)}</td>
+                    <td className="px-4 py-3 font-semibold">{formatDateTime(user.lastSeenAt)}</td>
+                    <td className="px-4 py-3 font-black text-teal-700">{formatDuration(user.totalPlaySeconds)}</td>
+                    <td className="px-4 py-3 font-semibold">{user.sessionCount ?? 0}</td>
+                    <td className="px-4 py-3 font-semibold">{Number(user.gold ?? 0).toLocaleString('ko-KR')}</td>
+                    <td className="px-4 py-3 font-semibold">+{Number(user.dps ?? 0).toLocaleString('ko-KR')}/초</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+};
+
 const App = () => {
+  if (window.location.pathname === '/admin') {
+    return <AdminDashboard />;
+  }
+
   const [authUser, setAuthUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isRankingOpen, setIsRankingOpen] = useState(false);
@@ -346,6 +572,50 @@ const App = () => {
     syncScore();
     const interval = setInterval(syncScore, 10000);
     return () => clearInterval(interval);
+  }, [authUser, isSaveLoaded]);
+
+  useEffect(() => {
+    if (!authUser || !isSaveLoaded) return;
+
+    let lastActiveAt = Date.now();
+    let hasSentSessionStart = false;
+
+    const sendActivity = (seconds) => {
+      const roundedSeconds = Math.max(0, Math.min(300, Math.round(seconds)));
+      fetch('/api/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seconds: roundedSeconds,
+          sessionStart: !hasSentSessionStart,
+        }),
+        keepalive: true,
+      }).catch(() => {});
+      hasSentSessionStart = true;
+    };
+
+    sendActivity(0);
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (document.visibilityState === 'hidden') {
+        lastActiveAt = now;
+        return;
+      }
+
+      sendActivity((now - lastActiveAt) / 1000);
+      lastActiveAt = now;
+    }, 30000);
+
+    const handleVisibilityChange = () => {
+      lastActiveAt = Date.now();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [authUser, isSaveLoaded]);
 
   const handleRankingOpen = async () => {
