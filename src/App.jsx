@@ -1255,10 +1255,10 @@ const App = () => {
   return (
     <div
       className={`
-        fixed inset-0 w-full max-w-[440px] mx-auto
+        game-shell
         bg-gradient-to-b ${currentBgGradient}
         flex flex-col items-center justify-between
-        px-3 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] transition-all duration-500 ease-in-out
+        px-3 transition-all duration-500 ease-in-out
         overflow-hidden overscroll-none
       `}
       style={{
@@ -1503,7 +1503,7 @@ const App = () => {
       </div>
 
       {/* ==================== 하단: 성장 상점 버튼 ==================== */}
-      <div className="relative z-30 grid w-full shrink-0 grid-cols-3 gap-2 pb-[calc(env(safe-area-inset-bottom)+0.45rem)]">
+      <div className="relative z-30 grid w-full shrink-0 grid-cols-3 gap-2 pb-2">
         <button
           onClick={() => {
             setPoopShopTab('upgrade');

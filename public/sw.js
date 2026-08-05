@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poop-pr-shell-v11';
+const CACHE_NAME = 'poop-pr-shell-v12';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
