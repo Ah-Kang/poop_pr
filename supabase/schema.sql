@@ -2,6 +2,9 @@ create table if not exists public.users (
   kakao_id text primary key,
   nickname text not null,
   display_nickname text,
+  login_id text,
+  password_hash text,
+  auth_provider text not null default 'kakao',
   profile_image text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -9,6 +12,16 @@ create table if not exists public.users (
 
 alter table public.users
   add column if not exists display_nickname text;
+alter table public.users
+  add column if not exists login_id text;
+alter table public.users
+  add column if not exists password_hash text;
+alter table public.users
+  add column if not exists auth_provider text not null default 'kakao';
+
+create unique index if not exists users_login_id_unique
+  on public.users (login_id)
+  where login_id is not null;
 
 create table if not exists public.scores (
   kakao_id text primary key references public.users(kakao_id) on delete cascade,

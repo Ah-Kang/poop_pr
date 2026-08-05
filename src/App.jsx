@@ -384,7 +384,7 @@ const AdminDashboard = () => {
                         )}
                         <div className="min-w-0">
                           <p className="truncate font-black">{user.kakaoNickname ?? user.nickname}</p>
-                          <p className="truncate text-[10px] font-bold text-slate-400">카카오 가입 이름</p>
+                          <p className="truncate text-[10px] font-bold text-slate-400">가입 이름</p>
                           <p className="truncate text-xs text-slate-500">{user.id}</p>
                         </div>
                       </div>
@@ -417,6 +417,11 @@ const App = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profileNicknameDraft, setProfileNicknameDraft] = useState('');
   const [profileSaveStatus, setProfileSaveStatus] = useState('idle');
+  const [localAuthMode, setLocalAuthMode] = useState('hidden');
+  const [localLoginId, setLocalLoginId] = useState('');
+  const [localPassword, setLocalPassword] = useState('');
+  const [localNickname, setLocalNickname] = useState('');
+  const [localAuthStatus, setLocalAuthStatus] = useState('idle');
   const [isRankingOpen, setIsRankingOpen] = useState(false);
   const [selectedRankingUser, setSelectedRankingUser] = useState(null);
   const [rankings, setRankings] = useState([]);
@@ -500,12 +505,67 @@ const App = () => {
     window.location.href = '/auth/kakao';
   };
 
+  const resetLocalAuthForm = () => {
+    setLocalPassword('');
+    setLocalNickname('');
+    setLocalAuthStatus('idle');
+  };
+
+  const handleLocalAuthSubmit = async () => {
+    const loginId = localLoginId.trim().toLowerCase();
+    const password = localPassword;
+    const displayNickname = localAuthMode === 'register'
+      ? localNickname.trim().replace(/\s+/g, ' ')
+      : undefined;
+
+    if (!/^[a-z0-9_]{4,20}$/.test(loginId)) {
+      setLocalAuthStatus('invalid_id');
+      return;
+    }
+    if (password.length < 6 || password.length > 72) {
+      setLocalAuthStatus('invalid_password');
+      return;
+    }
+    if (localAuthMode === 'register' && (!displayNickname || displayNickname.length < 2 || displayNickname.length > 12)) {
+      setLocalAuthStatus('invalid_nickname');
+      return;
+    }
+
+    setLocalAuthStatus('loading');
+    try {
+      const response = await fetch(
+        localAuthMode === 'register' ? '/api/auth/local/register' : '/api/auth/local/login',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ loginId, password, displayNickname }),
+        }
+      );
+      const data = response.ok ? await response.json() : await response.json().catch(() => ({}));
+      if (!response.ok || !data?.user) {
+        setLocalAuthStatus(data?.error === 'login_id_taken' ? 'taken' : 'error');
+        return;
+      }
+
+      setAuthUser(data.user);
+      setProfileNicknameDraft(data.user.displayNickname || data.user.nickname || '');
+      setLocalAuthMode('hidden');
+      setLocalLoginId('');
+      resetLocalAuthForm();
+    } catch {
+      setLocalAuthStatus('error');
+    }
+  };
+
   const handleLogout = async () => {
     await fetch('/api/logout', { method: 'POST' });
     setAuthUser(null);
     setIsProfileOpen(false);
     setProfileNicknameDraft('');
     setProfileSaveStatus('idle');
+    setLocalAuthMode('hidden');
+    setLocalLoginId('');
+    resetLocalAuthForm();
     setCloudSaveStatus('idle');
     cloudSaveOwnerRef.current = null;
   };
@@ -1584,7 +1644,7 @@ const App = () => {
 
       {!isAuthLoading && !authUser && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/65 p-4">
-          <div className="w-full max-w-sm rounded-[1.75rem] border-[3px] border-amber-950 bg-[#fff8e8] p-5 text-center text-slate-900 shadow-[0_8px_0_#78350f,0_18px_40px_rgba(0,0,0,0.45)]">
+          <div className="max-h-[88vh] w-full max-w-sm overflow-y-auto rounded-[1.75rem] border-[3px] border-amber-950 bg-[#fff8e8] p-5 text-center text-slate-900 shadow-[0_8px_0_#78350f,0_18px_40px_rgba(0,0,0,0.45)]">
             <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border-[3px] border-amber-800 bg-amber-200 text-3xl shadow-[0_4px_0_#92400e]">
               💩
             </div>
@@ -1600,6 +1660,124 @@ const App = () => {
             >
               카카오톡으로 시작하기
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLocalAuthMode(localAuthMode === 'hidden' ? 'login' : 'hidden');
+                resetLocalAuthForm();
+              }}
+              className="mt-3 w-full rounded-2xl border-2 border-amber-950 bg-white px-4 py-3 text-sm font-black text-amber-950 shadow-[0_4px_0_#78350f] active:translate-y-0.5 active:shadow-none"
+            >
+              다른 계정으로 시작하기
+            </button>
+
+            {localAuthMode !== 'hidden' && (
+              <div className="mt-4 rounded-2xl border-2 border-amber-200 bg-white/80 p-3 text-left">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocalAuthMode('login');
+                      resetLocalAuthForm();
+                    }}
+                    className={`rounded-xl px-3 py-2 text-xs font-black ${
+                      localAuthMode === 'login'
+                        ? 'bg-amber-400 text-amber-950 shadow-[0_2px_0_#92400e]'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    로그인
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocalAuthMode('register');
+                      resetLocalAuthForm();
+                    }}
+                    className={`rounded-xl px-3 py-2 text-xs font-black ${
+                      localAuthMode === 'register'
+                        ? 'bg-amber-400 text-amber-950 shadow-[0_2px_0_#92400e]'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    회원가입
+                  </button>
+                </div>
+
+                <label className="mt-3 block text-[10px] font-black text-slate-700" htmlFor="local-login-id">
+                  아이디
+                </label>
+                <input
+                  id="local-login-id"
+                  type="text"
+                  value={localLoginId}
+                  onChange={(event) => {
+                    setLocalLoginId(event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20));
+                    setLocalAuthStatus('idle');
+                  }}
+                  placeholder="영문/숫자 4~20자"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  className="mt-1 w-full rounded-xl border-2 border-amber-200 bg-white px-3 py-2.5 text-sm font-black text-slate-900 outline-none focus:border-amber-700"
+                />
+
+                <label className="mt-2 block text-[10px] font-black text-slate-700" htmlFor="local-password">
+                  비밀번호
+                </label>
+                <input
+                  id="local-password"
+                  type="password"
+                  value={localPassword}
+                  onChange={(event) => {
+                    setLocalPassword(event.target.value.slice(0, 72));
+                    setLocalAuthStatus('idle');
+                  }}
+                  placeholder="6자 이상"
+                  className="mt-1 w-full rounded-xl border-2 border-amber-200 bg-white px-3 py-2.5 text-sm font-black text-slate-900 outline-none focus:border-amber-700"
+                />
+
+                {localAuthMode === 'register' && (
+                  <>
+                    <label className="mt-2 block text-[10px] font-black text-slate-700" htmlFor="local-nickname">
+                      랭킹 닉네임
+                    </label>
+                    <input
+                      id="local-nickname"
+                      type="text"
+                      value={localNickname}
+                      onChange={(event) => {
+                        setLocalNickname(event.target.value.slice(0, 12));
+                        setLocalAuthStatus('idle');
+                      }}
+                      placeholder="2~12글자"
+                      className="mt-1 w-full rounded-xl border-2 border-amber-200 bg-white px-3 py-2.5 text-sm font-black text-slate-900 outline-none focus:border-amber-700"
+                      maxLength={12}
+                    />
+                  </>
+                )}
+
+                <p className={`mt-2 min-h-4 text-[10px] font-bold ${
+                  ['idle', 'loading'].includes(localAuthStatus) ? 'text-slate-500' : 'text-red-600'
+                }`}>
+                  {localAuthStatus === 'idle' && '아이디는 영문, 숫자, 밑줄만 사용할 수 있어요.'}
+                  {localAuthStatus === 'loading' && '처리 중...'}
+                  {localAuthStatus === 'invalid_id' && '아이디는 영문/숫자/밑줄 4~20자로 입력해주세요.'}
+                  {localAuthStatus === 'invalid_password' && '비밀번호는 6자 이상 입력해주세요.'}
+                  {localAuthStatus === 'invalid_nickname' && '닉네임은 2~12글자로 입력해주세요.'}
+                  {localAuthStatus === 'taken' && '이미 사용 중인 아이디예요.'}
+                  {localAuthStatus === 'error' && '로그인 또는 회원가입에 실패했어요.'}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={handleLocalAuthSubmit}
+                  disabled={localAuthStatus === 'loading'}
+                  className="mt-2 w-full rounded-xl bg-slate-800 px-4 py-3 text-sm font-black text-white shadow-[0_3px_0_#0f172a] active:translate-y-0.5 active:shadow-none disabled:opacity-60"
+                >
+                  {localAuthMode === 'register' ? '회원가입하고 시작하기' : '로그인하고 시작하기'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1619,7 +1797,7 @@ const App = () => {
               <div className="min-w-0">
                 <p className="truncate text-sm font-black">{authUser.nickname}</p>
                 <p className="truncate text-[10px] font-bold text-slate-500">
-                  카카오 이름: {authUser.kakaoNickname || authUser.nickname}
+                  가입 이름: {authUser.kakaoNickname || authUser.nickname}
                 </p>
               </div>
             </div>

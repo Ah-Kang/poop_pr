@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser';
 import 'dotenv/config';
 import express from 'express';
 import {
+  createLocalUser,
+  getLocalUserByLoginId,
   getDatabaseMode,
   getGameSave,
   getAdminAnalytics,
@@ -25,6 +27,7 @@ const sessionSecret = process.env.SESSION_SECRET;
 const isProduction = process.env.NODE_ENV === 'production';
 const sessionMaxAge = 7 * 24 * 60 * 60 * 1000;
 const adminToken = process.env.ADMIN_TOKEN;
+const passwordKeyLength = 64;
 
 app.set('trust proxy', 1);
 app.use(express.json());
@@ -99,6 +102,47 @@ const sessionCookieOptions = {
   signed: true,
 };
 
+const normalizeLoginId = (value) => {
+  const loginId = String(value ?? '').trim().toLowerCase();
+  if (!/^[a-z0-9_]{4,20}$/.test(loginId)) return null;
+  return loginId;
+};
+
+const normalizePassword = (value) => {
+  const password = String(value ?? '');
+  if (password.length < 6 || password.length > 72) return null;
+  return password;
+};
+
+const hashPassword = (password) => new Promise((resolve, reject) => {
+  const salt = crypto.randomBytes(16).toString('hex');
+  crypto.scrypt(password, salt, passwordKeyLength, (error, derivedKey) => {
+    if (error) reject(error);
+    else resolve(`scrypt:${salt}:${derivedKey.toString('hex')}`);
+  });
+});
+
+const verifyPassword = (password, passwordHash) => new Promise((resolve) => {
+  const [method, salt, storedHash] = String(passwordHash ?? '').split(':');
+  if (method !== 'scrypt' || !salt || !storedHash) {
+    resolve(false);
+    return;
+  }
+
+  crypto.scrypt(password, salt, passwordKeyLength, (error, derivedKey) => {
+    if (error) {
+      resolve(false);
+      return;
+    }
+
+    const storedBuffer = Buffer.from(storedHash, 'hex');
+    resolve(
+      storedBuffer.length === derivedKey.length
+      && crypto.timingSafeEqual(storedBuffer, derivedKey)
+    );
+  });
+});
+
 app.get('/api/health', (_request, response) => {
   response.json({ ok: true, kakaoConfigured: isConfigured(), database: getDatabaseMode() });
 });
@@ -171,6 +215,60 @@ app.get('/api/me', (request, response) => {
   const session = getSession(request);
   if (!session) return response.status(401).json({ user: null });
   return response.json({ user: session.user });
+});
+
+app.post('/api/auth/local/register', async (request, response) => {
+  const loginId = normalizeLoginId(request.body.loginId);
+  const password = normalizePassword(request.body.password);
+  const displayNickname = normalizeDisplayNickname(request.body.displayNickname);
+
+  if (!loginId) return response.status(400).json({ error: 'invalid_login_id' });
+  if (!password) return response.status(400).json({ error: 'invalid_password' });
+  if (!displayNickname) return response.status(400).json({ error: 'invalid_nickname' });
+
+  try {
+    const passwordHash = await hashPassword(password);
+    const user = await createLocalUser({
+      id: `local:${loginId}`,
+      loginId,
+      nickname: displayNickname,
+      passwordHash,
+    });
+
+    response.cookie('game_session', encodeSession({ user, createdAt: Date.now() }), sessionCookieOptions);
+    return response.status(201).json({ user });
+  } catch (error) {
+    if (error?.code === '23505' || String(error?.message ?? '').includes('UNIQUE')) {
+      return response.status(409).json({ error: 'login_id_taken' });
+    }
+
+    console.error(error);
+    return response.status(500).json({ error: 'register_failed' });
+  }
+});
+
+app.post('/api/auth/local/login', async (request, response) => {
+  const loginId = normalizeLoginId(request.body.loginId);
+  const password = normalizePassword(request.body.password);
+
+  if (!loginId || !password) {
+    return response.status(400).json({ error: 'invalid_credentials' });
+  }
+
+  try {
+    const userWithPassword = await getLocalUserByLoginId(loginId);
+    const passwordIsValid = await verifyPassword(password, userWithPassword?.passwordHash);
+    if (!userWithPassword || !passwordIsValid) {
+      return response.status(401).json({ error: 'invalid_credentials' });
+    }
+
+    const { passwordHash, ...user } = userWithPassword;
+    response.cookie('game_session', encodeSession({ user, createdAt: Date.now() }), sessionCookieOptions);
+    return response.json({ user });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({ error: 'login_failed' });
+  }
 });
 
 app.post('/api/logout', (request, response) => {

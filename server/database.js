@@ -20,6 +20,9 @@ const sqliteSchema = `
     kakao_id TEXT PRIMARY KEY,
     nickname TEXT NOT NULL,
     display_nickname TEXT,
+    login_id TEXT UNIQUE,
+    password_hash TEXT,
+    auth_provider TEXT NOT NULL DEFAULT 'kakao',
     profile_image TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -62,6 +65,9 @@ const postgresSchema = `
     kakao_id text PRIMARY KEY,
     nickname text NOT NULL,
     display_nickname text,
+    login_id text UNIQUE,
+    password_hash text,
+    auth_provider text NOT NULL DEFAULT 'kakao',
     profile_image text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
@@ -69,6 +75,15 @@ const postgresSchema = `
 
   ALTER TABLE public.users
     ADD COLUMN IF NOT EXISTS display_nickname text;
+  ALTER TABLE public.users
+    ADD COLUMN IF NOT EXISTS login_id text;
+  ALTER TABLE public.users
+    ADD COLUMN IF NOT EXISTS password_hash text;
+  ALTER TABLE public.users
+    ADD COLUMN IF NOT EXISTS auth_provider text NOT NULL DEFAULT 'kakao';
+  CREATE UNIQUE INDEX IF NOT EXISTS users_login_id_unique
+    ON public.users (login_id)
+    WHERE login_id IS NOT NULL;
 
   CREATE TABLE IF NOT EXISTS public.scores (
     kakao_id text PRIMARY KEY REFERENCES public.users(kakao_id) ON DELETE CASCADE,
@@ -125,6 +140,16 @@ const initializeSqlite = async () => {
   if (!userColumns.some((column) => column.name === 'display_nickname')) {
     sqliteDatabase.exec('ALTER TABLE users ADD COLUMN display_nickname TEXT');
   }
+  if (!userColumns.some((column) => column.name === 'login_id')) {
+    sqliteDatabase.exec('ALTER TABLE users ADD COLUMN login_id TEXT');
+  }
+  if (!userColumns.some((column) => column.name === 'password_hash')) {
+    sqliteDatabase.exec('ALTER TABLE users ADD COLUMN password_hash TEXT');
+  }
+  if (!userColumns.some((column) => column.name === 'auth_provider')) {
+    sqliteDatabase.exec("ALTER TABLE users ADD COLUMN auth_provider TEXT NOT NULL DEFAULT 'kakao'");
+  }
+  sqliteDatabase.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_login_id_unique ON users(login_id) WHERE login_id IS NOT NULL');
   const gameSaveColumns = sqliteDatabase.prepare('PRAGMA table_info(game_saves)').all();
   if (!gameSaveColumns.some((column) => column.name === 'cosmetics')) {
     sqliteDatabase.exec("ALTER TABLE game_saves ADD COLUMN cosmetics TEXT NOT NULL DEFAULT '{}'");
@@ -143,6 +168,22 @@ const initializeSqlite = async () => {
       UPDATE users
       SET display_nickname = ?, updated_at = CURRENT_TIMESTAMP
       WHERE kakao_id = ?
+    `),
+    createLocalUser: sqliteDatabase.prepare(`
+      INSERT INTO users (
+        kakao_id, nickname, display_nickname, login_id, password_hash, auth_provider
+      ) VALUES (?, ?, ?, ?, ?, 'local')
+    `),
+    getLocalUserByLoginId: sqliteDatabase.prepare(`
+      SELECT
+        kakao_id AS id,
+        nickname AS kakaoNickname,
+        COALESCE(display_nickname, nickname) AS nickname,
+        COALESCE(display_nickname, nickname) AS displayNickname,
+        profile_image AS profileImage,
+        password_hash AS passwordHash
+      FROM users
+      WHERE login_id = ?
     `),
     upsertScore: sqliteDatabase.prepare(`
       INSERT INTO scores (kakao_id, gold, dps, toilet_level, poop_level)
@@ -230,6 +271,8 @@ const initializeSqlite = async () => {
         users.kakao_id AS id,
         users.nickname AS kakaoNickname,
         COALESCE(users.display_nickname, users.nickname) AS displayNickname,
+        users.auth_provider AS authProvider,
+        users.login_id AS loginId,
         users.profile_image AS profileImage,
         users.created_at AS createdAt,
         users.updated_at AS updatedAt,
@@ -278,6 +321,8 @@ const normalizePostgresRow = (row) => ({
   kakaoNickname: row.kakaonickname ?? row.kakaoNickname,
   displayNickname: row.displaynickname ?? row.displayNickname,
   profileImage: row.profileimage ?? row.profileImage ?? null,
+  authProvider: row.authprovider ?? row.authProvider,
+  loginId: row.loginid ?? row.loginId,
   gold: row.gold,
   dps: row.dps,
   toiletLevel: row.toiletlevel ?? row.toiletLevel,
@@ -346,6 +391,54 @@ export const saveUser = async (user) => {
     FROM users
     WHERE kakao_id = ?
   `).get(user.id);
+};
+
+export const createLocalUser = async (user) => {
+  if (postgresPool) {
+    const { rows } = await postgresPool.query(`
+      INSERT INTO public.users (
+        kakao_id, nickname, display_nickname, login_id, password_hash, auth_provider
+      ) VALUES ($1, $2, $2, $3, $4, 'local')
+      RETURNING
+        kakao_id AS id,
+        nickname AS "kakaoNickname",
+        COALESCE(display_nickname, nickname) AS nickname,
+        COALESCE(display_nickname, nickname) AS "displayNickname",
+        profile_image AS "profileImage"
+    `, [user.id, user.nickname, user.loginId, user.passwordHash]);
+    return rows[0];
+  }
+
+  sqliteStatements.createLocalUser.run(
+    user.id,
+    user.nickname,
+    user.nickname,
+    user.loginId,
+    user.passwordHash,
+  );
+  const row = sqliteStatements.getLocalUserByLoginId.get(user.loginId);
+  if (!row) return null;
+  const { passwordHash, ...safeUser } = row;
+  return safeUser;
+};
+
+export const getLocalUserByLoginId = async (loginId) => {
+  if (postgresPool) {
+    const { rows } = await postgresPool.query(`
+      SELECT
+        kakao_id AS id,
+        nickname AS "kakaoNickname",
+        COALESCE(display_nickname, nickname) AS nickname,
+        COALESCE(display_nickname, nickname) AS "displayNickname",
+        profile_image AS "profileImage",
+        password_hash AS "passwordHash"
+      FROM public.users
+      WHERE login_id = $1
+    `, [loginId]);
+    return rows[0] ?? null;
+  }
+
+  return sqliteStatements.getLocalUserByLoginId.get(loginId) ?? null;
 };
 
 export const updateUserProfile = async (kakaoId, profile) => {
