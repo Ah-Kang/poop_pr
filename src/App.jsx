@@ -121,6 +121,19 @@ const poopCharacters = [
   { id: 5, name: '황금똥', badge: '👑', legacyRequiredLevel: 120, evolutionLevel: null, upgradeBasePrice: 2500000, upgradeGrowth: 1.14, baseClickPower: 1400, baseDps: 600, clickGrowth: 40, dpsGrowth: 28, gradient: 'from-yellow-300 to-amber-600', image: goldPoopImage, description: '모든 변기가 꿈꾸는 전설의 황금똥' },
 ];
 const initialPoopLevels = poopCharacters.map((_, index) => index === 0 ? 1 : 0);
+const initialGameSave = {
+  gold: 0,
+  toiletLevel: 0,
+  poopLevels: initialPoopLevels,
+  selectedPoopId: 0,
+  itemLevels: initialItemLevels,
+};
+const initialScore = {
+  gold: 0,
+  dps: 0,
+  toiletLevel: 0,
+  poopLevel: 1,
+};
 const getPoopUpgradePrice = (poop, level) =>
   Math.ceil(poop.upgradeBasePrice * Math.pow(poop.upgradeGrowth, level - 1));
 const getPoopStats = (poop, level) => {
@@ -873,7 +886,7 @@ const App = () => {
   };
 
   // ==================== 게임 초기화 리셋 핸들러 ====================
-  const handleResetGame = () => {
+  const handleResetGame = async () => {
     if (resetTimerRef.current) {
       clearTimeout(resetTimerRef.current);
       resetTimerRef.current = null;
@@ -890,6 +903,31 @@ const App = () => {
     setIsResetConfirmOpen(false);
     setIsDeveloperModeOpen(false);
     localStorage.removeItem(localStorageKey);
+
+    scoreRef.current = initialScore;
+    gameSaveRef.current = initialGameSave;
+
+    if (!authUser) return;
+
+    setCloudSaveStatus('saving');
+    try {
+      const [saveResponse, scoreResponse] = await Promise.all([
+        fetch('/api/game-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(initialGameSave),
+        }),
+        fetch('/api/score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(initialScore),
+        }),
+      ]);
+
+      setCloudSaveStatus(saveResponse.ok && scoreResponse.ok ? 'saved' : 'error');
+    } catch {
+      setCloudSaveStatus('error');
+    }
   };
 
   const handleResetModalOpen = () => {
