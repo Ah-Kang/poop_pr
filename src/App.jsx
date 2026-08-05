@@ -104,6 +104,7 @@ const cleanerEventMaxDelay = 90000;
 const cleanerEventMinGold = 5000;
 const itemUnlockRequiredLevel = 15;
 const developerGoldAmount = 999999999999;
+const developerModeTapWindow = 1000;
 const activeClickDpsBonusRate = 0.18;
 const appVersion = packageJson.version;
 const defaultCosmetics = {
@@ -1325,7 +1326,7 @@ const App = () => {
     resetTimerRef.current = setTimeout(() => {
       resetTimerRef.current = null;
       handleResetGame();
-    }, 500);
+    }, developerModeTapWindow);
   };
 
   const handleDeveloperGoldCharge = () => {
@@ -2095,7 +2096,13 @@ const App = () => {
                 취소
               </button>
               <button
-                onClick={handleResetButtonClick}
+                onPointerUp={(event) => {
+                  event.preventDefault();
+                  handleResetButtonClick();
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') handleResetButtonClick();
+                }}
                 className="rounded-lg bg-red-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-red-600"
               >
                 {isDeveloperModeOpen ? '게임 초기화' : '초기화'}
