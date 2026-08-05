@@ -955,7 +955,24 @@ const App = () => {
   // ==================== 숫자 포맷팅 함수 ====================
   // 큰 숫자를 읽기 쉬운 형식으로 표현 (예: 1,234,567)
   const formatNumber = (num) => {
-    return Math.floor(num).toLocaleString('ko-KR');
+    const number = Math.max(0, Math.floor(Number(num) || 0));
+    const units = [
+      { value: 1_000_000_000_000, label: '조' },
+      { value: 100_000_000, label: '억' },
+      { value: 10_000, label: '만' },
+    ];
+    const unit = units.find(({ value }) => number >= value);
+
+    if (!unit) return number.toLocaleString('ko-KR');
+
+    const scaled = number / unit.value;
+    const formatted = scaled >= 100 || Number.isInteger(scaled)
+      ? Math.floor(scaled).toLocaleString('ko-KR')
+      : scaled >= 10
+      ? scaled.toFixed(1)
+      : scaled.toFixed(2);
+
+    return `${formatted.replace(/\.0+$/, '').replace(/(\.\d)0$/, '$1')}${unit.label}`;
   };
 
   // ==================== 현재 화장실 배경설정 가져오기 ====================
