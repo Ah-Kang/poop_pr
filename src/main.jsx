@@ -14,6 +14,20 @@ document.addEventListener('gesturechange', (event) => event.preventDefault());
 document.addEventListener('gestureend', (event) => event.preventDefault());
 document.addEventListener('touchmove', preventIosZoom, { passive: false });
 
+const updateDisplayModeClass = () => {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+  document.documentElement.classList.toggle('is-standalone', isStandalone);
+};
+
+const displayModeQuery = window.matchMedia('(display-mode: standalone)');
+updateDisplayModeClass();
+if (displayModeQuery.addEventListener) {
+  displayModeQuery.addEventListener('change', updateDisplayModeClass);
+} else if (displayModeQuery.addListener) {
+  displayModeQuery.addListener(updateDisplayModeClass);
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />

@@ -37,7 +37,12 @@ body {
   min-height: 100svh;
   min-height: 100dvh;
   margin: 0 auto;
+  padding-top: 0.75rem;
+  padding-bottom: 0.625rem;
+  touch-action: manipulation;
+}
+
+html.is-standalone .game-shell {
   padding-top: calc(env(safe-area-inset-top) + 0.75rem);
   padding-bottom: calc(env(safe-area-inset-bottom) + 0.625rem);
-  touch-action: manipulation;
 }
