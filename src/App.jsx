@@ -86,16 +86,16 @@ const toilets = [
 
 // 반복 구매형 생산 장비: 이전 장비 5레벨 달성 시 다음 장비 해금
 const cleaningItems = [
-  { id: 0, name: '두루마리 휴지', icon: toiletPaperIcon, basePrice: 10, dps: 1, description: '기본 중의 기본. 꾸준히 생산해요.', placement: { left: '1%', top: '16%' } },
-  { id: 1, name: '뚫어뽕', icon: plungerIcon, basePrice: 75, dps: 5, description: '막힘을 뚫고 생산 흐름을 높여요.', placement: { right: '1%', top: '16%' } },
-  { id: 2, name: '화장실 솔', icon: toiletBrushIcon, basePrice: 400, dps: 20, description: '변기를 반짝이게 닦아 생산성을 올려요.', placement: { left: '0%', top: '48%' } },
-  { id: 3, name: '강력 세정제', icon: cleanerSprayIcon, basePrice: 2000, dps: 75, description: '묵은 때까지 녹이는 강력한 장비예요.', placement: { right: '0%', top: '48%' } },
-  { id: 4, name: '자동 비데', icon: bidetIcon, basePrice: 10000, dps: 300, description: '자동화의 시작. 생산량이 크게 뛰어요.', placement: { left: '9%', bottom: '7%' } },
-  { id: 5, name: '청소 로봇', icon: cleaningRobotIcon, basePrice: 50000, dps: 1200, description: '24시간 쉬지 않는 최종 청소 장비예요.', placement: { right: '9%', bottom: '7%' } },
+  { id: 0, name: '두루마리 휴지', icon: toiletPaperIcon, basePrice: 25, dps: 1, description: '기본 중의 기본. 꾸준히 생산해요.', placement: { left: '1%', top: '16%' } },
+  { id: 1, name: '뚫어뽕', icon: plungerIcon, basePrice: 180, dps: 5, description: '막힘을 뚫고 생산 흐름을 높여요.', placement: { right: '1%', top: '16%' } },
+  { id: 2, name: '화장실 솔', icon: toiletBrushIcon, basePrice: 950, dps: 20, description: '변기를 반짝이게 닦아 생산성을 올려요.', placement: { left: '0%', top: '48%' } },
+  { id: 3, name: '강력 세정제', icon: cleanerSprayIcon, basePrice: 5200, dps: 75, description: '묵은 때까지 녹이는 강력한 장비예요.', placement: { right: '0%', top: '48%' } },
+  { id: 4, name: '자동 비데', icon: bidetIcon, basePrice: 28000, dps: 300, description: '자동화의 시작. 생산량이 크게 뛰어요.', placement: { left: '9%', bottom: '7%' } },
+  { id: 5, name: '청소 로봇', icon: cleaningRobotIcon, basePrice: 150000, dps: 1200, description: '24시간 쉬지 않는 최종 청소 장비예요.', placement: { right: '9%', bottom: '7%' } },
 ];
 
 const initialItemLevels = cleaningItems.map(() => 0);
-const getItemPrice = (item, level) => Math.ceil(item.basePrice * Math.pow(1.18, level));
+const getItemPrice = (item, level) => Math.ceil(item.basePrice * Math.pow(1.24, level));
 const cleanerEventDuration = 9;
 const cleanerRequiredBlocks = 6;
 const cleanerEventMinDelay = 45000;
@@ -111,11 +111,11 @@ const getRandomCleanerDelay = () =>
 
 // 똥 캐릭터 진화 단계: 각 똥은 자기 레벨 1부터 성장하고, 진화 레벨에 도달하면 다음 똥이 해금
 const poopCharacters = [
-  { id: 0, name: '물똥', badge: '💧', legacyRequiredLevel: 1, evolutionLevel: 25, upgradeBasePrice: 20, upgradeGrowth: 1.2, baseClickPower: 1, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-sky-300 to-blue-600', image: waterPoopImage, description: '아직 힘이 없는 촉촉한 초보 똥' },
-  { id: 1, name: '말랑똥', badge: '🫧', legacyRequiredLevel: 10, evolutionLevel: 25, upgradeBasePrice: 110, upgradeGrowth: 1.18, baseClickPower: 12, baseDps: 2, clickGrowth: 2, dpsGrowth: 1, gradient: 'from-cyan-300 to-teal-500', image: softPoopImage, description: '형태를 갖추기 시작한 말랑한 똥' },
-  { id: 2, name: '건강똥', badge: '🌿', legacyRequiredLevel: 25, evolutionLevel: 30, upgradeBasePrice: 1100, upgradeGrowth: 1.17, baseClickPower: 45, baseDps: 10, clickGrowth: 4, dpsGrowth: 2, gradient: 'from-lime-300 to-emerald-600', image: healthyPoopImage, description: '균형 잡힌 영양으로 단단해진 똥' },
-  { id: 3, name: '불꽃똥', badge: '🔥', legacyRequiredLevel: 50, evolutionLevel: 35, upgradeBasePrice: 14000, upgradeGrowth: 1.16, baseClickPower: 180, baseDps: 45, clickGrowth: 8, dpsGrowth: 5, gradient: 'from-orange-400 to-red-600', image: firePoopImage, description: '뜨거운 생산력을 뿜어내는 똥' },
-  { id: 4, name: '다이아똥', badge: '💎', legacyRequiredLevel: 80, evolutionLevel: 45, upgradeBasePrice: 180000, upgradeGrowth: 1.15, baseClickPower: 520, baseDps: 160, clickGrowth: 18, dpsGrowth: 12, gradient: 'from-cyan-300 to-violet-600', image: diamondPoopImage, description: '보석처럼 단단하고 희귀한 똥' },
+  { id: 0, name: '물똥', badge: '💧', legacyRequiredLevel: 1, evolutionLevel: 100, upgradeBasePrice: 20, upgradeGrowth: 1.2, baseClickPower: 1, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-sky-300 to-blue-600', image: waterPoopImage, description: '아직 힘이 없는 촉촉한 초보 똥' },
+  { id: 1, name: '말랑똥', badge: '🫧', legacyRequiredLevel: 10, evolutionLevel: 100, upgradeBasePrice: 110, upgradeGrowth: 1.18, baseClickPower: 12, baseDps: 2, clickGrowth: 2, dpsGrowth: 1, gradient: 'from-cyan-300 to-teal-500', image: softPoopImage, description: '형태를 갖추기 시작한 말랑한 똥' },
+  { id: 2, name: '건강똥', badge: '🌿', legacyRequiredLevel: 25, evolutionLevel: 100, upgradeBasePrice: 1100, upgradeGrowth: 1.17, baseClickPower: 45, baseDps: 10, clickGrowth: 4, dpsGrowth: 2, gradient: 'from-lime-300 to-emerald-600', image: healthyPoopImage, description: '균형 잡힌 영양으로 단단해진 똥' },
+  { id: 3, name: '불꽃똥', badge: '🔥', legacyRequiredLevel: 50, evolutionLevel: 100, upgradeBasePrice: 14000, upgradeGrowth: 1.16, baseClickPower: 180, baseDps: 45, clickGrowth: 8, dpsGrowth: 5, gradient: 'from-orange-400 to-red-600', image: firePoopImage, description: '뜨거운 생산력을 뿜어내는 똥' },
+  { id: 4, name: '다이아똥', badge: '💎', legacyRequiredLevel: 80, evolutionLevel: 100, upgradeBasePrice: 180000, upgradeGrowth: 1.15, baseClickPower: 520, baseDps: 160, clickGrowth: 18, dpsGrowth: 12, gradient: 'from-cyan-300 to-violet-600', image: diamondPoopImage, description: '보석처럼 단단하고 희귀한 똥' },
   { id: 5, name: '황금똥', badge: '👑', legacyRequiredLevel: 120, evolutionLevel: null, upgradeBasePrice: 2500000, upgradeGrowth: 1.14, baseClickPower: 1400, baseDps: 600, clickGrowth: 40, dpsGrowth: 28, gradient: 'from-yellow-300 to-amber-600', image: goldPoopImage, description: '모든 변기가 꿈꾸는 전설의 황금똥' },
 ];
 const initialPoopLevels = poopCharacters.map((_, index) => index === 0 ? 1 : 0);
