@@ -469,6 +469,7 @@ const App = () => {
   const [isDeveloperModeOpen, setIsDeveloperModeOpen] = useState(false);
   const resetClickCountRef = useRef(0);
   const resetTimerRef = useRef(null);
+  const nutrientTapTimeRef = useRef(0);
 
   // 저장 데이터를 읽기 전에 초기값이 덮어쓰는 것을 방지
   const [isSaveLoaded, setIsSaveLoaded] = useState(false);
@@ -1281,6 +1282,17 @@ const App = () => {
     setIsResetConfirmOpen(true);
   };
 
+  const handleNutrientPanelClick = () => {
+    const now = Date.now();
+    if (now - nutrientTapTimeRef.current <= 400) {
+      nutrientTapTimeRef.current = 0;
+      handleResetModalOpen();
+      return;
+    }
+
+    nutrientTapTimeRef.current = now;
+  };
+
   const handleResetModalClose = () => {
     if (resetTimerRef.current) {
       clearTimeout(resetTimerRef.current);
@@ -1434,8 +1446,14 @@ const App = () => {
 
         <div className="grid grid-cols-2 divide-x-[3px] divide-cyan-950/40 overflow-hidden rounded-[1.4rem] border-[3px] border-cyan-950/70 bg-gradient-to-b from-cyan-300 via-cyan-400 to-cyan-600 text-white shadow-[0_7px_0_rgba(8,51,68,0.9),0_12px_24px_rgba(0,0,0,0.3)]">
           <div
-            className="relative px-4 py-3 before:pointer-events-none before:absolute before:inset-x-2 before:top-1 before:h-1/3 before:rounded-full before:bg-white/20"
+            className="relative cursor-pointer px-4 py-3 before:pointer-events-none before:absolute before:inset-x-2 before:top-1 before:h-1/3 before:rounded-full before:bg-white/20"
+            role="button"
+            tabIndex={0}
+            onClick={handleNutrientPanelClick}
             onDoubleClick={handleResetModalOpen}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') handleResetModalOpen();
+            }}
           >
             <div className="relative flex items-center gap-1.5 text-[10px] font-black uppercase text-cyan-950">
               <span aria-hidden="true">💰</span>
