@@ -527,6 +527,12 @@ const App = () => {
       { id: 'hardhat', name: '안전모', icon: '⛑️', requirement: '장비 총 Lv.30', unlocked: totalItemLevels >= 30 },
       { id: 'flower', name: '꽃핀', icon: '🌸', requirement: '말랑똥 Lv.50', unlocked: (poopLevels[1] ?? 0) >= 50 },
       { id: 'sunglasses', name: '선글라스', icon: '🕶️', requirement: '불꽃똥 해금', unlocked: (poopLevels[3] ?? 0) > 0 },
+      { id: 'wizard', name: '마법사 모자', icon: '🧙', requirement: '건강똥 Lv.70', unlocked: (poopLevels[2] ?? 0) >= 70 },
+      { id: 'ribbon', name: '리본', icon: '🎀', requirement: '물똥 Lv.20', unlocked: (poopLevels[0] ?? 0) >= 20 },
+      { id: 'toiletLid', name: '변기뚜껑 모자', icon: '🚽', requirement: '화장실 2단계', unlocked: currentToiletLevel >= 1 },
+      { id: 'halo', name: '천사 링', icon: '😇', requirement: '장비 총 Lv.60', unlocked: totalItemLevels >= 60 },
+      { id: 'devilHorns', name: '악마 뿔', icon: '😈', requirement: '불꽃똥 Lv.40', unlocked: (poopLevels[3] ?? 0) >= 40 },
+      { id: 'spaceHelmet', name: '우주 헬멧', icon: '🪐', requirement: '우주 화장실 해금', unlocked: currentToiletLevel >= 4 },
     ],
     aura: [
       { id: 'none', name: '없음', icon: '', requirement: '기본', unlocked: true },
@@ -534,8 +540,12 @@ const App = () => {
       { id: 'water', name: '물방울', icon: '💧', requirement: '물똥 Lv.60', unlocked: (poopLevels[0] ?? 0) >= 60 },
       { id: 'fire', name: '불꽃', icon: '🔥', requirement: '불꽃똥 해금', unlocked: (poopLevels[3] ?? 0) > 0 },
       { id: 'diamond', name: '다이아 빛', icon: '💎', requirement: '다이아똥 해금', unlocked: (poopLevels[4] ?? 0) > 0 },
-    ],
-    title: [
+      { id: 'heartBubble', name: '하트 버블', icon: '🫧', requirement: '말랑똥 Lv.80', unlocked: (poopLevels[1] ?? 0) >= 80 },
+      { id: 'steam', name: '구름 김', icon: '☁️', requirement: '화장실 3단계', unlocked: currentToiletLevel >= 2 },
+      { id: 'rainbow', name: '무지개 링', icon: '🌈', requirement: '건강똥 Lv.100', unlocked: (poopLevels[2] ?? 0) >= 100 },
+      { id: 'constellation', name: '별자리', icon: '🌙', requirement: '우주 화장실 해금', unlocked: currentToiletLevel >= 4 },
+      { id: 'goldCoin', name: '골드 코인', icon: '🪙', requirement: '100만 영양분', unlocked: gold >= 1000000 },
+      { id: 'cleanFoam', name: '소독 거품', icon: '🧼', requirement: '장비 총 Lv.45', unlocked: totalItemLevels >= 45 },
     ],
   };
   const getCosmeticOption = (slot, id) =>
@@ -546,6 +556,129 @@ const App = () => {
       ...prevCosmetics,
       [slot]: option.id,
     }));
+  };
+  const renderCosmeticVisual = (option, slot, mode = 'avatar') => {
+    if (!option || option.id === 'none') {
+      return mode === 'picker' ? <span className="text-[10px] font-black text-slate-400">OFF</span> : null;
+    }
+
+    const isPicker = mode === 'picker';
+    const emojiClass = isPicker ? 'text-2xl leading-none' : 'text-4xl leading-none';
+    const hatFrameClass = isPicker ? 'h-9 w-10' : 'h-12 w-16';
+    const auraFrameClass = isPicker ? 'h-9 w-9' : 'h-full w-full';
+
+    if (slot === 'hat') {
+      if (option.id === 'spaceHelmet') {
+        return (
+          <span className={`relative block ${hatFrameClass}`} aria-hidden="true">
+            <span className="absolute inset-x-1 top-1 h-8 rounded-full border-[6px] border-stone-100 bg-transparent shadow-[inset_0_0_0_2px_rgba(14,165,233,0.5),0_2px_5px_rgba(15,23,42,0.35)]" />
+            <span className="absolute left-0 top-4 h-4 w-3 rounded-full bg-amber-300 shadow-[0_1px_0_#92400e]" />
+            <span className="absolute right-0 top-4 h-4 w-3 rounded-full bg-amber-300 shadow-[0_1px_0_#92400e]" />
+            <span className="absolute bottom-1 left-1/2 h-2 w-8 -translate-x-1/2 rounded-full bg-stone-100 shadow-[0_1px_0_#94a3b8]" />
+            <span className="absolute right-1 top-2 h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_6px_rgba(34,211,238,0.9)]" />
+          </span>
+        );
+      }
+
+      return <span className={emojiClass} aria-hidden="true">{option.icon}</span>;
+    }
+
+    const auraBase = `pointer-events-none ${isPicker ? 'relative' : 'absolute -inset-8'} ${auraFrameClass}`;
+    const sparkleBase = 'absolute rounded-full opacity-90';
+
+    if (option.id === 'sparkle') {
+      return (
+        <span className={auraBase} aria-hidden="true">
+          <span className="absolute left-1 top-0 text-xl text-amber-300">✦</span>
+          <span className="absolute right-0 top-5 text-lg text-yellow-200">✦</span>
+          <span className="absolute bottom-1 left-4 text-base text-amber-200">✦</span>
+        </span>
+      );
+    }
+
+    if (option.id === 'water' || option.id === 'heartBubble' || option.id === 'cleanFoam') {
+      const bubbleColor = option.id === 'heartBubble' ? 'bg-pink-200/80' : option.id === 'cleanFoam' ? 'bg-cyan-100/90' : 'bg-sky-200/80';
+      const symbol = option.id === 'heartBubble' ? '♥' : option.id === 'cleanFoam' ? '+' : '';
+      return (
+        <span className={auraBase} aria-hidden="true">
+          {[0, 1, 2, 3, 4].map((bubble) => (
+            <span
+              key={bubble}
+              className={`${sparkleBase} ${bubbleColor} grid place-items-center border border-white/80 text-[9px] font-black text-white`}
+              style={{
+                left: `${14 + bubble * 15}%`,
+                top: `${bubble % 2 === 0 ? 18 : 58}%`,
+                width: `${isPicker ? 10 : 16}px`,
+                height: `${isPicker ? 10 : 16}px`,
+              }}
+            >
+              {symbol}
+            </span>
+          ))}
+        </span>
+      );
+    }
+
+    if (option.id === 'fire') {
+      return (
+        <span className={auraBase} aria-hidden="true">
+          <span className="absolute inset-x-3 bottom-0 h-4/5 rounded-full bg-gradient-to-t from-orange-500/80 via-red-400/45 to-transparent blur-[1px]" />
+          <span className="absolute left-1/2 top-1 -translate-x-1/2 text-3xl">🔥</span>
+        </span>
+      );
+    }
+
+    if (option.id === 'diamond') {
+      return (
+        <span className={auraBase} aria-hidden="true">
+          <span className="absolute inset-2 rounded-full bg-cyan-200/25 shadow-[0_0_18px_rgba(103,232,249,0.9)]" />
+          <span className="absolute left-0 top-3 text-lg">💎</span>
+          <span className="absolute right-1 top-0 text-base">💎</span>
+          <span className="absolute bottom-1 left-1/2 text-sm">💎</span>
+        </span>
+      );
+    }
+
+    if (option.id === 'steam') {
+      return (
+        <span className={auraBase} aria-hidden="true">
+          <span className="absolute left-0 top-2 text-xl opacity-80">☁️</span>
+          <span className="absolute right-1 top-5 text-lg opacity-70">☁️</span>
+          <span className="absolute bottom-1 left-4 text-base opacity-60">☁️</span>
+        </span>
+      );
+    }
+
+    if (option.id === 'rainbow') {
+      return (
+        <span className={auraBase} aria-hidden="true">
+          <span className="absolute inset-1 rounded-full border-[5px] border-pink-300 shadow-[inset_0_0_0_4px_#fde68a,0_0_0_4px_#67e8f9,0_0_14px_rgba(244,114,182,0.55)]" />
+        </span>
+      );
+    }
+
+    if (option.id === 'constellation') {
+      return (
+        <span className={auraBase} aria-hidden="true">
+          <span className="absolute inset-2 rounded-full border border-indigo-300/80 shadow-[0_0_16px_rgba(129,140,248,0.75)]" />
+          <span className="absolute left-2 top-1 text-sm text-yellow-200">★</span>
+          <span className="absolute right-2 top-4 text-xs text-yellow-100">★</span>
+          <span className="absolute bottom-2 left-1/2 text-sm text-yellow-200">★</span>
+        </span>
+      );
+    }
+
+    if (option.id === 'goldCoin') {
+      return (
+        <span className={auraBase} aria-hidden="true">
+          <span className="absolute left-1 top-3 text-lg">🪙</span>
+          <span className="absolute right-1 top-0 text-base">🪙</span>
+          <span className="absolute bottom-2 left-1/2 text-sm">🪙</span>
+        </span>
+      );
+    }
+
+    return <span className={emojiClass} aria-hidden="true">{option.icon}</span>;
   };
   const renderPoopAvatar = (
     poop,
@@ -562,28 +695,23 @@ const App = () => {
 
     return (
       <>
-        {aura?.icon && (
-          <>
-            <span className="absolute -left-5 top-5 text-2xl drop-shadow-lg" style={{ animation: 'cleaningSparkle 1.5s ease-in-out infinite' }} aria-hidden="true">{aura.icon}</span>
-            <span className="absolute -right-5 bottom-8 text-2xl drop-shadow-lg" style={{ animation: 'cleaningSparkle 1.7s ease-in-out infinite .35s' }} aria-hidden="true">{aura.icon}</span>
-          </>
-        )}
+        {renderCosmeticVisual(aura, 'aura')}
         {poop.image ? (
           <img
             src={poop.image}
             alt={poop.name}
-            className={imageClassName}
+            className={`relative z-10 ${imageClassName}`}
             draggable="false"
           />
         ) : (
-          <span aria-label={poop.name}>💩</span>
+          <span className="relative z-10" aria-label={poop.name}>💩</span>
         )}
-        {hat?.icon && (
-          <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-4xl drop-shadow-lg" aria-hidden="true">
-            {hat.icon}
+        {hat?.id !== 'none' && (
+          <span className="absolute -top-5 left-1/2 z-20 -translate-x-1/2 drop-shadow-lg" aria-hidden="true">
+            {renderCosmeticVisual(hat, 'hat')}
           </span>
         )}
-        <span className={badgeClassName} aria-hidden="true">
+        <span className={`z-30 ${badgeClassName}`} aria-hidden="true">
           {poop.badge}
         </span>
         {showTitle && titleText && (
@@ -1452,9 +1580,13 @@ const App = () => {
                     </div>
                     <div className="mt-2 grid grid-cols-2 gap-1.5 border-t border-amber-900/15 pt-2 text-[9px] font-bold text-slate-700">
                       <div className="flex min-w-0 items-center gap-1.5 rounded-lg bg-amber-100/80 px-2 py-1">
-                        <span className="relative h-7 w-7 shrink-0">
+                        <span className="relative flex h-7 w-7 shrink-0 items-center justify-center">
                           <img src={rankingPoop.image} alt="" className="h-7 w-7 object-contain" />
-                          {rankingHat?.icon && <span className="absolute -right-1 -top-2 text-sm">{rankingHat.icon}</span>}
+                          {rankingHat?.id !== 'none' && (
+                            <span className="absolute -right-2 -top-3 scale-50">
+                              {renderCosmeticVisual(rankingHat, 'hat')}
+                            </span>
+                          )}
                         </span>
                         <span className="truncate">{rankingPoop.name} Lv.{rankingPoopLevel}</span>
                       </div>
@@ -1743,8 +1875,11 @@ const App = () => {
                                 : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
                             }`}
                           >
-                            <span className="block truncate text-xs font-black">
-                              {option.icon ? `${option.icon} ` : ''}{option.name}
+                            <span className="flex min-w-0 items-center gap-2">
+                              <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/70">
+                                {renderCosmeticVisual(option, slot, 'picker')}
+                              </span>
+                              <span className="block min-w-0 truncate text-xs font-black">{option.name}</span>
                             </span>
                             <span className="mt-0.5 block truncate text-[9px] font-bold">
                               {option.unlocked ? (isEquipped ? '장착 중' : '장착 가능') : option.requirement}
