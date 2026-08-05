@@ -22,8 +22,12 @@ create table if not exists public.game_saves (
   poop_levels jsonb not null default '[]'::jsonb,
   selected_poop_id integer not null default 0,
   item_levels jsonb not null default '[]'::jsonb,
+  cosmetics jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
+
+alter table public.game_saves
+  add column if not exists cosmetics jsonb not null default '{}'::jsonb;
 
 create table if not exists public.user_activity (
   kakao_id text primary key references public.users(kakao_id) on delete cascade,

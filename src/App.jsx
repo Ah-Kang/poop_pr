@@ -106,6 +106,11 @@ const itemUnlockRequiredLevel = 15;
 const developerGoldAmount = 999999999999;
 const activeClickDpsBonusRate = 0.18;
 const appVersion = packageJson.version;
+const defaultCosmetics = {
+  hat: 'none',
+  aura: 'none',
+  title: 'none',
+};
 const getRandomCleanerDelay = () =>
   Math.floor(
     cleanerEventMinDelay + Math.random() * (cleanerEventMaxDelay - cleanerEventMinDelay)
@@ -127,6 +132,7 @@ const initialGameSave = {
   poopLevels: initialPoopLevels,
   selectedPoopId: 0,
   itemLevels: initialItemLevels,
+  cosmetics: defaultCosmetics,
 };
 const initialScore = {
   gold: 0,
@@ -146,6 +152,11 @@ const getPoopStats = (poop, level) => {
 };
 const getHighestUnlockedPoopId = (levels) =>
   levels.reduce((highestId, level, index) => level > 0 ? index : highestId, 0);
+const normalizeCosmetics = (value) => ({
+  hat: typeof value?.hat === 'string' ? value.hat : defaultCosmetics.hat,
+  aura: typeof value?.aura === 'string' ? value.aura : defaultCosmetics.aura,
+  title: typeof value?.title === 'string' ? value.title : defaultCosmetics.title,
+});
 const getSavedPoopLevels = (parsed) => {
   if (Array.isArray(parsed.poopLevels)) {
     const normalizedLevels = poopCharacters.map((_, index) =>
@@ -417,6 +428,9 @@ const App = () => {
 
   // 청소 장비별 보유 레벨
   const [itemLevels, setItemLevels] = useState(initialItemLevels);
+
+  // 똥 꾸미기 장착 상태
+  const [cosmetics, setCosmetics] = useState(defaultCosmetics);
   
   // 화장실 매입 상점 팝업창의 열림/닫힘 상태
   const [isShopOpen, setIsShopOpen] = useState(false);
@@ -498,6 +512,85 @@ const App = () => {
   const dps = toiletDps + characterDps + itemDps;
   const activeClickBonus = Math.floor(dps * activeClickDpsBonusRate);
   const clickPower = baseClickPower + activeClickBonus;
+  const totalItemLevels = itemLevels.reduce((total, level) => total + (level ?? 0), 0);
+  const cosmeticOptions = {
+    hat: [
+      { id: 'none', name: '없음', icon: '', requirement: '기본', unlocked: true },
+      { id: 'crown', name: '왕관', icon: '👑', requirement: '황금똥 해금', unlocked: (poopLevels[5] ?? 0) > 0 },
+      { id: 'hardhat', name: '안전모', icon: '⛑️', requirement: '장비 총 Lv.30', unlocked: totalItemLevels >= 30 },
+      { id: 'flower', name: '꽃핀', icon: '🌸', requirement: '말랑똥 Lv.50', unlocked: (poopLevels[1] ?? 0) >= 50 },
+      { id: 'sunglasses', name: '선글라스', icon: '🕶️', requirement: '불꽃똥 해금', unlocked: (poopLevels[3] ?? 0) > 0 },
+    ],
+    aura: [
+      { id: 'none', name: '없음', icon: '', requirement: '기본', unlocked: true },
+      { id: 'sparkle', name: '반짝이', icon: '✨', requirement: '물똥 Lv.30', unlocked: (poopLevels[0] ?? 0) >= 30 },
+      { id: 'water', name: '물방울', icon: '💧', requirement: '물똥 Lv.60', unlocked: (poopLevels[0] ?? 0) >= 60 },
+      { id: 'fire', name: '불꽃', icon: '🔥', requirement: '불꽃똥 해금', unlocked: (poopLevels[3] ?? 0) > 0 },
+      { id: 'diamond', name: '다이아 빛', icon: '💎', requirement: '다이아똥 해금', unlocked: (poopLevels[4] ?? 0) > 0 },
+    ],
+    title: [
+      { id: 'none', name: '없음', icon: '', requirement: '기본', unlocked: true },
+      { id: 'beginner_king', name: '초보 변기왕', icon: '🏅', requirement: '기본 지급', unlocked: true },
+      { id: 'cleaner_master', name: '성실한 청소부', icon: '🧽', requirement: '장비 총 Lv.20', unlocked: totalItemLevels >= 20 },
+      { id: 'gold_ruler', name: '황금의 지배자', icon: '👑', requirement: '황금똥 해금', unlocked: (poopLevels[5] ?? 0) > 0 },
+    ],
+  };
+  const getCosmeticOption = (slot, id) =>
+    cosmeticOptions[slot]?.find((option) => option.id === id) ?? cosmeticOptions[slot]?.[0];
+  const handleCosmeticEquip = (slot, option) => {
+    if (!option.unlocked) return;
+    setCosmetics((prevCosmetics) => ({
+      ...prevCosmetics,
+      [slot]: option.id,
+    }));
+  };
+  const renderPoopAvatar = (
+    poop,
+    level,
+    cosmeticState = defaultCosmetics,
+    imageClassName = 'h-48 w-48 object-contain',
+    badgeClassName = 'absolute -right-1 -top-2 text-4xl drop-shadow-lg',
+    showTitle = true
+  ) => {
+    const normalizedCosmetics = normalizeCosmetics(cosmeticState);
+    const hat = getCosmeticOption('hat', normalizedCosmetics.hat);
+    const aura = getCosmeticOption('aura', normalizedCosmetics.aura);
+    const title = getCosmeticOption('title', normalizedCosmetics.title);
+
+    return (
+      <>
+        {aura?.icon && (
+          <>
+            <span className="absolute -left-5 top-5 text-2xl drop-shadow-lg" style={{ animation: 'cleaningSparkle 1.5s ease-in-out infinite' }} aria-hidden="true">{aura.icon}</span>
+            <span className="absolute -right-5 bottom-8 text-2xl drop-shadow-lg" style={{ animation: 'cleaningSparkle 1.7s ease-in-out infinite .35s' }} aria-hidden="true">{aura.icon}</span>
+          </>
+        )}
+        {poop.image ? (
+          <img
+            src={poop.image}
+            alt={poop.name}
+            className={imageClassName}
+            draggable="false"
+          />
+        ) : (
+          <span aria-label={poop.name}>💩</span>
+        )}
+        {hat?.icon && (
+          <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-4xl drop-shadow-lg" aria-hidden="true">
+            {hat.icon}
+          </span>
+        )}
+        <span className={badgeClassName} aria-hidden="true">
+          {poop.badge}
+        </span>
+        {showTitle && title?.id !== 'none' && (
+          <span className="absolute -bottom-4 left-1/2 max-w-44 -translate-x-1/2 truncate rounded-full border-2 border-amber-950 bg-white/90 px-3 py-1 text-[10px] font-black text-amber-950 shadow-[0_2px_0_#78350f]">
+            {title.icon} {title.name} · Lv.{level}
+          </span>
+        )}
+      </>
+    );
+  };
   const scoreRef = useRef({ gold, dps, toiletLevel: currentToiletLevel, poopLevel });
   const gameSaveRef = useRef({
     gold,
@@ -505,6 +598,7 @@ const App = () => {
     poopLevels,
     selectedPoopId: currentPoop.id,
     itemLevels,
+    cosmetics,
   });
 
   useEffect(() => {
@@ -518,8 +612,9 @@ const App = () => {
       poopLevels,
       selectedPoopId: currentPoop.id,
       itemLevels,
+      cosmetics,
     };
-  }, [gold, currentToiletLevel, poopLevels, currentPoop.id, itemLevels]);
+  }, [gold, currentToiletLevel, poopLevels, currentPoop.id, itemLevels, cosmetics]);
 
   useEffect(() => {
     if (!authUser || !isSaveLoaded || cloudSaveOwnerRef.current === authUser.id) return;
@@ -540,6 +635,7 @@ const App = () => {
           setPoopLevels(savedPoopLevels.some((level) => level > 0) ? savedPoopLevels : initialPoopLevels);
           setSelectedPoopId(save.selectedPoopId);
           setItemLevels(savedItemLevels);
+          setCosmetics(normalizeCosmetics(save.cosmetics));
         } else {
           const uploadResponse = await fetch('/api/game-save', {
             method: 'POST',
@@ -691,6 +787,7 @@ const App = () => {
           ? cleaningItems.map((_, index) => parsed.itemLevels[index] ?? 0)
           : initialItemLevels
       );
+      setCosmetics(normalizeCosmetics(parsed.cosmetics));
     } catch (error) {
       console.warn('저장된 게임 데이터를 불러오는 중 오류가 발생했습니다.', error);
     } finally {
@@ -710,12 +807,13 @@ const App = () => {
         poopLevels,
         selectedPoopId: currentPoop.id,
         itemLevels,
+        cosmetics,
       };
       localStorage.setItem(localStorageKey, JSON.stringify(saveData));
     } catch (error) {
       console.warn('게임 데이터를 저장하는 중 오류가 발생했습니다.', error);
     }
-  }, [gold, currentToiletLevel, currentPoopLevel, poopLevel, poopLevels, currentPoop.id, itemLevels, isSaveLoaded]);
+  }, [gold, currentToiletLevel, currentPoopLevel, poopLevel, poopLevels, currentPoop.id, itemLevels, cosmetics, isSaveLoaded]);
 
   useEffect(() => {
     if ((poopLevels[selectedPoopId] ?? 0) === 0) {
@@ -897,6 +995,7 @@ const App = () => {
     setPoopLevels(initialPoopLevels);
     setSelectedPoopId(0);
     setItemLevels(initialItemLevels);
+    setCosmetics(defaultCosmetics);
     setIsShopOpen(false);
     setIsItemShopOpen(false);
     setIsPoopShopOpen(false);
@@ -1061,6 +1160,11 @@ const App = () => {
                     {cloudSaveStatus === 'saved' && '☁️ 저장됨'}
                     {cloudSaveStatus === 'error' && '⚠️ 저장 실패'}
                   </p>
+                  {getCosmeticOption('title', cosmetics.title)?.id !== 'none' && (
+                    <p className="truncate text-[8px] font-black text-amber-700">
+                      {getCosmeticOption('title', cosmetics.title).icon} {getCosmeticOption('title', cosmetics.title).name}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex shrink-0 gap-1.5">
@@ -1251,19 +1355,7 @@ const App = () => {
           {activeCleaningItems.length >= 5 && (
             <span className="absolute -left-5 bottom-8 text-2xl" style={{ animation: 'cleaningSparkle 1.2s ease-in-out infinite .4s' }} aria-hidden="true">💨</span>
           )}
-          {currentPoop.image ? (
-            <img
-              src={currentPoop.image}
-              alt={currentPoop.name}
-              className="h-48 w-48 object-contain"
-              draggable="false"
-            />
-          ) : (
-            <span aria-label={currentPoop.name}>💩</span>
-          )}
-          <span className="absolute -right-1 -top-2 text-4xl drop-shadow-lg" aria-hidden="true">
-            {currentPoop.badge}
-          </span>
+          {renderPoopAvatar(currentPoop, poopLevel, cosmetics)}
         </button>
 
         {/* 클릭 시 떠오르는 텍스트 효과 (선택사항) */}
@@ -1330,6 +1422,9 @@ const App = () => {
                 const rankingPoopLevel = entry.poopLevels?.[rankingPoop.id] ?? entry.poopLevel ?? 1;
                 const rankingToilet = toilets[entry.toiletLevel] ?? toilets[0];
                 const ownedItems = cleaningItems.filter((item) => (entry.itemLevels?.[item.id] ?? 0) > 0);
+                const rankingCosmetics = normalizeCosmetics(entry.cosmetics);
+                const rankingTitle = getCosmeticOption('title', rankingCosmetics.title);
+                const rankingHat = getCosmeticOption('hat', rankingCosmetics.hat);
 
                 return (
                   <button
@@ -1343,13 +1438,18 @@ const App = () => {
                       {entry.profileImage ? <img src={entry.profileImage} alt="" className="h-9 w-9 rounded-full border-2 border-amber-800 object-cover" /> : <span className="grid h-9 w-9 place-items-center rounded-full bg-amber-200">👤</span>}
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-black text-slate-800">{entry.nickname}{entry.id === authUser?.id ? ' (나)' : ''}</p>
-                        <p className="text-[9px] font-bold text-slate-500">초당 +{formatNumber(entry.dps)}</p>
+                        <p className="truncate text-[9px] font-bold text-slate-500">
+                          {rankingTitle?.id !== 'none' ? `${rankingTitle.icon} ${rankingTitle.name} · ` : ''}초당 +{formatNumber(entry.dps)}
+                        </p>
                       </div>
                       <p className="shrink-0 text-sm font-black text-amber-700">{formatNumber(entry.gold)} 💰</p>
                     </div>
                     <div className="mt-2 grid grid-cols-2 gap-1.5 border-t border-amber-900/15 pt-2 text-[9px] font-bold text-slate-700">
                       <div className="flex min-w-0 items-center gap-1.5 rounded-lg bg-amber-100/80 px-2 py-1">
-                        <img src={rankingPoop.image} alt="" className="h-7 w-7 shrink-0 object-contain" />
+                        <span className="relative h-7 w-7 shrink-0">
+                          <img src={rankingPoop.image} alt="" className="h-7 w-7 object-contain" />
+                          {rankingHat?.icon && <span className="absolute -right-1 -top-2 text-sm">{rankingHat.icon}</span>}
+                        </span>
                         <span className="truncate">{rankingPoop.name} Lv.{rankingPoopLevel}</span>
                       </div>
                       <div className="flex min-w-0 items-center gap-1.5 rounded-lg bg-cyan-100/80 px-2 py-1">
@@ -1377,6 +1477,8 @@ const App = () => {
             const profilePoopLevel = selectedRankingUser.poopLevels?.[profilePoop.id] ?? selectedRankingUser.poopLevel ?? 1;
             const profileToilet = toilets[selectedRankingUser.toiletLevel] ?? toilets[0];
             const profileItems = cleaningItems.filter((item) => (selectedRankingUser.itemLevels?.[item.id] ?? 0) > 0);
+            const profileCosmetics = normalizeCosmetics(selectedRankingUser.cosmetics);
+            const profileTitle = getCosmeticOption('title', profileCosmetics.title);
 
             return (
               <div
@@ -1405,7 +1507,9 @@ const App = () => {
                         )}
                         <div className="min-w-0">
                           <p className="truncate text-sm font-black">{selectedRankingUser.nickname}</p>
-                          <p className="text-[10px] font-bold text-slate-500">대표 화장실</p>
+                          <p className="truncate text-[10px] font-bold text-slate-500">
+                            {profileTitle?.id !== 'none' ? `${profileTitle.icon} ${profileTitle.name}` : '대표 화장실'}
+                          </p>
                         </div>
                       </div>
                       <button
@@ -1419,12 +1523,16 @@ const App = () => {
                     </div>
 
                     <div className="relative z-10 mt-8 flex flex-col items-center">
-                      <img
-                        src={profilePoop.image}
-                        alt={profilePoop.name}
-                        className="h-32 w-32 object-contain drop-shadow-[0_12px_18px_rgba(0,0,0,0.45)]"
-                        draggable="false"
-                      />
+                      <div className="relative flex h-36 w-36 items-center justify-center">
+                        {renderPoopAvatar(
+                          profilePoop,
+                          profilePoopLevel,
+                          profileCosmetics,
+                          'h-32 w-32 object-contain drop-shadow-[0_12px_18px_rgba(0,0,0,0.45)]',
+                          'absolute -right-1 -top-1 text-3xl drop-shadow-lg',
+                          false
+                        )}
+                      </div>
                       <span className="mt-2 rounded-full border-2 border-amber-950 bg-amber-300 px-3 py-1 text-xs font-black text-amber-950 shadow-[0_3px_0_#78350f]">
                         {profilePoop.badge} {profilePoop.name} Lv.{profilePoopLevel}
                       </span>
@@ -1562,16 +1670,74 @@ const App = () => {
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
+              <div className="rounded-2xl border-[3px] border-teal-700 bg-teal-50 p-4 shadow-[0_5px_0_#115e59]">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-black text-teal-950">🎨 똥 꾸미기</h3>
+                    <p className="mt-0.5 text-xs font-bold text-teal-700">해금한 꾸미기를 장착해 랭킹 쇼룸에 자랑해요</p>
+                  </div>
+                  <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
+                    {renderPoopAvatar(
+                      currentPoop,
+                      poopLevel,
+                      cosmetics,
+                      'h-14 w-14 object-contain',
+                      'absolute -right-1 -top-1 text-xl drop-shadow-lg',
+                      false
+                    )}
+                  </div>
+                </div>
+
+                {[
+                  { slot: 'hat', label: '모자' },
+                  { slot: 'aura', label: '오라' },
+                  { slot: 'title', label: '칭호' },
+                ].map(({ slot, label }) => (
+                  <div key={slot} className="mt-3">
+                    <p className="mb-1.5 text-xs font-black text-teal-900">{label}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {cosmeticOptions[slot].map((option) => {
+                        const isEquipped = cosmetics[slot] === option.id;
+
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => handleCosmeticEquip(slot, option)}
+                            disabled={!option.unlocked}
+                            className={`min-h-[48px] rounded-xl border-2 px-2 py-1.5 text-left transition-all ${
+                              isEquipped
+                                ? 'border-amber-700 bg-amber-200 text-amber-950 shadow-[0_3px_0_#92400e]'
+                                : option.unlocked
+                                ? 'border-teal-200 bg-white text-slate-800 active:scale-[0.98]'
+                                : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                            }`}
+                          >
+                            <span className="block truncate text-xs font-black">
+                              {option.icon ? `${option.icon} ` : ''}{option.name}
+                            </span>
+                            <span className="mt-0.5 block truncate text-[9px] font-bold">
+                              {option.unlocked ? (isEquipped ? '장착 중' : '장착 가능') : option.requirement}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               <div className="rounded-2xl border-[3px] border-amber-700 bg-amber-50 p-4 shadow-[0_5px_0_#92400e]">
                 <div className="flex items-center gap-3">
                   <div className="relative flex h-20 w-20 shrink-0 items-center justify-center">
-                    <img
-                      src={currentPoop.image}
-                      alt={currentPoop.name}
-                      className="h-20 w-20 object-contain"
-                      draggable="false"
-                    />
-                    <span className="absolute -right-1 -top-1 text-2xl">{currentPoop.badge}</span>
+                    {renderPoopAvatar(
+                      currentPoop,
+                      poopLevel,
+                      cosmetics,
+                      'h-20 w-20 object-contain',
+                      'absolute -right-1 -top-1 text-2xl',
+                      false
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <h3 className="font-black text-gray-900">

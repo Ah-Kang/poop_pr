@@ -38,6 +38,7 @@ const sqliteSchema = `
     poop_levels TEXT NOT NULL,
     selected_poop_id INTEGER NOT NULL DEFAULT 0,
     item_levels TEXT NOT NULL,
+    cosmetics TEXT NOT NULL DEFAULT '{}',
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
   CREATE TABLE IF NOT EXISTS user_activity (
@@ -80,8 +81,12 @@ const postgresSchema = `
     poop_levels jsonb NOT NULL DEFAULT '[]'::jsonb,
     selected_poop_id integer NOT NULL DEFAULT 0,
     item_levels jsonb NOT NULL DEFAULT '[]'::jsonb,
+    cosmetics jsonb NOT NULL DEFAULT '{}'::jsonb,
     updated_at timestamptz NOT NULL DEFAULT now()
   );
+
+  ALTER TABLE public.game_saves
+    ADD COLUMN IF NOT EXISTS cosmetics jsonb NOT NULL DEFAULT '{}'::jsonb;
 
   CREATE TABLE IF NOT EXISTS public.user_activity (
     kakao_id text PRIMARY KEY REFERENCES public.users(kakao_id) ON DELETE CASCADE,
@@ -111,6 +116,10 @@ const initializeSqlite = async () => {
 
   sqliteDatabase = new DatabaseSync(path.join(dataDirectory, 'game.db'));
   sqliteDatabase.exec(sqliteSchema);
+  const gameSaveColumns = sqliteDatabase.prepare('PRAGMA table_info(game_saves)').all();
+  if (!gameSaveColumns.some((column) => column.name === 'cosmetics')) {
+    sqliteDatabase.exec("ALTER TABLE game_saves ADD COLUMN cosmetics TEXT NOT NULL DEFAULT '{}'");
+  }
   sqliteStatements = {
     upsertUser: sqliteDatabase.prepare(`
       INSERT INTO users (kakao_id, nickname, profile_image)
@@ -142,6 +151,7 @@ const initializeSqlite = async () => {
         game_saves.selected_poop_id AS selectedPoopId,
         game_saves.poop_levels AS poopLevels,
         game_saves.item_levels AS itemLevels,
+        game_saves.cosmetics AS cosmetics,
         scores.updated_at AS updatedAt
       FROM scores
       JOIN users ON users.kakao_id = scores.kakao_id
@@ -156,20 +166,22 @@ const initializeSqlite = async () => {
         poop_levels AS poopLevels,
         selected_poop_id AS selectedPoopId,
         item_levels AS itemLevels,
+        cosmetics,
         updated_at AS updatedAt
       FROM game_saves
       WHERE kakao_id = ?
     `),
     upsertGameSave: sqliteDatabase.prepare(`
       INSERT INTO game_saves (
-        kakao_id, gold, toilet_level, poop_levels, selected_poop_id, item_levels
-      ) VALUES (?, ?, ?, ?, ?, ?)
+        kakao_id, gold, toilet_level, poop_levels, selected_poop_id, item_levels, cosmetics
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(kakao_id) DO UPDATE SET
         gold = excluded.gold,
         toilet_level = excluded.toilet_level,
         poop_levels = excluded.poop_levels,
         selected_poop_id = excluded.selected_poop_id,
         item_levels = excluded.item_levels,
+        cosmetics = excluded.cosmetics,
         updated_at = CURRENT_TIMESTAMP
     `),
     recordActivity: sqliteDatabase.prepare(`
@@ -238,6 +250,12 @@ const parseJsonArray = (value) => {
   return JSON.parse(value);
 };
 
+const parseJsonObject = (value) => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value;
+  if (!value) return {};
+  return JSON.parse(value);
+};
+
 const normalizePostgresRow = (row) => ({
   id: row.id,
   nickname: row.nickname,
@@ -249,6 +267,7 @@ const normalizePostgresRow = (row) => ({
   selectedPoopId: row.selectedpoopid ?? row.selectedPoopId ?? 0,
   poopLevels: parseJsonArray(row.pooplevels ?? row.poopLevels),
   itemLevels: parseJsonArray(row.itemlevels ?? row.itemLevels),
+  cosmetics: parseJsonObject(row.cosmetics),
   updatedAt: row.updatedat ?? row.updatedAt,
 });
 
@@ -332,6 +351,7 @@ export const getRanking = async (limit = 50) => {
         game_saves.selected_poop_id AS "selectedPoopId",
         game_saves.poop_levels AS "poopLevels",
         game_saves.item_levels AS "itemLevels",
+        game_saves.cosmetics AS cosmetics,
         scores.updated_at AS "updatedAt"
       FROM public.scores
       JOIN public.users ON users.kakao_id = scores.kakao_id
@@ -347,6 +367,7 @@ export const getRanking = async (limit = 50) => {
     selectedPoopId: row.selectedPoopId ?? 0,
     poopLevels: parseJsonArray(row.poopLevels),
     itemLevels: parseJsonArray(row.itemLevels),
+    cosmetics: parseJsonObject(row.cosmetics),
   }));
 };
 
@@ -359,6 +380,7 @@ export const getGameSave = async (kakaoId) => {
         poop_levels AS "poopLevels",
         selected_poop_id AS "selectedPoopId",
         item_levels AS "itemLevels",
+        cosmetics,
         updated_at AS "updatedAt"
       FROM public.game_saves
       WHERE kakao_id = $1
@@ -373,6 +395,7 @@ export const getGameSave = async (kakaoId) => {
     ...row,
     poopLevels: parseJsonArray(row.poopLevels),
     itemLevels: parseJsonArray(row.itemLevels),
+    cosmetics: parseJsonObject(row.cosmetics),
   };
 };
 
@@ -380,14 +403,15 @@ export const saveGame = async (kakaoId, save) => {
   if (postgresPool) {
     await postgresPool.query(`
       INSERT INTO public.game_saves (
-        kakao_id, gold, toilet_level, poop_levels, selected_poop_id, item_levels
-      ) VALUES ($1, $2, $3, $4::jsonb, $5, $6::jsonb)
+        kakao_id, gold, toilet_level, poop_levels, selected_poop_id, item_levels, cosmetics
+      ) VALUES ($1, $2, $3, $4::jsonb, $5, $6::jsonb, $7::jsonb)
       ON CONFLICT(kakao_id) DO UPDATE SET
         gold = excluded.gold,
         toilet_level = excluded.toilet_level,
         poop_levels = excluded.poop_levels,
         selected_poop_id = excluded.selected_poop_id,
         item_levels = excluded.item_levels,
+        cosmetics = excluded.cosmetics,
         updated_at = now()
     `, [
       kakaoId,
@@ -396,6 +420,7 @@ export const saveGame = async (kakaoId, save) => {
       JSON.stringify(save.poopLevels),
       save.selectedPoopId,
       JSON.stringify(save.itemLevels),
+      JSON.stringify(save.cosmetics),
     ]);
     return;
   }
@@ -407,6 +432,7 @@ export const saveGame = async (kakaoId, save) => {
     JSON.stringify(save.poopLevels),
     save.selectedPoopId,
     JSON.stringify(save.itemLevels),
+    JSON.stringify(save.cosmetics),
   );
 };
 

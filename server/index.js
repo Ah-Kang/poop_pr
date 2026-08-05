@@ -260,6 +260,16 @@ const normalizeLevelArray = (value, maxLength) => {
   return normalized.some((level) => level === null) ? null : normalized;
 };
 
+const normalizeCosmetics = (value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+
+  return {
+    hat: typeof value.hat === 'string' ? value.hat.slice(0, 40) : 'none',
+    aura: typeof value.aura === 'string' ? value.aura.slice(0, 40) : 'none',
+    title: typeof value.title === 'string' ? value.title.slice(0, 40) : 'none',
+  };
+};
+
 app.get('/api/game-save', requireUser, async (request, response) => {
   try {
     return response.json({ save: await getGameSave(request.authUser.id) });
@@ -276,6 +286,7 @@ app.post('/api/game-save', requireUser, async (request, response) => {
     poopLevels: normalizeLevelArray(request.body.poopLevels, 20),
     selectedPoopId: normalizeScoreNumber(request.body.selectedPoopId, 100),
     itemLevels: normalizeLevelArray(request.body.itemLevels, 20),
+    cosmetics: normalizeCosmetics(request.body.cosmetics),
   };
   if (Object.values(save).some((value) => value === null)) {
     return response.status(400).json({ error: 'invalid_game_save' });
