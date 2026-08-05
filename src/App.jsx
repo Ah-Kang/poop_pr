@@ -384,6 +384,7 @@ const App = () => {
   const [authUser, setAuthUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isRankingOpen, setIsRankingOpen] = useState(false);
+  const [selectedRankingUser, setSelectedRankingUser] = useState(null);
   const [rankings, setRankings] = useState([]);
   const [isRankingLoading, setIsRankingLoading] = useState(false);
   const [cloudSaveStatus, setCloudSaveStatus] = useState('idle');
@@ -625,6 +626,7 @@ const App = () => {
 
   const handleRankingOpen = async () => {
     setIsRankingOpen(true);
+    setSelectedRankingUser(null);
     setIsRankingLoading(true);
     try {
       const response = await fetch('/api/ranking');
@@ -1248,14 +1250,20 @@ const App = () => {
       </div>
 
       {isRankingOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setIsRankingOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => {
+          setIsRankingOpen(false);
+          setSelectedRankingUser(null);
+        }}>
           <div className="w-full max-w-sm overflow-hidden rounded-[1.75rem] border-[3px] border-amber-950 bg-[#fff8e8] shadow-[0_8px_0_#78350f,0_18px_40px_rgba(0,0,0,0.4)]" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between border-b-[3px] border-amber-950 bg-gradient-to-b from-yellow-300 to-amber-400 px-4 py-3">
               <div>
                 <h2 className="text-lg font-black text-amber-950">🏆 전체 랭킹</h2>
-                <p className="text-[10px] font-bold text-amber-900">현재 보유 영양분 기준</p>
+                <p className="text-[10px] font-bold text-amber-900">카드를 누르면 화장실을 구경할 수 있어요</p>
               </div>
-              <button type="button" onClick={() => setIsRankingOpen(false)} className="rounded-xl border-2 border-amber-950 bg-white/80 px-2.5 py-1 text-lg font-black text-amber-950 shadow-[0_3px_0_#78350f]">✕</button>
+              <button type="button" onClick={() => {
+                setIsRankingOpen(false);
+                setSelectedRankingUser(null);
+              }} className="rounded-xl border-2 border-amber-950 bg-white/80 px-2.5 py-1 text-lg font-black text-amber-950 shadow-[0_3px_0_#78350f]">✕</button>
             </div>
             <div className="max-h-[55vh] space-y-2 overflow-y-auto p-3">
               {isRankingLoading ? (
@@ -1269,7 +1277,12 @@ const App = () => {
                 const ownedItems = cleaningItems.filter((item) => (entry.itemLevels?.[item.id] ?? 0) > 0);
 
                 return (
-                  <div key={entry.id} className={`rounded-2xl border-2 px-3 py-2 ${entry.id === authUser?.id ? 'border-amber-500 bg-yellow-100' : 'border-amber-900/20 bg-white'}`}>
+                  <button
+                    key={entry.id}
+                    type="button"
+                    onClick={() => setSelectedRankingUser(entry)}
+                    className={`w-full rounded-2xl border-2 px-3 py-2 text-left transition-transform active:scale-[0.99] ${entry.id === authUser?.id ? 'border-amber-500 bg-yellow-100' : 'border-amber-900/20 bg-white'}`}
+                  >
                     <div className="flex items-center gap-2">
                       <span className="w-7 shrink-0 text-center text-base font-black text-amber-900">{index < 3 ? ['🥇', '🥈', '🥉'][index] : index + 1}</span>
                       {entry.profileImage ? <img src={entry.profileImage} alt="" className="h-9 w-9 rounded-full border-2 border-amber-800 object-cover" /> : <span className="grid h-9 w-9 place-items-center rounded-full bg-amber-200">👤</span>}
@@ -1298,11 +1311,111 @@ const App = () => {
                         </span>
                       )) : <span className="text-[8px] font-bold text-slate-400">보유 장비 없음</span>}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           </div>
+
+          {selectedRankingUser && (() => {
+            const profilePoop = poopCharacters[selectedRankingUser.selectedPoopId] ?? poopCharacters[0];
+            const profilePoopLevel = selectedRankingUser.poopLevels?.[profilePoop.id] ?? selectedRankingUser.poopLevel ?? 1;
+            const profileToilet = toilets[selectedRankingUser.toiletLevel] ?? toilets[0];
+            const profileItems = cleaningItems.filter((item) => (selectedRankingUser.itemLevels?.[item.id] ?? 0) > 0);
+
+            return (
+              <div
+                className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
+                onClick={() => setSelectedRankingUser(null)}
+              >
+                <div
+                  className="max-h-[86vh] w-full max-w-sm overflow-hidden rounded-[1.75rem] border-[3px] border-cyan-950 bg-[#fff8e8] text-slate-900 shadow-[0_8px_0_#083344,0_18px_40px_rgba(0,0,0,0.45)]"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div
+                    className="relative min-h-56 overflow-hidden border-b-[3px] border-cyan-950 p-4"
+                    style={{
+                      backgroundImage: profileToilet.image ? `url(${profileToilet.image})` : undefined,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-black/45" />
+                    <div className="relative z-10 flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2 rounded-2xl bg-white/90 px-3 py-2 shadow-lg">
+                        {selectedRankingUser.profileImage ? (
+                          <img src={selectedRankingUser.profileImage} alt="" className="h-9 w-9 rounded-full border-2 border-amber-900 object-cover" />
+                        ) : (
+                          <span className="grid h-9 w-9 place-items-center rounded-full bg-amber-200 text-sm">👤</span>
+                        )}
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-black">{selectedRankingUser.nickname}</p>
+                          <p className="text-[10px] font-bold text-slate-500">대표 화장실</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRankingUser(null)}
+                        className="rounded-xl border-2 border-cyan-950 bg-white/90 px-2.5 py-1 text-lg font-black text-cyan-950 shadow-[0_3px_0_#083344]"
+                        aria-label="유저 쇼룸 닫기"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="relative z-10 mt-8 flex flex-col items-center">
+                      <img
+                        src={profilePoop.image}
+                        alt={profilePoop.name}
+                        className="h-32 w-32 object-contain drop-shadow-[0_12px_18px_rgba(0,0,0,0.45)]"
+                        draggable="false"
+                      />
+                      <span className="mt-2 rounded-full border-2 border-amber-950 bg-amber-300 px-3 py-1 text-xs font-black text-amber-950 shadow-[0_3px_0_#78350f]">
+                        {profilePoop.badge} {profilePoop.name} Lv.{profilePoopLevel}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="max-h-[42vh] overflow-y-auto p-4">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-2xl bg-cyan-100 px-3 py-2">
+                        <p className="text-[10px] font-black text-cyan-800">영양분</p>
+                        <p className="mt-1 text-base font-black">{formatNumber(selectedRankingUser.gold)}</p>
+                      </div>
+                      <div className="rounded-2xl bg-lime-100 px-3 py-2">
+                        <p className="text-[10px] font-black text-lime-800">초당 생산량</p>
+                        <p className="mt-1 text-base font-black">+{formatNumber(selectedRankingUser.dps)}/초</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 rounded-2xl border-2 border-orange-200 bg-orange-50 p-3">
+                      <p className="text-[10px] font-black text-orange-800">화장실</p>
+                      <p className="mt-1 text-sm font-black">{profileToilet.name}</p>
+                      <p className="mt-0.5 text-xs font-bold text-orange-700">변기 보너스 +{formatNumber(profileToilet.dpsBonus)}/초</p>
+                    </div>
+
+                    <div className="mt-3 rounded-2xl border-2 border-teal-200 bg-teal-50 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[10px] font-black text-teal-800">장착 장비</p>
+                        <p className="text-[10px] font-bold text-teal-700">{profileItems.length}종 보유</p>
+                      </div>
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        {profileItems.length > 0 ? profileItems.map((item) => (
+                          <div key={item.id} className="flex flex-col items-center rounded-xl bg-white px-2 py-2">
+                            <img src={item.icon} alt="" className="h-10 w-10 object-contain" />
+                            <p className="mt-1 max-w-full truncate text-[9px] font-black text-slate-700">{item.name}</p>
+                            <p className="text-[9px] font-bold text-teal-700">Lv.{selectedRankingUser.itemLevels[item.id]}</p>
+                          </div>
+                        )) : (
+                          <p className="col-span-3 py-4 text-center text-xs font-bold text-slate-400">아직 전시할 장비가 없어요.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
