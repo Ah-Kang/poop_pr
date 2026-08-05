@@ -1555,27 +1555,27 @@ const App = () => {
       </div>
 
       {/* ==================== 하단: 성장 상점 버튼 ==================== */}
-      <div className="relative z-30 grid w-full shrink-0 grid-cols-3 gap-2 pb-2">
+      <div className="relative z-30 grid w-full shrink-0 grid-cols-3 gap-2">
         <button
           onClick={() => {
             setPoopShopTab('upgrade');
             setIsPoopShopOpen(true);
           }}
-          className="flex min-h-[66px] flex-col items-center justify-center rounded-[1.35rem] border-[3px] border-amber-700 bg-gradient-to-b from-yellow-300 via-amber-300 to-amber-500 px-2 py-2 text-[11px] font-black text-amber-950 shadow-[0_7px_0_#92400e,0_11px_18px_rgba(0,0,0,0.28)] transition-all hover:brightness-105 active:translate-y-1 active:shadow-[0_2px_0_#92400e]"
+          className="flex min-h-[62px] flex-col items-center justify-center rounded-[1.35rem] border-[3px] border-amber-700 bg-gradient-to-b from-yellow-300 via-amber-300 to-amber-500 px-2 py-1.5 text-[11px] font-black text-amber-950 shadow-[0_6px_0_#92400e,0_10px_16px_rgba(0,0,0,0.26)] transition-all hover:brightness-105 active:translate-y-1 active:shadow-[0_2px_0_#92400e]"
         >
           <span className="text-2xl drop-shadow-sm" aria-hidden="true">💩</span>
           <span className="mt-0.5">똥 강화</span>
         </button>
         <button
           onClick={() => setIsItemShopOpen(true)}
-          className="flex min-h-[66px] flex-col items-center justify-center rounded-[1.35rem] border-[3px] border-teal-800 bg-gradient-to-b from-cyan-300 via-teal-300 to-teal-500 px-2 py-2 text-[11px] font-black text-teal-950 shadow-[0_7px_0_#115e59,0_11px_18px_rgba(0,0,0,0.28)] transition-all hover:brightness-105 active:translate-y-1 active:shadow-[0_2px_0_#115e59]"
+          className="flex min-h-[62px] flex-col items-center justify-center rounded-[1.35rem] border-[3px] border-teal-800 bg-gradient-to-b from-cyan-300 via-teal-300 to-teal-500 px-2 py-1.5 text-[11px] font-black text-teal-950 shadow-[0_6px_0_#115e59,0_10px_16px_rgba(0,0,0,0.26)] transition-all hover:brightness-105 active:translate-y-1 active:shadow-[0_2px_0_#115e59]"
         >
           <span className="text-2xl drop-shadow-sm" aria-hidden="true">🧹</span>
           <span className="mt-0.5">청소 장비</span>
         </button>
         <button
           onClick={() => setIsShopOpen(true)}
-          className="flex min-h-[66px] flex-col items-center justify-center rounded-[1.35rem] border-[3px] border-orange-800 bg-gradient-to-b from-orange-300 via-orange-300 to-red-400 px-2 py-2 text-[11px] font-black text-red-950 shadow-[0_7px_0_#9a3412,0_11px_18px_rgba(0,0,0,0.28)] transition-all hover:brightness-105 active:translate-y-1 active:shadow-[0_2px_0_#9a3412]"
+          className="flex min-h-[62px] flex-col items-center justify-center rounded-[1.35rem] border-[3px] border-orange-800 bg-gradient-to-b from-orange-300 via-orange-300 to-red-400 px-2 py-1.5 text-[11px] font-black text-red-950 shadow-[0_6px_0_#9a3412,0_10px_16px_rgba(0,0,0,0.26)] transition-all hover:brightness-105 active:translate-y-1 active:shadow-[0_2px_0_#9a3412]"
         >
           <span className="text-2xl drop-shadow-sm" aria-hidden="true">🚽</span>
           <span className="mt-0.5">화장실 매입</span>

@@ -25,5 +25,5 @@ body {
   height: 100dvh;
   transform: translateX(-50%);
   padding-top: calc(env(safe-area-inset-top) + 0.75rem);
-  padding-bottom: calc(env(safe-area-inset-bottom) + 0.85rem);
+  padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
 }
