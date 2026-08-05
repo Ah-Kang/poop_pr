@@ -103,6 +103,7 @@ const cleanerEventMaxDelay = 90000;
 const cleanerEventMinGold = 5000;
 const itemUnlockRequiredLevel = 15;
 const developerGoldAmount = 999999999999;
+const activeClickDpsBonusRate = 0.18;
 const getRandomCleanerDelay = () =>
   Math.floor(
     cleanerEventMinDelay + Math.random() * (cleanerEventMaxDelay - cleanerEventMinDelay)
@@ -477,8 +478,10 @@ const App = () => {
   const nextPoop = poopCharacters[currentPoop.id + 1] ?? null;
   const canEvolvePoop = Boolean(nextPoop && (poopLevels[nextPoop.id] ?? 0) === 0 && poopLevel >= currentPoop.evolutionLevel);
   const poopUpgradePrice = getPoopUpgradePrice(currentPoop, poopLevel);
-  const { clickPower, dps: characterDps } = getPoopStats(currentPoop, poopLevel);
+  const { clickPower: baseClickPower, dps: characterDps } = getPoopStats(currentPoop, poopLevel);
   const dps = toiletDps + characterDps + itemDps;
+  const activeClickBonus = Math.floor(dps * activeClickDpsBonusRate);
+  const clickPower = baseClickPower + activeClickBonus;
   const scoreRef = useRef({ gold, dps, toiletLevel: currentToiletLevel, poopLevel });
   const gameSaveRef = useRef({
     gold,
@@ -1372,7 +1375,7 @@ const App = () => {
                 </span>
               </div>
               <div className="mt-2 flex items-center justify-between gap-2 text-xs text-slate-500">
-                <span>자동 +{formatNumber(characterDps)}/초</span>
+                <span>기본 클릭 +{formatNumber(baseClickPower)} · 자동 보너스 +{formatNumber(activeClickBonus)}</span>
                 <span>
                   {nextPoop
                     ? canEvolvePoop
@@ -1406,6 +1409,11 @@ const App = () => {
                       <span className="rounded bg-sky-50 px-2 py-1 text-sky-700">클릭 +{formatNumber(clickPower)}</span>
                       <span className="rounded bg-emerald-50 px-2 py-1 text-emerald-700">자동 +{formatNumber(characterDps)}/초</span>
                     </div>
+                    {activeClickBonus > 0 && (
+                      <p className="mt-2 text-[11px] font-bold text-slate-500">
+                        직접 클릭 보정: 자동 생산량의 {Math.round(activeClickDpsBonusRate * 100)}%가 클릭에 추가돼요.
+                      </p>
+                    )}
                   </div>
                 </div>
 
