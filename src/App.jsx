@@ -968,10 +968,10 @@ const App = () => {
   return (
     <div
       className={`
-        min-h-[100svh] h-[100svh] w-full max-w-[440px] mx-auto
+        min-h-[100dvh] h-[100dvh] w-full max-w-[440px] mx-auto
         bg-gradient-to-b ${currentBgGradient}
         relative flex flex-col items-center justify-between
-        p-3 transition-all duration-500 ease-in-out
+        px-3 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] transition-all duration-500 ease-in-out
         overflow-hidden
       `}
       style={{
