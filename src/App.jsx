@@ -105,7 +105,10 @@ const cleanerEventMinGold = 5000;
 const itemUnlockRequiredLevel = 15;
 const developerGoldAmount = 999999999999;
 const developerModeTapWindow = 1000;
-const activeClickDpsBonusRate = 0.18;
+const poopEvolutionLevel = 100;
+const poopUpgradeBasePrice = 20;
+const poopUpgradeGrowth = 1.04;
+const activeClickDpsBonusRate = 0.05;
 const appVersion = packageJson.version;
 const defaultCosmetics = {
   hat: 'none',
@@ -119,12 +122,12 @@ const getRandomCleanerDelay = () =>
 
 // 똥 캐릭터 진화 단계: 각 똥은 자기 레벨 1부터 성장하고, 진화 레벨에 도달하면 다음 똥이 해금
 const poopCharacters = [
-  { id: 0, name: '물똥', badge: '💧', legacyRequiredLevel: 1, evolutionLevel: 100, upgradeBasePrice: 20, upgradeGrowth: 1.2, baseClickPower: 1, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-sky-300 to-blue-600', image: waterPoopImage, description: '아직 힘이 없는 촉촉한 초보 똥' },
-  { id: 1, name: '말랑똥', badge: '🫧', legacyRequiredLevel: 10, evolutionLevel: 100, upgradeBasePrice: 110, upgradeGrowth: 1.18, baseClickPower: 12, baseDps: 2, clickGrowth: 2, dpsGrowth: 1, gradient: 'from-cyan-300 to-teal-500', image: softPoopImage, description: '형태를 갖추기 시작한 말랑한 똥' },
-  { id: 2, name: '건강똥', badge: '🌿', legacyRequiredLevel: 25, evolutionLevel: 100, upgradeBasePrice: 1100, upgradeGrowth: 1.17, baseClickPower: 45, baseDps: 10, clickGrowth: 4, dpsGrowth: 2, gradient: 'from-lime-300 to-emerald-600', image: healthyPoopImage, description: '균형 잡힌 영양으로 단단해진 똥' },
-  { id: 3, name: '불꽃똥', badge: '🔥', legacyRequiredLevel: 50, evolutionLevel: 100, upgradeBasePrice: 14000, upgradeGrowth: 1.16, baseClickPower: 180, baseDps: 45, clickGrowth: 8, dpsGrowth: 5, gradient: 'from-orange-400 to-red-600', image: firePoopImage, description: '뜨거운 생산력을 뿜어내는 똥' },
-  { id: 4, name: '다이아똥', badge: '💎', legacyRequiredLevel: 80, evolutionLevel: 100, upgradeBasePrice: 180000, upgradeGrowth: 1.15, baseClickPower: 520, baseDps: 160, clickGrowth: 18, dpsGrowth: 12, gradient: 'from-cyan-300 to-violet-600', image: diamondPoopImage, description: '보석처럼 단단하고 희귀한 똥' },
-  { id: 5, name: '황금똥', badge: '👑', legacyRequiredLevel: 120, evolutionLevel: null, upgradeBasePrice: 2500000, upgradeGrowth: 1.14, baseClickPower: 1400, baseDps: 600, clickGrowth: 40, dpsGrowth: 28, gradient: 'from-yellow-300 to-amber-600', image: goldPoopImage, description: '모든 변기가 꿈꾸는 전설의 황금똥' },
+  { id: 0, name: '물똥', badge: '💧', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 1, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-sky-300 to-blue-600', image: waterPoopImage, description: '아직 힘이 없는 촉촉한 초보 똥' },
+  { id: 1, name: '말랑똥', badge: '🫧', legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 12, baseDps: 2, clickGrowth: 2, dpsGrowth: 1, gradient: 'from-cyan-300 to-teal-500', image: softPoopImage, description: '형태를 갖추기 시작한 말랑한 똥' },
+  { id: 2, name: '건강똥', badge: '🌿', legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 45, baseDps: 10, clickGrowth: 4, dpsGrowth: 2, gradient: 'from-lime-300 to-emerald-600', image: healthyPoopImage, description: '균형 잡힌 영양으로 단단해진 똥' },
+  { id: 3, name: '불꽃똥', badge: '🔥', legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 180, baseDps: 45, clickGrowth: 8, dpsGrowth: 5, gradient: 'from-orange-400 to-red-600', image: firePoopImage, description: '뜨거운 생산력을 뿜어내는 똥' },
+  { id: 4, name: '다이아똥', badge: '💎', legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 520, baseDps: 160, clickGrowth: 18, dpsGrowth: 12, gradient: 'from-cyan-300 to-violet-600', image: diamondPoopImage, description: '보석처럼 단단하고 희귀한 똥' },
+  { id: 5, name: '황금똥', badge: '👑', legacyRequiredLevel: 120, evolutionLevel: null, baseClickPower: 1400, baseDps: 600, clickGrowth: 40, dpsGrowth: 28, gradient: 'from-yellow-300 to-amber-600', image: goldPoopImage, description: '모든 변기가 꿈꾸는 전설의 황금똥' },
 ];
 const initialPoopLevels = poopCharacters.map((_, index) => index === 0 ? 1 : 0);
 const initialGameSave = {
@@ -141,8 +144,10 @@ const initialScore = {
   toiletLevel: 0,
   poopLevel: 1,
 };
+const getPoopUpgradeIndex = (poop, level) =>
+  (poop.id * poopEvolutionLevel) + Math.max(0, level - 1);
 const getPoopUpgradePrice = (poop, level) =>
-  Math.ceil(poop.upgradeBasePrice * Math.pow(poop.upgradeGrowth, level - 1));
+  Math.ceil(poopUpgradeBasePrice * Math.pow(poopUpgradeGrowth, getPoopUpgradeIndex(poop, level)));
 const getPoopStats = (poop, level) => {
   const stageLevel = Math.max(0, level - 1);
 
