@@ -18,6 +18,7 @@ import toiletBrushIcon from './assets/cleaning-items/toilet-brush.png';
 import cleanerSprayIcon from './assets/cleaning-items/cleaner-spray.png';
 import bidetIcon from './assets/cleaning-items/bidet.png';
 import cleaningRobotIcon from './assets/cleaning-items/cleaning-robot.png';
+import packageJson from '../package.json';
 
 // ==================== 화장실 데이터 배열 ====================
 // 각 화장실의 정보: 이름, 가격, dps 보너스, 배경색
@@ -104,6 +105,7 @@ const cleanerEventMinGold = 5000;
 const itemUnlockRequiredLevel = 15;
 const developerGoldAmount = 999999999999;
 const activeClickDpsBonusRate = 0.18;
+const appVersion = packageJson.version;
 const getRandomCleanerDelay = () =>
   Math.floor(
     cleanerEventMinDelay + Math.random() * (cleanerEventMaxDelay - cleanerEventMinDelay)
@@ -1313,7 +1315,12 @@ const App = () => {
             className="w-full max-w-xs rounded-[1.75rem] border-[3px] border-cyan-950 bg-[#fff8e8] p-5 text-gray-900 shadow-[0_8px_0_#083344,0_18px_40px_rgba(0,0,0,0.4)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 className="text-lg font-black">게임 초기화</h2>
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-lg font-black">게임 초기화</h2>
+              <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-black text-white">
+                v{appVersion}
+              </span>
+            </div>
             <p className="mt-2 text-sm font-semibold text-gray-600">
               저장된 영양분, 똥 레벨, 장비, 화장실을 모두 처음으로 되돌릴까요?
             </p>
