@@ -1375,6 +1375,25 @@ const App = () => {
     ? Math.min(100, (poopLevel / currentPoop.evolutionLevel) * 100)
     : 100;
 
+  useEffect(() => {
+    const backgroundValue = currentBgImage ? `url(${currentBgImage})` : 'none';
+    document.documentElement.style.setProperty('--game-background-image', backgroundValue);
+    document.body.style.setProperty('--game-background-image', backgroundValue);
+    document.body.style.backgroundImage = backgroundValue;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center';
+    document.body.style.backgroundRepeat = 'no-repeat';
+
+    return () => {
+      document.documentElement.style.removeProperty('--game-background-image');
+      document.body.style.removeProperty('--game-background-image');
+      document.body.style.removeProperty('background-image');
+      document.body.style.removeProperty('background-size');
+      document.body.style.removeProperty('background-position');
+      document.body.style.removeProperty('background-repeat');
+    };
+  }, [currentBgImage]);
+
   // ==================== JSX 렌더링 ====================
   return (
     <div
