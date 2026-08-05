@@ -987,11 +987,11 @@ const App = () => {
   return (
     <div
       className={`
-        min-h-[calc(100dvh+env(safe-area-inset-bottom))] h-[calc(100dvh+env(safe-area-inset-bottom))] w-full max-w-[440px] mx-auto
+        fixed inset-0 w-full max-w-[440px] mx-auto
         bg-gradient-to-b ${currentBgGradient}
-        relative flex flex-col items-center justify-between
+        flex flex-col items-center justify-between
         px-3 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] transition-all duration-500 ease-in-out
-        overflow-hidden
+        overflow-hidden overscroll-none
       `}
       style={{
         backgroundImage: currentBgImage
