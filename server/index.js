@@ -266,7 +266,7 @@ const normalizeCosmetics = (value) => {
   return {
     hat: typeof value.hat === 'string' ? value.hat.slice(0, 40) : 'none',
     aura: typeof value.aura === 'string' ? value.aura.slice(0, 40) : 'none',
-    title: typeof value.title === 'string' ? value.title.slice(0, 40) : 'none',
+    titleText: typeof value.titleText === 'string' ? value.titleText.slice(0, 12) : '',
   };
 };
 

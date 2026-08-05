@@ -109,7 +109,7 @@ const appVersion = packageJson.version;
 const defaultCosmetics = {
   hat: 'none',
   aura: 'none',
-  title: 'none',
+  titleText: '',
 };
 const getRandomCleanerDelay = () =>
   Math.floor(
@@ -155,7 +155,11 @@ const getHighestUnlockedPoopId = (levels) =>
 const normalizeCosmetics = (value) => ({
   hat: typeof value?.hat === 'string' ? value.hat : defaultCosmetics.hat,
   aura: typeof value?.aura === 'string' ? value.aura : defaultCosmetics.aura,
-  title: typeof value?.title === 'string' ? value.title : defaultCosmetics.title,
+  titleText: typeof value?.titleText === 'string'
+    ? value.titleText
+    : typeof value?.title === 'string' && value.title !== 'none'
+    ? value.title
+    : defaultCosmetics.titleText,
 });
 const getSavedPoopLevels = (parsed) => {
   if (Array.isArray(parsed.poopLevels)) {
@@ -440,6 +444,9 @@ const App = () => {
 
   // 똥 캐릭터 진화 상점 팝업창의 열림/닫힘 상태
   const [isPoopShopOpen, setIsPoopShopOpen] = useState(false);
+
+  // 똥 강화 모달 상단 탭
+  const [poopShopTab, setPoopShopTab] = useState('upgrade');
   
   // 클릭 애니메이션 트리거 (팝핑 효과)
   const [isClicking, setIsClicking] = useState(false);
@@ -529,10 +536,6 @@ const App = () => {
       { id: 'diamond', name: '다이아 빛', icon: '💎', requirement: '다이아똥 해금', unlocked: (poopLevels[4] ?? 0) > 0 },
     ],
     title: [
-      { id: 'none', name: '없음', icon: '', requirement: '기본', unlocked: true },
-      { id: 'beginner_king', name: '초보 변기왕', icon: '🏅', requirement: '기본 지급', unlocked: true },
-      { id: 'cleaner_master', name: '성실한 청소부', icon: '🧽', requirement: '장비 총 Lv.20', unlocked: totalItemLevels >= 20 },
-      { id: 'gold_ruler', name: '황금의 지배자', icon: '👑', requirement: '황금똥 해금', unlocked: (poopLevels[5] ?? 0) > 0 },
     ],
   };
   const getCosmeticOption = (slot, id) =>
@@ -555,7 +558,7 @@ const App = () => {
     const normalizedCosmetics = normalizeCosmetics(cosmeticState);
     const hat = getCosmeticOption('hat', normalizedCosmetics.hat);
     const aura = getCosmeticOption('aura', normalizedCosmetics.aura);
-    const title = getCosmeticOption('title', normalizedCosmetics.title);
+    const titleText = normalizedCosmetics.titleText.trim();
 
     return (
       <>
@@ -583,9 +586,9 @@ const App = () => {
         <span className={badgeClassName} aria-hidden="true">
           {poop.badge}
         </span>
-        {showTitle && title?.id !== 'none' && (
+        {showTitle && titleText && (
           <span className="absolute -bottom-4 left-1/2 max-w-44 -translate-x-1/2 truncate rounded-full border-2 border-amber-950 bg-white/90 px-3 py-1 text-[10px] font-black text-amber-950 shadow-[0_2px_0_#78350f]">
-            {title.icon} {title.name} · Lv.{level}
+            🏷️ {titleText} · Lv.{level}
           </span>
         )}
       </>
@@ -1160,9 +1163,9 @@ const App = () => {
                     {cloudSaveStatus === 'saved' && '☁️ 저장됨'}
                     {cloudSaveStatus === 'error' && '⚠️ 저장 실패'}
                   </p>
-                  {getCosmeticOption('title', cosmetics.title)?.id !== 'none' && (
+                  {cosmetics.titleText?.trim() && (
                     <p className="truncate text-[8px] font-black text-amber-700">
-                      {getCosmeticOption('title', cosmetics.title).icon} {getCosmeticOption('title', cosmetics.title).name}
+                      🏷️ {cosmetics.titleText.trim()}
                     </p>
                   )}
                 </div>
@@ -1374,7 +1377,10 @@ const App = () => {
       {/* ==================== 하단: 성장 상점 버튼 ==================== */}
       <div className="relative z-30 grid w-full shrink-0 grid-cols-3 gap-2 pb-[calc(env(safe-area-inset-bottom)+0.45rem)]">
         <button
-          onClick={() => setIsPoopShopOpen(true)}
+          onClick={() => {
+            setPoopShopTab('upgrade');
+            setIsPoopShopOpen(true);
+          }}
           className="flex min-h-[66px] flex-col items-center justify-center rounded-[1.35rem] border-[3px] border-amber-700 bg-gradient-to-b from-yellow-300 via-amber-300 to-amber-500 px-2 py-2 text-[11px] font-black text-amber-950 shadow-[0_7px_0_#92400e,0_11px_18px_rgba(0,0,0,0.28)] transition-all hover:brightness-105 active:translate-y-1 active:shadow-[0_2px_0_#92400e]"
         >
           <span className="text-2xl drop-shadow-sm" aria-hidden="true">💩</span>
@@ -1423,8 +1429,8 @@ const App = () => {
                 const rankingToilet = toilets[entry.toiletLevel] ?? toilets[0];
                 const ownedItems = cleaningItems.filter((item) => (entry.itemLevels?.[item.id] ?? 0) > 0);
                 const rankingCosmetics = normalizeCosmetics(entry.cosmetics);
-                const rankingTitle = getCosmeticOption('title', rankingCosmetics.title);
                 const rankingHat = getCosmeticOption('hat', rankingCosmetics.hat);
+                const rankingTitleText = rankingCosmetics.titleText.trim();
 
                 return (
                   <button
@@ -1439,7 +1445,7 @@ const App = () => {
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-black text-slate-800">{entry.nickname}{entry.id === authUser?.id ? ' (나)' : ''}</p>
                         <p className="truncate text-[9px] font-bold text-slate-500">
-                          {rankingTitle?.id !== 'none' ? `${rankingTitle.icon} ${rankingTitle.name} · ` : ''}초당 +{formatNumber(entry.dps)}
+                          {rankingTitleText ? `🏷️ ${rankingTitleText} · ` : ''}초당 +{formatNumber(entry.dps)}
                         </p>
                       </div>
                       <p className="shrink-0 text-sm font-black text-amber-700">{formatNumber(entry.gold)} 💰</p>
@@ -1478,7 +1484,7 @@ const App = () => {
             const profileToilet = toilets[selectedRankingUser.toiletLevel] ?? toilets[0];
             const profileItems = cleaningItems.filter((item) => (selectedRankingUser.itemLevels?.[item.id] ?? 0) > 0);
             const profileCosmetics = normalizeCosmetics(selectedRankingUser.cosmetics);
-            const profileTitle = getCosmeticOption('title', profileCosmetics.title);
+            const profileTitleText = profileCosmetics.titleText.trim();
 
             return (
               <div
@@ -1508,7 +1514,7 @@ const App = () => {
                         <div className="min-w-0">
                           <p className="truncate text-sm font-black">{selectedRankingUser.nickname}</p>
                           <p className="truncate text-[10px] font-bold text-slate-500">
-                            {profileTitle?.id !== 'none' ? `${profileTitle.icon} ${profileTitle.name}` : '대표 화장실'}
+                            {profileTitleText ? `🏷️ ${profileTitleText}` : '대표 화장실'}
                           </p>
                         </div>
                       </div>
@@ -1651,6 +1657,30 @@ const App = () => {
             </div>
 
             <div className="border-b border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900">
+              <div className="mb-3 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+                <button
+                  type="button"
+                  onClick={() => setPoopShopTab('upgrade')}
+                  className={`rounded-xl px-3 py-2 text-xs font-black transition-all ${
+                    poopShopTab === 'upgrade'
+                      ? 'bg-cyan-500 text-white shadow-[0_3px_0_#155e75]'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  똥 강화
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPoopShopTab('cosmetics')}
+                  className={`rounded-xl px-3 py-2 text-xs font-black transition-all ${
+                    poopShopTab === 'cosmetics'
+                      ? 'bg-teal-500 text-white shadow-[0_3px_0_#115e59]'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  똥 꾸미기
+                </button>
+              </div>
               <div className="flex items-center justify-between gap-3">
                 <span>현재 {currentPoop.badge} {currentPoop.name} Lv.{poopLevel}</span>
                 <span className="shrink-0 rounded bg-amber-400 px-2.5 py-1 text-xs text-slate-950">
@@ -1670,11 +1700,12 @@ const App = () => {
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
+              {poopShopTab === 'cosmetics' && (
               <div className="rounded-2xl border-[3px] border-teal-700 bg-teal-50 p-4 shadow-[0_5px_0_#115e59]">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <h3 className="font-black text-teal-950">🎨 똥 꾸미기</h3>
-                    <p className="mt-0.5 text-xs font-bold text-teal-700">해금한 꾸미기를 장착해 랭킹 쇼룸에 자랑해요</p>
+                    <p className="mt-0.5 text-xs font-bold text-teal-700">꾸민 똥은 랭킹 쇼룸에도 같이 보여요</p>
                   </div>
                   <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
                     {renderPoopAvatar(
@@ -1691,7 +1722,6 @@ const App = () => {
                 {[
                   { slot: 'hat', label: '모자' },
                   { slot: 'aura', label: '오라' },
-                  { slot: 'title', label: '칭호' },
                 ].map(({ slot, label }) => (
                   <div key={slot} className="mt-3">
                     <p className="mb-1.5 text-xs font-black text-teal-900">{label}</p>
@@ -1725,8 +1755,31 @@ const App = () => {
                     </div>
                   </div>
                 ))}
+                <div className="mt-3">
+                  <p className="mb-1.5 text-xs font-black text-teal-900">칭호</p>
+                  <input
+                    type="text"
+                    value={cosmetics.titleText}
+                    onChange={(event) => {
+                      const titleText = event.target.value.slice(0, 12);
+                      setCosmetics((prevCosmetics) => ({
+                        ...prevCosmetics,
+                        titleText,
+                      }));
+                    }}
+                    placeholder="예: 최강 물똥"
+                    className="w-full rounded-xl border-2 border-teal-200 bg-white px-3 py-3 text-sm font-black text-slate-900 outline-none focus:border-teal-600"
+                    maxLength={12}
+                  />
+                  <p className="mt-1 text-[10px] font-bold text-teal-700">
+                    최대 12글자까지 자유롭게 작성할 수 있어요.
+                  </p>
+                </div>
               </div>
+              )}
 
+              {poopShopTab === 'upgrade' && (
+              <>
               <div className="rounded-2xl border-[3px] border-amber-700 bg-amber-50 p-4 shadow-[0_5px_0_#92400e]">
                 <div className="flex items-center gap-3">
                   <div className="relative flex h-20 w-20 shrink-0 items-center justify-center">
@@ -1846,6 +1899,8 @@ const App = () => {
                   </div>
                 );
               })}
+              </>
+              )}
             </div>
           </div>
         </div>
