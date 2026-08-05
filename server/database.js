@@ -19,6 +19,7 @@ const sqliteSchema = `
   CREATE TABLE IF NOT EXISTS users (
     kakao_id TEXT PRIMARY KEY,
     nickname TEXT NOT NULL,
+    display_nickname TEXT,
     profile_image TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -60,10 +61,14 @@ const postgresSchema = `
   CREATE TABLE IF NOT EXISTS public.users (
     kakao_id text PRIMARY KEY,
     nickname text NOT NULL,
+    display_nickname text,
     profile_image text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
   );
+
+  ALTER TABLE public.users
+    ADD COLUMN IF NOT EXISTS display_nickname text;
 
   CREATE TABLE IF NOT EXISTS public.scores (
     kakao_id text PRIMARY KEY REFERENCES public.users(kakao_id) ON DELETE CASCADE,
@@ -116,6 +121,10 @@ const initializeSqlite = async () => {
 
   sqliteDatabase = new DatabaseSync(path.join(dataDirectory, 'game.db'));
   sqliteDatabase.exec(sqliteSchema);
+  const userColumns = sqliteDatabase.prepare('PRAGMA table_info(users)').all();
+  if (!userColumns.some((column) => column.name === 'display_nickname')) {
+    sqliteDatabase.exec('ALTER TABLE users ADD COLUMN display_nickname TEXT');
+  }
   const gameSaveColumns = sqliteDatabase.prepare('PRAGMA table_info(game_saves)').all();
   if (!gameSaveColumns.some((column) => column.name === 'cosmetics')) {
     sqliteDatabase.exec("ALTER TABLE game_saves ADD COLUMN cosmetics TEXT NOT NULL DEFAULT '{}'");
@@ -126,8 +135,14 @@ const initializeSqlite = async () => {
       VALUES (?, ?, ?)
       ON CONFLICT(kakao_id) DO UPDATE SET
         nickname = excluded.nickname,
+        display_nickname = COALESCE(users.display_nickname, excluded.nickname),
         profile_image = excluded.profile_image,
         updated_at = CURRENT_TIMESTAMP
+    `),
+    updateDisplayNickname: sqliteDatabase.prepare(`
+      UPDATE users
+      SET display_nickname = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE kakao_id = ?
     `),
     upsertScore: sqliteDatabase.prepare(`
       INSERT INTO scores (kakao_id, gold, dps, toilet_level, poop_level)
@@ -142,7 +157,7 @@ const initializeSqlite = async () => {
     ranking: sqliteDatabase.prepare(`
       SELECT
         users.kakao_id AS id,
-        users.nickname,
+        COALESCE(users.display_nickname, users.nickname) AS nickname,
         users.profile_image AS profileImage,
         scores.gold,
         scores.dps,
@@ -213,7 +228,8 @@ const initializeSqlite = async () => {
     adminUsers: sqliteDatabase.prepare(`
       SELECT
         users.kakao_id AS id,
-        users.nickname,
+        users.nickname AS kakaoNickname,
+        COALESCE(users.display_nickname, users.nickname) AS displayNickname,
         users.profile_image AS profileImage,
         users.created_at AS createdAt,
         users.updated_at AS updatedAt,
@@ -259,6 +275,8 @@ const parseJsonObject = (value) => {
 const normalizePostgresRow = (row) => ({
   id: row.id,
   nickname: row.nickname,
+  kakaoNickname: row.kakaonickname ?? row.kakaoNickname,
+  displayNickname: row.displaynickname ?? row.displayNickname,
   profileImage: row.profileimage ?? row.profileImage ?? null,
   gold: row.gold,
   dps: row.dps,
@@ -299,18 +317,65 @@ export const closeDatabase = async () => {
 
 export const saveUser = async (user) => {
   if (postgresPool) {
-    await postgresPool.query(`
+    const { rows } = await postgresPool.query(`
       INSERT INTO public.users (kakao_id, nickname, profile_image)
       VALUES ($1, $2, $3)
       ON CONFLICT(kakao_id) DO UPDATE SET
         nickname = excluded.nickname,
+        display_nickname = COALESCE(public.users.display_nickname, excluded.nickname),
         profile_image = excluded.profile_image,
         updated_at = now()
+      RETURNING
+        kakao_id AS id,
+        nickname AS "kakaoNickname",
+        COALESCE(display_nickname, nickname) AS nickname,
+        COALESCE(display_nickname, nickname) AS "displayNickname",
+        profile_image AS "profileImage"
     `, [user.id, user.nickname, user.profileImage]);
-    return;
+    return rows[0];
   }
 
   sqliteStatements.upsertUser.run(user.id, user.nickname, user.profileImage);
+  return sqliteDatabase.prepare(`
+    SELECT
+      kakao_id AS id,
+      nickname AS kakaoNickname,
+      COALESCE(display_nickname, nickname) AS nickname,
+      COALESCE(display_nickname, nickname) AS displayNickname,
+      profile_image AS profileImage
+    FROM users
+    WHERE kakao_id = ?
+  `).get(user.id);
+};
+
+export const updateUserProfile = async (kakaoId, profile) => {
+  if (postgresPool) {
+    const { rows } = await postgresPool.query(`
+      UPDATE public.users
+      SET display_nickname = $2, updated_at = now()
+      WHERE kakao_id = $1
+      RETURNING
+        kakao_id AS id,
+        nickname AS "kakaoNickname",
+        COALESCE(display_nickname, nickname) AS nickname,
+        COALESCE(display_nickname, nickname) AS "displayNickname",
+        profile_image AS "profileImage"
+    `, [kakaoId, profile.displayNickname]);
+    return rows[0] ?? null;
+  }
+
+  sqliteStatements.updateDisplayNickname.run(profile.displayNickname, kakaoId);
+  const row = sqliteDatabase.prepare(`
+    SELECT
+      kakao_id AS id,
+      nickname AS kakaoNickname,
+      COALESCE(display_nickname, nickname) AS nickname,
+      COALESCE(display_nickname, nickname) AS displayNickname,
+      profile_image AS profileImage
+    FROM users
+    WHERE kakao_id = ?
+  `).get(kakaoId);
+  return row ?? null;
 };
 
 export const saveScore = async (kakaoId, score) => {
@@ -342,7 +407,7 @@ export const getRanking = async (limit = 50) => {
     const { rows } = await postgresPool.query(`
       SELECT
         users.kakao_id AS id,
-        users.nickname,
+        COALESCE(users.display_nickname, users.nickname) AS nickname,
         users.profile_image AS "profileImage",
         scores.gold,
         scores.dps,
@@ -484,7 +549,8 @@ export const getAdminAnalytics = async () => {
       postgresPool.query(`
         SELECT
           users.kakao_id AS id,
-          users.nickname,
+          users.nickname AS "kakaoNickname",
+          COALESCE(users.display_nickname, users.nickname) AS "displayNickname",
           users.profile_image AS "profileImage",
           users.created_at AS "createdAt",
           users.updated_at AS "updatedAt",

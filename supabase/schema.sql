@@ -1,10 +1,14 @@
 create table if not exists public.users (
   kakao_id text primary key,
   nickname text not null,
+  display_nickname text,
   profile_image text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.users
+  add column if not exists display_nickname text;
 
 create table if not exists public.scores (
   kakao_id text primary key references public.users(kakao_id) on delete cascade,

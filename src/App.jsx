@@ -357,6 +357,7 @@ const AdminDashboard = () => {
               <thead className="bg-slate-100 text-xs font-black text-slate-600">
                 <tr>
                   <th className="px-4 py-3">유저</th>
+                  <th className="px-4 py-3">게임 닉네임</th>
                   <th className="px-4 py-3">가입일</th>
                   <th className="px-4 py-3">마지막 접속</th>
                   <th className="px-4 py-3">사용시간</th>
@@ -368,7 +369,7 @@ const AdminDashboard = () => {
               <tbody className="divide-y divide-slate-200">
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-4 py-10 text-center font-bold text-slate-500">
+                    <td colSpan="8" className="px-4 py-10 text-center font-bold text-slate-500">
                       아직 가입자 데이터가 없어요.
                     </td>
                   </tr>
@@ -382,11 +383,13 @@ const AdminDashboard = () => {
                           <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-200 text-xs">유저</span>
                         )}
                         <div className="min-w-0">
-                          <p className="truncate font-black">{user.nickname}</p>
+                          <p className="truncate font-black">{user.kakaoNickname ?? user.nickname}</p>
+                          <p className="truncate text-[10px] font-bold text-slate-400">카카오 가입 이름</p>
                           <p className="truncate text-xs text-slate-500">{user.id}</p>
                         </div>
                       </div>
                     </td>
+                    <td className="px-4 py-3 font-black text-amber-700">{user.displayNickname ?? user.nickname}</td>
                     <td className="px-4 py-3 font-semibold">{formatDateTime(user.createdAt)}</td>
                     <td className="px-4 py-3 font-semibold">{formatDateTime(user.lastSeenAt)}</td>
                     <td className="px-4 py-3 font-black text-teal-700">{formatDuration(user.totalPlaySeconds)}</td>
@@ -411,6 +414,9 @@ const App = () => {
 
   const [authUser, setAuthUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileNicknameDraft, setProfileNicknameDraft] = useState('');
+  const [profileSaveStatus, setProfileSaveStatus] = useState('idle');
   const [isRankingOpen, setIsRankingOpen] = useState(false);
   const [selectedRankingUser, setSelectedRankingUser] = useState(null);
   const [rankings, setRankings] = useState([]);
@@ -475,7 +481,10 @@ const App = () => {
     fetch('/api/me')
       .then((response) => response.ok ? response.json() : { user: null })
       .then(({ user }) => {
-        if (isMounted) setAuthUser(user);
+        if (isMounted) {
+          setAuthUser(user);
+          setProfileNicknameDraft(user?.displayNickname || user?.nickname || '');
+        }
       })
       .catch(() => {})
       .finally(() => {
@@ -494,8 +503,50 @@ const App = () => {
   const handleLogout = async () => {
     await fetch('/api/logout', { method: 'POST' });
     setAuthUser(null);
+    setIsProfileOpen(false);
+    setProfileNicknameDraft('');
+    setProfileSaveStatus('idle');
     setCloudSaveStatus('idle');
     cloudSaveOwnerRef.current = null;
+  };
+
+  const handleProfileOpen = () => {
+    if (!authUser) return;
+    setProfileNicknameDraft(authUser.displayNickname || authUser.nickname || '');
+    setProfileSaveStatus('idle');
+    setIsProfileOpen(true);
+  };
+
+  const handleProfileSave = async () => {
+    const displayNickname = profileNicknameDraft.trim().replace(/\s+/g, ' ');
+    if (displayNickname.length < 2 || displayNickname.length > 12) {
+      setProfileSaveStatus('invalid');
+      return;
+    }
+
+    setProfileSaveStatus('saving');
+    try {
+      const response = await fetch('/api/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayNickname }),
+      });
+      const data = response.ok ? await response.json() : null;
+      if (!response.ok || !data?.user) throw new Error('profile_save_failed');
+
+      setAuthUser(data.user);
+      setProfileNicknameDraft(data.user.displayNickname || data.user.nickname || '');
+      setProfileSaveStatus('saved');
+      setRankings((prevRankings) =>
+        prevRankings.map((entry) =>
+          entry.id === data.user.id
+            ? { ...entry, nickname: data.user.nickname, displayNickname: data.user.displayNickname }
+            : entry
+        )
+      );
+    } catch {
+      setProfileSaveStatus('error');
+    }
   };
 
   const itemDps = cleaningItems.reduce(
@@ -1277,7 +1328,11 @@ const App = () => {
         <div className="flex min-h-10 items-center justify-between gap-2 rounded-2xl border-[3px] border-amber-950/70 bg-[#fff7df] px-2.5 py-1.5 shadow-[0_4px_0_#78350f,0_7px_14px_rgba(0,0,0,0.18)]">
           {authUser ? (
             <>
-              <div className="flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={handleProfileOpen}
+                className="flex min-w-0 items-center gap-2 rounded-xl px-1 py-1 text-left active:scale-[0.99]"
+              >
                 {authUser.profileImage ? (
                   <img className="h-8 w-8 shrink-0 rounded-full border-2 border-amber-900 object-cover" src={authUser.profileImage} alt="" />
                 ) : (
@@ -1297,13 +1352,10 @@ const App = () => {
                     </p>
                   )}
                 </div>
-              </div>
+              </button>
               <div className="flex shrink-0 gap-1.5">
                 <button type="button" onClick={handleRankingOpen} className="rounded-xl bg-amber-400 px-2.5 py-1.5 text-[10px] font-black text-amber-950 shadow-[0_2px_0_#92400e] active:translate-y-0.5 active:shadow-none">
                   🏆 랭킹
-                </button>
-                <button type="button" onClick={handleLogout} className="rounded-xl bg-slate-700 px-2.5 py-1.5 text-[10px] font-black text-white shadow-[0_2px_0_#0f172a] active:translate-y-0.5 active:shadow-none">
-                  로그아웃
                 </button>
               </div>
             </>
@@ -1529,6 +1581,93 @@ const App = () => {
           <span className="mt-0.5">화장실 매입</span>
         </button>
       </div>
+
+      {!isAuthLoading && !authUser && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/65 p-4">
+          <div className="w-full max-w-sm rounded-[1.75rem] border-[3px] border-amber-950 bg-[#fff8e8] p-5 text-center text-slate-900 shadow-[0_8px_0_#78350f,0_18px_40px_rgba(0,0,0,0.45)]">
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border-[3px] border-amber-800 bg-amber-200 text-3xl shadow-[0_4px_0_#92400e]">
+              💩
+            </div>
+            <h2 className="mt-4 text-xl font-black">카카오 로그인</h2>
+            <p className="mt-2 text-sm font-bold text-slate-600">
+              저장, 랭킹, 똥 꾸미기를 사용하려면 먼저 로그인해주세요.
+            </p>
+            <button
+              type="button"
+              onClick={handleKakaoLogin}
+              disabled={isAuthLoading}
+              className="mt-5 w-full rounded-2xl border-2 border-[#3c1e1e] bg-[#FEE500] px-4 py-3 text-sm font-black text-[#191919] shadow-[0_4px_0_#3c1e1e] active:translate-y-0.5 active:shadow-none disabled:opacity-50"
+            >
+              카카오톡으로 시작하기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isProfileOpen && authUser && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/65 p-4" onClick={() => setIsProfileOpen(false)}>
+          <div
+            className="w-full max-w-sm rounded-[1.75rem] border-[3px] border-amber-950 bg-[#fff8e8] p-4 text-slate-900 shadow-[0_8px_0_#78350f,0_18px_40px_rgba(0,0,0,0.45)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              {authUser.profileImage ? (
+                <img src={authUser.profileImage} alt="" className="h-12 w-12 rounded-full border-2 border-amber-900 object-cover" />
+              ) : (
+                <span className="grid h-12 w-12 place-items-center rounded-full bg-amber-200 text-lg">👤</span>
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black">{authUser.nickname}</p>
+                <p className="truncate text-[10px] font-bold text-slate-500">
+                  카카오 이름: {authUser.kakaoNickname || authUser.nickname}
+                </p>
+              </div>
+            </div>
+
+            <label className="mt-4 block text-xs font-black text-amber-950" htmlFor="profile-nickname">
+              랭킹 닉네임
+            </label>
+            <input
+              id="profile-nickname"
+              type="text"
+              value={profileNicknameDraft}
+              onChange={(event) => {
+                setProfileNicknameDraft(event.target.value.slice(0, 12));
+                setProfileSaveStatus('idle');
+              }}
+              className="mt-1 w-full rounded-xl border-2 border-amber-300 bg-white px-3 py-3 text-sm font-black text-slate-900 outline-none focus:border-amber-700"
+              maxLength={12}
+            />
+            <p className={`mt-1 text-[10px] font-bold ${
+              profileSaveStatus === 'error' || profileSaveStatus === 'invalid' ? 'text-red-600' : 'text-slate-500'
+            }`}>
+              {profileSaveStatus === 'saving' && '저장 중...'}
+              {profileSaveStatus === 'saved' && '저장됐어요. 랭킹에 이 이름으로 보여요.'}
+              {profileSaveStatus === 'invalid' && '닉네임은 2~12글자로 입력해주세요.'}
+              {profileSaveStatus === 'error' && '저장에 실패했어요. 잠시 후 다시 시도해주세요.'}
+              {profileSaveStatus === 'idle' && '2~12글자까지 사용할 수 있어요.'}
+            </p>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleProfileSave}
+                disabled={profileSaveStatus === 'saving'}
+                className="rounded-xl bg-amber-400 px-3 py-3 text-sm font-black text-amber-950 shadow-[0_3px_0_#92400e] active:translate-y-0.5 active:shadow-none disabled:opacity-60"
+              >
+                저장
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-xl bg-slate-700 px-3 py-3 text-sm font-black text-white shadow-[0_3px_0_#0f172a] active:translate-y-0.5 active:shadow-none"
+              >
+                로그아웃
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isRankingOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => {

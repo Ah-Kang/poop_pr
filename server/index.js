@@ -14,6 +14,7 @@ import {
   saveGame,
   saveScore,
   saveUser,
+  updateUserProfile,
 } from './database.js';
 
 const app = express();
@@ -78,6 +79,8 @@ const decodeSession = (value) => {
       user: {
         id: String(user.id),
         nickname: String(user.nickname),
+        kakaoNickname: String(user.kakaoNickname || user.nickname),
+        displayNickname: String(user.displayNickname || user.nickname),
         profileImage: user.profileImage || null,
       },
       createdAt: session.createdAt,
@@ -149,12 +152,12 @@ app.get('/auth/kakao/callback', async (request, response) => {
     if (!userResponse.ok) throw new Error(`User request failed: ${userResponse.status}`);
     const kakaoUser = await userResponse.json();
     const profile = kakaoUser.kakao_account?.profile ?? {};
-    const user = {
+    const kakaoProfile = {
       id: String(kakaoUser.id),
       nickname: profile.nickname || kakaoUser.properties?.nickname || '카카오 사용자',
       profileImage: profile.profile_image_url || kakaoUser.properties?.profile_image || null,
     };
-    await saveUser(user);
+    const user = await saveUser(kakaoProfile);
 
     response.cookie('game_session', encodeSession({ user, createdAt: Date.now() }), sessionCookieOptions);
     return response.redirect(`${frontendUrl}/?login=success`);
@@ -186,6 +189,30 @@ const requireUser = (request, response, next) => {
   request.authUser = session.user;
   return next();
 };
+
+const normalizeDisplayNickname = (value) => {
+  const nickname = String(value ?? '').trim().replace(/\s+/g, ' ');
+  if (nickname.length < 2 || nickname.length > 12) return null;
+  return nickname;
+};
+
+app.patch('/api/me', requireUser, async (request, response) => {
+  const displayNickname = normalizeDisplayNickname(request.body.displayNickname);
+  if (!displayNickname) {
+    return response.status(400).json({ error: 'invalid_nickname' });
+  }
+
+  try {
+    const user = await updateUserProfile(request.authUser.id, { displayNickname });
+    if (!user) return response.status(404).json({ error: 'user_not_found' });
+
+    response.cookie('game_session', encodeSession({ user, createdAt: Date.now() }), sessionCookieOptions);
+    return response.json({ user });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({ error: 'profile_update_failed' });
+  }
+});
 
 const requireAdmin = (request, response, next) => {
   const providedToken = request.get('x-admin-token') || request.query.token;
