@@ -6,12 +6,26 @@ import hotelToiletImage from './assets/toilet-hotel-cartoon.webp';
 import spaceToiletImage from './assets/toilet-space-cartoon.webp';
 import goldenPalaceImage from './assets/toilet-golden-palace-cartoon.webp';
 import cleanerBrushSwingImage from './assets/cleaner-brush-swing.png';
-import waterPoopImage from './assets/PoopImage/waterpoop.png';
-import softPoopImage from './assets/PoopImage/softpoop.png';
-import healthyPoopImage from './assets/PoopImage/healtypoop.png';
-import firePoopImage from './assets/PoopImage/firepoop.png';
-import diamondPoopImage from './assets/PoopImage/diamondpoop.png';
-import goldPoopImage from './assets/PoopImage/goldpoop.png';
+import plankPoopImage from './assets/PoopImage/plank-poop.png';
+import shrimpPoopImage from './assets/PoopImage/shrimp-poop.png';
+import minnowPoopImage from './assets/PoopImage/minnow-poop.png';
+import rabbitPoopImage from './assets/PoopImage/rabbit-poop.png';
+import waterPoopImage from './assets/PoopImage/water-poop.png';
+import softPoopImage from './assets/PoopImage/soft-poop.png';
+import puddingPoopImage from './assets/PoopImage/pudding-poop.png';
+import tteokPoopImage from './assets/PoopImage/tteok-poop.png';
+import healthyPoopImage from './assets/PoopImage/healthy-poop.png';
+import hardPoopImage from './assets/PoopImage/hard-poop.png';
+import musclePoopImage from './assets/PoopImage/muscle-poop.png';
+import steelPoopImage from './assets/PoopImage/steel-poop.png';
+import firePoopImage from './assets/PoopImage/fire-poop.png';
+import volcanoPoopImage from './assets/PoopImage/volcano-poop.png';
+import lavaPoopImage from './assets/PoopImage/lava-poop.png';
+import platinumPoopImage from './assets/PoopImage/platinum-poop.png';
+import emeraldPoopImage from './assets/PoopImage/emerald-poop.png';
+import diamondPoopImage from './assets/PoopImage/diamond-poop.png';
+import kingPoopImage from './assets/PoopImage/king-poop.png';
+import goldPoopImage from './assets/PoopImage/golden-poop.png';
 import toiletPaperIcon from './assets/cleaning-items/toilet-paper.png';
 import plungerIcon from './assets/cleaning-items/plunger.png';
 import toiletBrushIcon from './assets/cleaning-items/toilet-brush.png';
@@ -122,25 +136,25 @@ const getRandomCleanerDelay = () =>
 
 // 똥 캐릭터 진화 단계: 각 똥은 자기 레벨 1부터 성장하고, 진화 레벨에 도달하면 다음 똥이 해금
 const poopCharacters = [
-  { id: 0, name: '플랑크똥', badge: '✦', emoji: '💩', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 1, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-stone-200 to-amber-500', description: '눈에 보일 듯 말 듯한 우주 먼지급 똥' },
-  { id: 1, name: '새우똥', badge: '🦐', emoji: '💩', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 4, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-orange-200 to-rose-400', description: '새우만큼 작고 살짝 굽은 하찮은 똥' },
-  { id: 2, name: '피래미똥', badge: '🐟', emoji: '💩', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 7, baseDps: 1, clickGrowth: 1, dpsGrowth: 0.2, gradient: 'from-sky-200 to-stone-500', description: '피래미처럼 작고 미끄러운 초소형 똥' },
-  { id: 3, name: '토끼똥', badge: '🐰', emoji: '💩', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 10, baseDps: 1, clickGrowth: 1, dpsGrowth: 0.4, gradient: 'from-amber-200 to-stone-600', description: '동글동글 알갱이처럼 모여 있는 똥' },
+  { id: 0, name: '플랑크똥', badge: '✦', image: plankPoopImage, legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 1, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-stone-200 to-amber-500', description: '눈에 보일 듯 말 듯한 우주 먼지급 똥' },
+  { id: 1, name: '새우똥', badge: '🦐', image: shrimpPoopImage, legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 4, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-orange-200 to-rose-400', description: '새우만큼 작고 살짝 굽은 하찮은 똥' },
+  { id: 2, name: '피래미똥', badge: '🐟', image: minnowPoopImage, legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 7, baseDps: 1, clickGrowth: 1, dpsGrowth: 0.2, gradient: 'from-sky-200 to-stone-500', description: '피래미처럼 작고 미끄러운 초소형 똥' },
+  { id: 3, name: '토끼똥', badge: '🐰', image: rabbitPoopImage, legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 10, baseDps: 1, clickGrowth: 1, dpsGrowth: 0.4, gradient: 'from-amber-200 to-stone-600', description: '동글동글 알갱이처럼 모여 있는 똥' },
   { id: 4, name: '물똥', badge: '💧', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 14, baseDps: 2, clickGrowth: 2, dpsGrowth: 0.8, gradient: 'from-sky-300 to-blue-600', image: waterPoopImage, description: '아직 힘이 없는 촉촉한 초보 똥' },
   { id: 5, name: '말랑똥', badge: '🫧', legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 24, baseDps: 4, clickGrowth: 2, dpsGrowth: 1.2, gradient: 'from-cyan-300 to-teal-500', image: softPoopImage, description: '형태를 갖추기 시작한 말랑한 똥' },
-  { id: 6, name: '푸딩똥', badge: '🍮', emoji: '💩', legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 38, baseDps: 7, clickGrowth: 3, dpsGrowth: 1.6, gradient: 'from-yellow-200 to-amber-400', description: '카라멜처럼 반짝이는 탱글한 똥' },
-  { id: 7, name: '찰떡똥', badge: '🍡', emoji: '💩', legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 58, baseDps: 12, clickGrowth: 4, dpsGrowth: 2, gradient: 'from-stone-100 to-orange-200', description: '쫀득하게 늘어나는 찰진 똥' },
+  { id: 6, name: '푸딩똥', badge: '🍮', image: puddingPoopImage, legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 38, baseDps: 7, clickGrowth: 3, dpsGrowth: 1.6, gradient: 'from-yellow-200 to-amber-400', description: '카라멜처럼 반짝이는 탱글한 똥' },
+  { id: 7, name: '찰떡똥', badge: '🍡', image: tteokPoopImage, legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 58, baseDps: 12, clickGrowth: 4, dpsGrowth: 2, gradient: 'from-stone-100 to-orange-200', description: '쫀득하게 늘어나는 찰진 똥' },
   { id: 8, name: '건강똥', badge: '🌿', legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 86, baseDps: 20, clickGrowth: 6, dpsGrowth: 3, gradient: 'from-lime-300 to-emerald-600', image: healthyPoopImage, description: '균형 잡힌 영양으로 단단해진 똥' },
-  { id: 9, name: '단단똥', badge: '🪨', emoji: '💩', legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 124, baseDps: 34, clickGrowth: 8, dpsGrowth: 4, gradient: 'from-stone-400 to-amber-800', description: '표면이 갈라질 만큼 단단해진 똥' },
-  { id: 10, name: '근육똥', badge: '💪', emoji: '💩', legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 176, baseDps: 55, clickGrowth: 11, dpsGrowth: 6, gradient: 'from-orange-300 to-amber-800', description: '작은 팔까지 생긴 힘센 똥' },
-  { id: 11, name: '강철똥', badge: '⚙️', emoji: '💩', legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 250, baseDps: 86, clickGrowth: 15, dpsGrowth: 8, gradient: 'from-slate-300 to-zinc-700', description: '철판과 리벳으로 무장한 똥' },
+  { id: 9, name: '단단똥', badge: '🪨', image: hardPoopImage, legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 124, baseDps: 34, clickGrowth: 8, dpsGrowth: 4, gradient: 'from-stone-400 to-amber-800', description: '표면이 갈라질 만큼 단단해진 똥' },
+  { id: 10, name: '근육똥', badge: '💪', image: musclePoopImage, legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 176, baseDps: 55, clickGrowth: 11, dpsGrowth: 6, gradient: 'from-orange-300 to-amber-800', description: '작은 팔까지 생긴 힘센 똥' },
+  { id: 11, name: '강철똥', badge: '⚙️', image: steelPoopImage, legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 250, baseDps: 86, clickGrowth: 15, dpsGrowth: 8, gradient: 'from-slate-300 to-zinc-700', description: '철판과 리벳으로 무장한 똥' },
   { id: 12, name: '불꽃똥', badge: '🔥', legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 350, baseDps: 130, clickGrowth: 20, dpsGrowth: 11, gradient: 'from-orange-400 to-red-600', image: firePoopImage, description: '뜨거운 생산력을 뿜어내는 똥' },
-  { id: 13, name: '화산똥', badge: '🌋', emoji: '💩', legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 480, baseDps: 190, clickGrowth: 26, dpsGrowth: 15, gradient: 'from-zinc-700 to-red-600', description: '금 간 표면 사이로 열기가 새어 나오는 똥' },
-  { id: 14, name: '용암똥', badge: '♨️', emoji: '💩', legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 650, baseDps: 280, clickGrowth: 34, dpsGrowth: 20, gradient: 'from-red-500 to-orange-500', description: '용암 줄기가 흐르는 후끈한 똥' },
-  { id: 15, name: '플래티넘똥', badge: '🥈', emoji: '💩', legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 880, baseDps: 400, clickGrowth: 44, dpsGrowth: 27, gradient: 'from-slate-100 to-zinc-400', description: '은백색 광택이 도는 고급 똥' },
-  { id: 16, name: '에메랄드똥', badge: '🟢', emoji: '💩', legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 1180, baseDps: 570, clickGrowth: 56, dpsGrowth: 36, gradient: 'from-emerald-300 to-green-700', description: '초록 결정 조각이 박힌 보석 똥' },
+  { id: 13, name: '화산똥', badge: '🌋', image: volcanoPoopImage, legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 480, baseDps: 190, clickGrowth: 26, dpsGrowth: 15, gradient: 'from-zinc-700 to-red-600', description: '금 간 표면 사이로 열기가 새어 나오는 똥' },
+  { id: 14, name: '용암똥', badge: '♨️', image: lavaPoopImage, legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 650, baseDps: 280, clickGrowth: 34, dpsGrowth: 20, gradient: 'from-red-500 to-orange-500', description: '용암 줄기가 흐르는 후끈한 똥' },
+  { id: 15, name: '플래티넘똥', badge: '🥈', image: platinumPoopImage, legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 880, baseDps: 400, clickGrowth: 44, dpsGrowth: 27, gradient: 'from-slate-100 to-zinc-400', description: '은백색 광택이 도는 고급 똥' },
+  { id: 16, name: '에메랄드똥', badge: '🟢', image: emeraldPoopImage, legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 1180, baseDps: 570, clickGrowth: 56, dpsGrowth: 36, gradient: 'from-emerald-300 to-green-700', description: '초록 결정 조각이 박힌 보석 똥' },
   { id: 17, name: '다이아똥', badge: '💎', legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 1560, baseDps: 800, clickGrowth: 72, dpsGrowth: 48, gradient: 'from-cyan-300 to-violet-600', image: diamondPoopImage, description: '보석처럼 단단하고 희귀한 똥' },
-  { id: 18, name: '왕똥', badge: '👑', emoji: '💩', legacyRequiredLevel: 120, evolutionLevel: poopEvolutionLevel, baseClickPower: 2050, baseDps: 1120, clickGrowth: 92, dpsGrowth: 64, gradient: 'from-red-300 to-amber-600', description: '작은 왕관을 쓴 당당한 똥' },
+  { id: 18, name: '왕똥', badge: '👑', image: kingPoopImage, legacyRequiredLevel: 120, evolutionLevel: poopEvolutionLevel, baseClickPower: 2050, baseDps: 1120, clickGrowth: 92, dpsGrowth: 64, gradient: 'from-red-300 to-amber-600', description: '작은 왕관을 쓴 당당한 똥' },
   { id: 19, name: '황금똥', badge: '🏆', legacyRequiredLevel: 120, evolutionLevel: null, baseClickPower: 2700, baseDps: 1550, clickGrowth: 120, dpsGrowth: 84, gradient: 'from-yellow-300 to-amber-600', image: goldPoopImage, description: '모든 변기가 꿈꾸는 전설의 황금똥' },
 ];
 const legacyPoopNames = ['물똥', '말랑똥', '건강똥', '불꽃똥', '다이아똥', '황금똥'];
