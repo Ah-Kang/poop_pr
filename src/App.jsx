@@ -107,7 +107,7 @@ const developerGoldAmount = 999999999999;
 const developerModeTapWindow = 1000;
 const poopEvolutionLevel = 100;
 const poopUpgradeBasePrice = 20;
-const poopUpgradeGrowth = 1.04;
+const poopUpgradeGrowth = 1.011;
 const activeClickDpsBonusRate = 0.05;
 const appVersion = packageJson.version;
 const defaultCosmetics = {
@@ -122,13 +122,29 @@ const getRandomCleanerDelay = () =>
 
 // 똥 캐릭터 진화 단계: 각 똥은 자기 레벨 1부터 성장하고, 진화 레벨에 도달하면 다음 똥이 해금
 const poopCharacters = [
-  { id: 0, name: '물똥', badge: '💧', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 1, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-sky-300 to-blue-600', image: waterPoopImage, description: '아직 힘이 없는 촉촉한 초보 똥' },
-  { id: 1, name: '말랑똥', badge: '🫧', legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 12, baseDps: 2, clickGrowth: 2, dpsGrowth: 1, gradient: 'from-cyan-300 to-teal-500', image: softPoopImage, description: '형태를 갖추기 시작한 말랑한 똥' },
-  { id: 2, name: '건강똥', badge: '🌿', legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 45, baseDps: 10, clickGrowth: 4, dpsGrowth: 2, gradient: 'from-lime-300 to-emerald-600', image: healthyPoopImage, description: '균형 잡힌 영양으로 단단해진 똥' },
-  { id: 3, name: '불꽃똥', badge: '🔥', legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 180, baseDps: 45, clickGrowth: 8, dpsGrowth: 5, gradient: 'from-orange-400 to-red-600', image: firePoopImage, description: '뜨거운 생산력을 뿜어내는 똥' },
-  { id: 4, name: '다이아똥', badge: '💎', legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 520, baseDps: 160, clickGrowth: 18, dpsGrowth: 12, gradient: 'from-cyan-300 to-violet-600', image: diamondPoopImage, description: '보석처럼 단단하고 희귀한 똥' },
-  { id: 5, name: '황금똥', badge: '👑', legacyRequiredLevel: 120, evolutionLevel: null, baseClickPower: 1400, baseDps: 600, clickGrowth: 40, dpsGrowth: 28, gradient: 'from-yellow-300 to-amber-600', image: goldPoopImage, description: '모든 변기가 꿈꾸는 전설의 황금똥' },
+  { id: 0, name: '플랑크똥', badge: '✦', emoji: '💩', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 1, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-stone-200 to-amber-500', description: '눈에 보일 듯 말 듯한 우주 먼지급 똥' },
+  { id: 1, name: '새우똥', badge: '🦐', emoji: '💩', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 4, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-orange-200 to-rose-400', description: '새우만큼 작고 살짝 굽은 하찮은 똥' },
+  { id: 2, name: '피래미똥', badge: '🐟', emoji: '💩', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 7, baseDps: 1, clickGrowth: 1, dpsGrowth: 0.2, gradient: 'from-sky-200 to-stone-500', description: '피래미처럼 작고 미끄러운 초소형 똥' },
+  { id: 3, name: '토끼똥', badge: '🐰', emoji: '💩', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 10, baseDps: 1, clickGrowth: 1, dpsGrowth: 0.4, gradient: 'from-amber-200 to-stone-600', description: '동글동글 알갱이처럼 모여 있는 똥' },
+  { id: 4, name: '물똥', badge: '💧', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 14, baseDps: 2, clickGrowth: 2, dpsGrowth: 0.8, gradient: 'from-sky-300 to-blue-600', image: waterPoopImage, description: '아직 힘이 없는 촉촉한 초보 똥' },
+  { id: 5, name: '말랑똥', badge: '🫧', legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 24, baseDps: 4, clickGrowth: 2, dpsGrowth: 1.2, gradient: 'from-cyan-300 to-teal-500', image: softPoopImage, description: '형태를 갖추기 시작한 말랑한 똥' },
+  { id: 6, name: '푸딩똥', badge: '🍮', emoji: '💩', legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 38, baseDps: 7, clickGrowth: 3, dpsGrowth: 1.6, gradient: 'from-yellow-200 to-amber-400', description: '카라멜처럼 반짝이는 탱글한 똥' },
+  { id: 7, name: '찰떡똥', badge: '🍡', emoji: '💩', legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 58, baseDps: 12, clickGrowth: 4, dpsGrowth: 2, gradient: 'from-stone-100 to-orange-200', description: '쫀득하게 늘어나는 찰진 똥' },
+  { id: 8, name: '건강똥', badge: '🌿', legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 86, baseDps: 20, clickGrowth: 6, dpsGrowth: 3, gradient: 'from-lime-300 to-emerald-600', image: healthyPoopImage, description: '균형 잡힌 영양으로 단단해진 똥' },
+  { id: 9, name: '단단똥', badge: '🪨', emoji: '💩', legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 124, baseDps: 34, clickGrowth: 8, dpsGrowth: 4, gradient: 'from-stone-400 to-amber-800', description: '표면이 갈라질 만큼 단단해진 똥' },
+  { id: 10, name: '근육똥', badge: '💪', emoji: '💩', legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 176, baseDps: 55, clickGrowth: 11, dpsGrowth: 6, gradient: 'from-orange-300 to-amber-800', description: '작은 팔까지 생긴 힘센 똥' },
+  { id: 11, name: '강철똥', badge: '⚙️', emoji: '💩', legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 250, baseDps: 86, clickGrowth: 15, dpsGrowth: 8, gradient: 'from-slate-300 to-zinc-700', description: '철판과 리벳으로 무장한 똥' },
+  { id: 12, name: '불꽃똥', badge: '🔥', legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 350, baseDps: 130, clickGrowth: 20, dpsGrowth: 11, gradient: 'from-orange-400 to-red-600', image: firePoopImage, description: '뜨거운 생산력을 뿜어내는 똥' },
+  { id: 13, name: '화산똥', badge: '🌋', emoji: '💩', legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 480, baseDps: 190, clickGrowth: 26, dpsGrowth: 15, gradient: 'from-zinc-700 to-red-600', description: '금 간 표면 사이로 열기가 새어 나오는 똥' },
+  { id: 14, name: '용암똥', badge: '♨️', emoji: '💩', legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 650, baseDps: 280, clickGrowth: 34, dpsGrowth: 20, gradient: 'from-red-500 to-orange-500', description: '용암 줄기가 흐르는 후끈한 똥' },
+  { id: 15, name: '플래티넘똥', badge: '🥈', emoji: '💩', legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 880, baseDps: 400, clickGrowth: 44, dpsGrowth: 27, gradient: 'from-slate-100 to-zinc-400', description: '은백색 광택이 도는 고급 똥' },
+  { id: 16, name: '에메랄드똥', badge: '🟢', emoji: '💩', legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 1180, baseDps: 570, clickGrowth: 56, dpsGrowth: 36, gradient: 'from-emerald-300 to-green-700', description: '초록 결정 조각이 박힌 보석 똥' },
+  { id: 17, name: '다이아똥', badge: '💎', legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 1560, baseDps: 800, clickGrowth: 72, dpsGrowth: 48, gradient: 'from-cyan-300 to-violet-600', image: diamondPoopImage, description: '보석처럼 단단하고 희귀한 똥' },
+  { id: 18, name: '왕똥', badge: '👑', emoji: '💩', legacyRequiredLevel: 120, evolutionLevel: poopEvolutionLevel, baseClickPower: 2050, baseDps: 1120, clickGrowth: 92, dpsGrowth: 64, gradient: 'from-red-300 to-amber-600', description: '작은 왕관을 쓴 당당한 똥' },
+  { id: 19, name: '황금똥', badge: '🏆', legacyRequiredLevel: 120, evolutionLevel: null, baseClickPower: 2700, baseDps: 1550, clickGrowth: 120, dpsGrowth: 84, gradient: 'from-yellow-300 to-amber-600', image: goldPoopImage, description: '모든 변기가 꿈꾸는 전설의 황금똥' },
 ];
+const legacyPoopNames = ['물똥', '말랑똥', '건강똥', '불꽃똥', '다이아똥', '황금똥'];
+const getPoopIdByName = (name) => poopCharacters.find((poop) => poop.name === name)?.id ?? 0;
 const initialPoopLevels = poopCharacters.map((_, index) => index === 0 ? 1 : 0);
 const initialGameSave = {
   gold: 0,
@@ -152,12 +168,87 @@ const getPoopStats = (poop, level) => {
   const stageLevel = Math.max(0, level - 1);
 
   return {
-    clickPower: poop.baseClickPower + poop.clickGrowth * stageLevel,
-    dps: poop.baseDps + poop.dpsGrowth * stageLevel,
+    clickPower: Math.floor(poop.baseClickPower + poop.clickGrowth * stageLevel),
+    dps: Math.floor(poop.baseDps + poop.dpsGrowth * stageLevel),
   };
 };
 const getHighestUnlockedPoopId = (levels) =>
   levels.reduce((highestId, level, index) => level > 0 ? index : highestId, 0);
+const migrateLegacyPoopLevels = (legacyLevels = []) => {
+  const migratedLevels = poopCharacters.map(() => 0);
+
+  legacyPoopNames.forEach((name, legacyId) => {
+    const newId = getPoopIdByName(name);
+    migratedLevels[newId] = Math.max(0, Math.floor(legacyLevels[legacyId] ?? 0));
+  });
+
+  const highestUnlockedId = getHighestUnlockedPoopId(migratedLevels);
+  if (migratedLevels[highestUnlockedId] <= 0) return initialPoopLevels;
+
+  return migratedLevels.map((level, index) => {
+    if (index < highestUnlockedId) return poopCharacters[index].evolutionLevel ?? 1;
+    return level;
+  });
+};
+const normalizePoopLevels = (levels) => {
+  if (!Array.isArray(levels)) return null;
+  if (levels.length === legacyPoopNames.length) return migrateLegacyPoopLevels(levels);
+
+  const normalizedLevels = poopCharacters.map((_, index) =>
+    Math.max(0, Math.floor(levels[index] ?? 0))
+  );
+
+  return normalizedLevels.some((level) => level > 0) ? normalizedLevels : initialPoopLevels;
+};
+const normalizeSelectedPoopId = (selectedPoopId, levels, sourceLevels) => {
+  const selectedId = Math.floor(Number(selectedPoopId));
+  const migratedSelectedId = Array.isArray(sourceLevels) && sourceLevels.length === legacyPoopNames.length
+    ? getPoopIdByName(legacyPoopNames[selectedId])
+    : selectedId;
+  const highestUnlockedId = getHighestUnlockedPoopId(levels);
+
+  return poopCharacters.some((poop) => poop.id === migratedSelectedId && (levels[poop.id] ?? 0) > 0)
+    ? migratedSelectedId
+    : highestUnlockedId;
+};
+const normalizePoopProgress = (source = {}) => {
+  const sourceLevels = source.poopLevels;
+  const levels = normalizePoopLevels(sourceLevels);
+
+  if (levels) {
+    return {
+      poopLevels: levels,
+      selectedPoopId: normalizeSelectedPoopId(source.selectedPoopId, levels, sourceLevels),
+    };
+  }
+
+  const legacyLevel = Math.max(1, Math.floor(source.poopLevel ?? 1));
+  const legacyPoop = [...poopCharacters]
+    .reverse()
+    .find((poop) => legacyLevel >= poop.legacyRequiredLevel) ?? poopCharacters[0];
+  const legacyLevels = poopCharacters.map((poop) => {
+    if (poop.id < legacyPoop.id) return poop.evolutionLevel ?? 1;
+    if (poop.id === legacyPoop.id) return Math.max(1, legacyLevel - poop.legacyRequiredLevel + 1);
+    return 0;
+  });
+
+  return {
+    poopLevels: legacyLevels,
+    selectedPoopId: legacyPoop.id,
+  };
+};
+const getPoopLevelByName = (levels, name) => levels[getPoopIdByName(name)] ?? 0;
+const getPoopVisual = (poop, className = '') => {
+  if (poop.image) {
+    return <img src={poop.image} alt="" className={className} draggable="false" />;
+  }
+
+  return (
+    <span className={`${className} grid place-items-center rounded-full bg-amber-100 text-2xl`} aria-hidden="true">
+      {poop.emoji ?? '💩'}
+    </span>
+  );
+};
 const normalizeCosmetics = (value) => ({
   hat: typeof value?.hat === 'string' ? value.hat : defaultCosmetics.hat,
   aura: typeof value?.aura === 'string' ? value.aura : defaultCosmetics.aura,
@@ -167,27 +258,6 @@ const normalizeCosmetics = (value) => ({
     ? value.title
     : defaultCosmetics.titleText,
 });
-const getSavedPoopLevels = (parsed) => {
-  if (Array.isArray(parsed.poopLevels)) {
-    const normalizedLevels = poopCharacters.map((_, index) =>
-      Math.max(0, Math.floor(parsed.poopLevels[index] ?? 0))
-    );
-
-    return normalizedLevels.some((level) => level > 0) ? normalizedLevels : initialPoopLevels;
-  }
-
-  const legacyLevel = Math.max(1, Math.floor(parsed.poopLevel ?? 1));
-  const legacyPoop = [...poopCharacters]
-    .reverse()
-    .find((poop) => legacyLevel >= poop.legacyRequiredLevel) ?? poopCharacters[0];
-
-  return poopCharacters.map((poop) => {
-    if (poop.id < legacyPoop.id) return poop.evolutionLevel ?? 1;
-    if (poop.id === legacyPoop.id) return Math.max(1, legacyLevel - poop.legacyRequiredLevel + 1);
-    return 0;
-  });
-};
-
 const formatDuration = (seconds) => {
   const totalSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
   const hours = Math.floor(totalSeconds / 3600);
@@ -641,26 +711,26 @@ const App = () => {
   const cosmeticOptions = {
     hat: [
       { id: 'none', name: '없음', icon: '', requirement: '기본', unlocked: true },
-      { id: 'crown', name: '왕관', icon: '👑', requirement: '황금똥 해금', unlocked: (poopLevels[5] ?? 0) > 0 },
+      { id: 'crown', name: '왕관', icon: '👑', requirement: '왕똥 해금', unlocked: getPoopLevelByName(poopLevels, '왕똥') > 0 },
       { id: 'hardhat', name: '안전모', icon: '⛑️', requirement: '장비 총 Lv.30', unlocked: totalItemLevels >= 30 },
-      { id: 'flower', name: '꽃핀', icon: '🌸', requirement: '말랑똥 Lv.50', unlocked: (poopLevels[1] ?? 0) >= 50 },
-      { id: 'sunglasses', name: '선글라스', icon: '🕶️', requirement: '불꽃똥 해금', unlocked: (poopLevels[3] ?? 0) > 0 },
-      { id: 'wizard', name: '마법사 모자', icon: '🧙', requirement: '건강똥 Lv.70', unlocked: (poopLevels[2] ?? 0) >= 70 },
-      { id: 'ribbon', name: '리본', icon: '🎀', requirement: '물똥 Lv.20', unlocked: (poopLevels[0] ?? 0) >= 20 },
+      { id: 'flower', name: '꽃핀', icon: '🌸', requirement: '말랑똥 Lv.50', unlocked: getPoopLevelByName(poopLevels, '말랑똥') >= 50 },
+      { id: 'sunglasses', name: '선글라스', icon: '🕶️', requirement: '불꽃똥 해금', unlocked: getPoopLevelByName(poopLevels, '불꽃똥') > 0 },
+      { id: 'wizard', name: '마법사 모자', icon: '🧙', requirement: '건강똥 Lv.70', unlocked: getPoopLevelByName(poopLevels, '건강똥') >= 70 },
+      { id: 'ribbon', name: '리본', icon: '🎀', requirement: '물똥 Lv.20', unlocked: getPoopLevelByName(poopLevels, '물똥') >= 20 },
       { id: 'toiletLid', name: '변기뚜껑 모자', icon: '🚽', requirement: '화장실 2단계', unlocked: currentToiletLevel >= 1 },
       { id: 'halo', name: '천사 링', icon: '😇', requirement: '장비 총 Lv.60', unlocked: totalItemLevels >= 60 },
-      { id: 'devilHorns', name: '악마 뿔', icon: '😈', requirement: '불꽃똥 Lv.40', unlocked: (poopLevels[3] ?? 0) >= 40 },
+      { id: 'devilHorns', name: '악마 뿔', icon: '😈', requirement: '불꽃똥 Lv.40', unlocked: getPoopLevelByName(poopLevels, '불꽃똥') >= 40 },
       { id: 'spaceHelmet', name: '우주 헬멧', icon: '🪐', requirement: '우주 화장실 해금', unlocked: currentToiletLevel >= 4 },
     ],
     aura: [
       { id: 'none', name: '없음', icon: '', requirement: '기본', unlocked: true },
-      { id: 'sparkle', name: '반짝이', icon: '✨', requirement: '물똥 Lv.30', unlocked: (poopLevels[0] ?? 0) >= 30 },
-      { id: 'water', name: '물방울', icon: '💧', requirement: '물똥 Lv.60', unlocked: (poopLevels[0] ?? 0) >= 60 },
-      { id: 'fire', name: '불꽃', icon: '🔥', requirement: '불꽃똥 해금', unlocked: (poopLevels[3] ?? 0) > 0 },
-      { id: 'diamond', name: '다이아 빛', icon: '💎', requirement: '다이아똥 해금', unlocked: (poopLevels[4] ?? 0) > 0 },
-      { id: 'heartBubble', name: '하트 버블', icon: '🫧', requirement: '말랑똥 Lv.80', unlocked: (poopLevels[1] ?? 0) >= 80 },
+      { id: 'sparkle', name: '반짝이', icon: '✨', requirement: '물똥 Lv.30', unlocked: getPoopLevelByName(poopLevels, '물똥') >= 30 },
+      { id: 'water', name: '물방울', icon: '💧', requirement: '물똥 Lv.60', unlocked: getPoopLevelByName(poopLevels, '물똥') >= 60 },
+      { id: 'fire', name: '불꽃', icon: '🔥', requirement: '불꽃똥 해금', unlocked: getPoopLevelByName(poopLevels, '불꽃똥') > 0 },
+      { id: 'diamond', name: '다이아 빛', icon: '💎', requirement: '다이아똥 해금', unlocked: getPoopLevelByName(poopLevels, '다이아똥') > 0 },
+      { id: 'heartBubble', name: '하트 버블', icon: '🫧', requirement: '말랑똥 Lv.80', unlocked: getPoopLevelByName(poopLevels, '말랑똥') >= 80 },
       { id: 'steam', name: '구름 김', icon: '☁️', requirement: '화장실 3단계', unlocked: currentToiletLevel >= 2 },
-      { id: 'rainbow', name: '무지개 링', icon: '🌈', requirement: '건강똥 Lv.100', unlocked: (poopLevels[2] ?? 0) >= 100 },
+      { id: 'rainbow', name: '무지개 링', icon: '🌈', requirement: '건강똥 Lv.100', unlocked: getPoopLevelByName(poopLevels, '건강똥') >= 100 },
       { id: 'constellation', name: '별자리', icon: '🌙', requirement: '우주 화장실 해금', unlocked: currentToiletLevel >= 4 },
       { id: 'goldCoin', name: '골드 코인', icon: '🪙', requirement: '100만 영양분', unlocked: gold >= 1000000 },
       { id: 'cleanFoam', name: '소독 거품', icon: '🧼', requirement: '장비 총 Lv.45', unlocked: totalItemLevels >= 45 },
@@ -822,7 +892,9 @@ const App = () => {
             draggable="false"
           />
         ) : (
-          <span className="relative z-10" aria-label={poop.name}>💩</span>
+          <span className={`relative z-10 grid place-items-center ${imageClassName}`} aria-label={poop.name}>
+            {poop.emoji ?? '💩'}
+          </span>
         )}
         {hat?.id !== 'none' && (
           <span className="absolute -top-5 left-1/2 z-20 -translate-x-1/2 drop-shadow-lg" aria-hidden="true">
@@ -877,12 +949,12 @@ const App = () => {
       })
       .then(async ({ save }) => {
         if (save) {
-          const savedPoopLevels = poopCharacters.map((_, index) => save.poopLevels[index] ?? 0);
-          const savedItemLevels = cleaningItems.map((_, index) => save.itemLevels[index] ?? 0);
+          const savedPoopProgress = normalizePoopProgress(save);
+          const savedItemLevels = cleaningItems.map((_, index) => save.itemLevels?.[index] ?? 0);
           setGold(save.gold);
           setCurrentToiletLevel(Math.min(toilets.length - 1, save.toiletLevel));
-          setPoopLevels(savedPoopLevels.some((level) => level > 0) ? savedPoopLevels : initialPoopLevels);
-          setSelectedPoopId(save.selectedPoopId);
+          setPoopLevels(savedPoopProgress.poopLevels);
+          setSelectedPoopId(savedPoopProgress.selectedPoopId);
           setItemLevels(savedItemLevels);
           setCosmetics(normalizeCosmetics(save.cosmetics));
         } else {
@@ -1018,12 +1090,11 @@ const App = () => {
 
       setGold(parsed.gold ?? 0);
       setCurrentToiletLevel(savedToiletLevel);
-      const savedPoopLevels = getSavedPoopLevels(parsed);
+      const savedPoopProgress = normalizePoopProgress(parsed);
+      const savedPoopLevels = savedPoopProgress.poopLevels;
       const savedUnlockedPoopId = getHighestUnlockedPoopId(savedPoopLevels);
       const savedUnlockedPoop = poopCharacters[savedUnlockedPoopId] ?? poopCharacters[0];
-      const savedSelectedPoopId = Number.isFinite(parsed.selectedPoopId)
-        ? parsed.selectedPoopId
-        : savedUnlockedPoop.id;
+      const savedSelectedPoopId = savedPoopProgress.selectedPoopId;
 
       setPoopLevels(savedPoopLevels);
       setSelectedPoopId(
@@ -1912,8 +1983,9 @@ const App = () => {
               ) : rankings.length === 0 ? (
                 <p className="py-8 text-center text-sm font-bold text-slate-500">아직 등록된 점수가 없어요.</p>
               ) : rankings.map((entry, index) => {
-                const rankingPoop = poopCharacters[entry.selectedPoopId] ?? poopCharacters[0];
-                const rankingPoopLevel = entry.poopLevels?.[rankingPoop.id] ?? entry.poopLevel ?? 1;
+                const rankingPoopProgress = normalizePoopProgress(entry);
+                const rankingPoop = poopCharacters[rankingPoopProgress.selectedPoopId] ?? poopCharacters[0];
+                const rankingPoopLevel = rankingPoopProgress.poopLevels[rankingPoop.id] ?? entry.poopLevel ?? 1;
                 const rankingToilet = toilets[entry.toiletLevel] ?? toilets[0];
                 const ownedItems = cleaningItems.filter((item) => (entry.itemLevels?.[item.id] ?? 0) > 0);
                 const rankingCosmetics = normalizeCosmetics(entry.cosmetics);
@@ -1941,7 +2013,7 @@ const App = () => {
                     <div className="mt-2 grid grid-cols-2 gap-1.5 border-t border-amber-900/15 pt-2 text-[9px] font-bold text-slate-700">
                       <div className="flex min-w-0 items-center gap-1.5 rounded-lg bg-amber-100/80 px-2 py-1">
                         <span className="relative flex h-7 w-7 shrink-0 items-center justify-center">
-                          <img src={rankingPoop.image} alt="" className="h-7 w-7 object-contain" />
+                          {getPoopVisual(rankingPoop, 'h-7 w-7 object-contain')}
                           {rankingHat?.id !== 'none' && (
                             <span className="absolute -right-2 -top-3 scale-50">
                               {renderCosmeticVisual(rankingHat, 'hat')}
@@ -1971,8 +2043,9 @@ const App = () => {
           </div>
 
           {selectedRankingUser && (() => {
-            const profilePoop = poopCharacters[selectedRankingUser.selectedPoopId] ?? poopCharacters[0];
-            const profilePoopLevel = selectedRankingUser.poopLevels?.[profilePoop.id] ?? selectedRankingUser.poopLevel ?? 1;
+            const profilePoopProgress = normalizePoopProgress(selectedRankingUser);
+            const profilePoop = poopCharacters[profilePoopProgress.selectedPoopId] ?? poopCharacters[0];
+            const profilePoopLevel = profilePoopProgress.poopLevels[profilePoop.id] ?? selectedRankingUser.poopLevel ?? 1;
             const profileToilet = toilets[selectedRankingUser.toiletLevel] ?? toilets[0];
             const profileItems = cleaningItems.filter((item) => (selectedRankingUser.itemLevels?.[item.id] ?? 0) > 0);
             const profileCosmetics = normalizeCosmetics(selectedRankingUser.cosmetics);
@@ -2361,7 +2434,9 @@ const App = () => {
                             draggable="false"
                           />
                         ) : (
-                          '💩'
+                          <span className="grid h-14 w-14 place-items-center text-4xl" aria-hidden="true">
+                            {poop.emoji ?? '💩'}
+                          </span>
                         )}
                         <span className="absolute -right-1 -top-1 text-xl">{poop.badge}</span>
                       </div>
