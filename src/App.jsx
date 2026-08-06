@@ -887,7 +887,6 @@ const App = () => {
     level,
     cosmeticState = defaultCosmetics,
     imageClassName = 'h-48 w-48 object-contain',
-    badgeClassName = 'absolute -right-1 -top-2 text-4xl drop-shadow-lg',
     showTitle = true
   ) => {
     const normalizedCosmetics = normalizeCosmetics(cosmeticState);
@@ -915,9 +914,6 @@ const App = () => {
             {renderCosmeticVisual(hat, 'hat')}
           </span>
         )}
-        <span className={`z-30 ${badgeClassName}`} aria-hidden="true">
-          {poop.badge}
-        </span>
         {showTitle && titleText && (
           <span className="absolute -bottom-4 left-1/2 max-w-44 -translate-x-1/2 truncate rounded-full border-2 border-amber-950 bg-white/90 px-3 py-1 text-[10px] font-black text-amber-950 shadow-[0_2px_0_#78350f]">
             🏷️ {titleText} · Lv.{level}
@@ -2452,7 +2448,6 @@ const App = () => {
                             {poop.emoji ?? '💩'}
                           </span>
                         )}
-                        <span className="absolute -right-1 -top-1 text-xl">{poop.badge}</span>
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
