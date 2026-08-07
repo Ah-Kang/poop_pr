@@ -331,6 +331,7 @@ app.post('/api/score', requireUser, async (request, response) => {
     gold: normalizeScoreNumber(request.body.gold, Number.MAX_SAFE_INTEGER),
     dps: normalizeScoreNumber(request.body.dps, Number.MAX_SAFE_INTEGER),
     toiletLevel: normalizeScoreNumber(request.body.toiletLevel, 100),
+    toiletSchemaVersion: normalizeScoreNumber(request.body.toiletSchemaVersion ?? 1, 10),
     poopLevel: normalizeScoreNumber(request.body.poopLevel, 100000),
   };
   if (Object.values(score).some((value) => value === null)) {
@@ -408,6 +409,7 @@ app.post('/api/game-save', requireUser, async (request, response) => {
   const save = {
     gold: normalizeScoreNumber(request.body.gold, Number.MAX_SAFE_INTEGER),
     toiletLevel: normalizeScoreNumber(request.body.toiletLevel, 100),
+    toiletSchemaVersion: normalizeScoreNumber(request.body.toiletSchemaVersion ?? 1, 10),
     poopLevels: normalizeLevelArray(request.body.poopLevels, 20),
     selectedPoopId: normalizeScoreNumber(request.body.selectedPoopId, 100),
     itemLevels: normalizeLevelArray(request.body.itemLevels, 20),

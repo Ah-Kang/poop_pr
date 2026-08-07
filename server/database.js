@@ -32,6 +32,7 @@ const sqliteSchema = `
     gold INTEGER NOT NULL DEFAULT 0,
     dps INTEGER NOT NULL DEFAULT 0,
     toilet_level INTEGER NOT NULL DEFAULT 0,
+    toilet_schema_version INTEGER NOT NULL DEFAULT 1,
     poop_level INTEGER NOT NULL DEFAULT 1,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -39,6 +40,7 @@ const sqliteSchema = `
     kakao_id TEXT PRIMARY KEY REFERENCES users(kakao_id) ON DELETE CASCADE,
     gold INTEGER NOT NULL DEFAULT 0,
     toilet_level INTEGER NOT NULL DEFAULT 0,
+    toilet_schema_version INTEGER NOT NULL DEFAULT 1,
     poop_levels TEXT NOT NULL,
     selected_poop_id INTEGER NOT NULL DEFAULT 0,
     item_levels TEXT NOT NULL,
@@ -90,6 +92,7 @@ const postgresSchema = `
     gold bigint NOT NULL DEFAULT 0,
     dps bigint NOT NULL DEFAULT 0,
     toilet_level integer NOT NULL DEFAULT 0,
+    toilet_schema_version integer NOT NULL DEFAULT 1,
     poop_level integer NOT NULL DEFAULT 1,
     updated_at timestamptz NOT NULL DEFAULT now()
   );
@@ -98,6 +101,7 @@ const postgresSchema = `
     kakao_id text PRIMARY KEY REFERENCES public.users(kakao_id) ON DELETE CASCADE,
     gold bigint NOT NULL DEFAULT 0,
     toilet_level integer NOT NULL DEFAULT 0,
+    toilet_schema_version integer NOT NULL DEFAULT 1,
     poop_levels jsonb NOT NULL DEFAULT '[]'::jsonb,
     selected_poop_id integer NOT NULL DEFAULT 0,
     item_levels jsonb NOT NULL DEFAULT '[]'::jsonb,
@@ -107,6 +111,10 @@ const postgresSchema = `
 
   ALTER TABLE public.game_saves
     ADD COLUMN IF NOT EXISTS cosmetics jsonb NOT NULL DEFAULT '{}'::jsonb;
+  ALTER TABLE public.scores
+    ADD COLUMN IF NOT EXISTS toilet_schema_version integer NOT NULL DEFAULT 1;
+  ALTER TABLE public.game_saves
+    ADD COLUMN IF NOT EXISTS toilet_schema_version integer NOT NULL DEFAULT 1;
 
   CREATE TABLE IF NOT EXISTS public.user_activity (
     kakao_id text PRIMARY KEY REFERENCES public.users(kakao_id) ON DELETE CASCADE,
@@ -150,7 +158,14 @@ const initializeSqlite = async () => {
     sqliteDatabase.exec("ALTER TABLE users ADD COLUMN auth_provider TEXT NOT NULL DEFAULT 'kakao'");
   }
   sqliteDatabase.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_login_id_unique ON users(login_id) WHERE login_id IS NOT NULL');
+  const scoreColumns = sqliteDatabase.prepare('PRAGMA table_info(scores)').all();
+  if (!scoreColumns.some((column) => column.name === 'toilet_schema_version')) {
+    sqliteDatabase.exec('ALTER TABLE scores ADD COLUMN toilet_schema_version INTEGER NOT NULL DEFAULT 1');
+  }
   const gameSaveColumns = sqliteDatabase.prepare('PRAGMA table_info(game_saves)').all();
+  if (!gameSaveColumns.some((column) => column.name === 'toilet_schema_version')) {
+    sqliteDatabase.exec('ALTER TABLE game_saves ADD COLUMN toilet_schema_version INTEGER NOT NULL DEFAULT 1');
+  }
   if (!gameSaveColumns.some((column) => column.name === 'cosmetics')) {
     sqliteDatabase.exec("ALTER TABLE game_saves ADD COLUMN cosmetics TEXT NOT NULL DEFAULT '{}'");
   }
@@ -186,12 +201,13 @@ const initializeSqlite = async () => {
       WHERE login_id = ?
     `),
     upsertScore: sqliteDatabase.prepare(`
-      INSERT INTO scores (kakao_id, gold, dps, toilet_level, poop_level)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO scores (kakao_id, gold, dps, toilet_level, toilet_schema_version, poop_level)
+      VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(kakao_id) DO UPDATE SET
         gold = excluded.gold,
         dps = excluded.dps,
         toilet_level = excluded.toilet_level,
+        toilet_schema_version = excluded.toilet_schema_version,
         poop_level = excluded.poop_level,
         updated_at = CURRENT_TIMESTAMP
     `),
@@ -203,6 +219,7 @@ const initializeSqlite = async () => {
         scores.gold,
         scores.dps,
         scores.toilet_level AS toiletLevel,
+        scores.toilet_schema_version AS toiletSchemaVersion,
         scores.poop_level AS poopLevel,
         game_saves.selected_poop_id AS selectedPoopId,
         game_saves.poop_levels AS poopLevels,
@@ -219,6 +236,7 @@ const initializeSqlite = async () => {
       SELECT
         gold,
         toilet_level AS toiletLevel,
+        toilet_schema_version AS toiletSchemaVersion,
         poop_levels AS poopLevels,
         selected_poop_id AS selectedPoopId,
         item_levels AS itemLevels,
@@ -229,11 +247,12 @@ const initializeSqlite = async () => {
     `),
     upsertGameSave: sqliteDatabase.prepare(`
       INSERT INTO game_saves (
-        kakao_id, gold, toilet_level, poop_levels, selected_poop_id, item_levels, cosmetics
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        kakao_id, gold, toilet_level, toilet_schema_version, poop_levels, selected_poop_id, item_levels, cosmetics
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(kakao_id) DO UPDATE SET
         gold = excluded.gold,
         toilet_level = excluded.toilet_level,
+        toilet_schema_version = excluded.toilet_schema_version,
         poop_levels = excluded.poop_levels,
         selected_poop_id = excluded.selected_poop_id,
         item_levels = excluded.item_levels,
@@ -326,6 +345,7 @@ const normalizePostgresRow = (row) => ({
   gold: row.gold,
   dps: row.dps,
   toiletLevel: row.toiletlevel ?? row.toiletLevel,
+  toiletSchemaVersion: row.toiletschemaversion ?? row.toiletSchemaVersion ?? 1,
   poopLevel: row.pooplevel ?? row.poopLevel,
   selectedPoopId: row.selectedpoopid ?? row.selectedPoopId ?? 0,
   poopLevels: parseJsonArray(row.pooplevels ?? row.poopLevels),
@@ -474,15 +494,16 @@ export const updateUserProfile = async (kakaoId, profile) => {
 export const saveScore = async (kakaoId, score) => {
   if (postgresPool) {
     await postgresPool.query(`
-      INSERT INTO public.scores (kakao_id, gold, dps, toilet_level, poop_level)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO public.scores (kakao_id, gold, dps, toilet_level, toilet_schema_version, poop_level)
+      VALUES ($1, $2, $3, $4, $5, $6)
       ON CONFLICT(kakao_id) DO UPDATE SET
         gold = excluded.gold,
         dps = excluded.dps,
         toilet_level = excluded.toilet_level,
+        toilet_schema_version = excluded.toilet_schema_version,
         poop_level = excluded.poop_level,
         updated_at = now()
-    `, [kakaoId, score.gold, score.dps, score.toiletLevel, score.poopLevel]);
+    `, [kakaoId, score.gold, score.dps, score.toiletLevel, score.toiletSchemaVersion, score.poopLevel]);
     return;
   }
 
@@ -491,6 +512,7 @@ export const saveScore = async (kakaoId, score) => {
     score.gold,
     score.dps,
     score.toiletLevel,
+    score.toiletSchemaVersion,
     score.poopLevel,
   );
 };
@@ -505,6 +527,7 @@ export const getRanking = async (limit = 50) => {
         scores.gold,
         scores.dps,
         scores.toilet_level AS "toiletLevel",
+        scores.toilet_schema_version AS "toiletSchemaVersion",
         scores.poop_level AS "poopLevel",
         game_saves.selected_poop_id AS "selectedPoopId",
         game_saves.poop_levels AS "poopLevels",
@@ -535,6 +558,7 @@ export const getGameSave = async (kakaoId) => {
       SELECT
         gold,
         toilet_level AS "toiletLevel",
+        toilet_schema_version AS "toiletSchemaVersion",
         poop_levels AS "poopLevels",
         selected_poop_id AS "selectedPoopId",
         item_levels AS "itemLevels",
@@ -561,11 +585,12 @@ export const saveGame = async (kakaoId, save) => {
   if (postgresPool) {
     await postgresPool.query(`
       INSERT INTO public.game_saves (
-        kakao_id, gold, toilet_level, poop_levels, selected_poop_id, item_levels, cosmetics
-      ) VALUES ($1, $2, $3, $4::jsonb, $5, $6::jsonb, $7::jsonb)
+        kakao_id, gold, toilet_level, toilet_schema_version, poop_levels, selected_poop_id, item_levels, cosmetics
+      ) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7::jsonb, $8::jsonb)
       ON CONFLICT(kakao_id) DO UPDATE SET
         gold = excluded.gold,
         toilet_level = excluded.toilet_level,
+        toilet_schema_version = excluded.toilet_schema_version,
         poop_levels = excluded.poop_levels,
         selected_poop_id = excluded.selected_poop_id,
         item_levels = excluded.item_levels,
@@ -575,6 +600,7 @@ export const saveGame = async (kakaoId, save) => {
       kakaoId,
       save.gold,
       save.toiletLevel,
+      save.toiletSchemaVersion,
       JSON.stringify(save.poopLevels),
       save.selectedPoopId,
       JSON.stringify(save.itemLevels),
@@ -587,6 +613,7 @@ export const saveGame = async (kakaoId, save) => {
     kakaoId,
     save.gold,
     save.toiletLevel,
+    save.toiletSchemaVersion,
     JSON.stringify(save.poopLevels),
     save.selectedPoopId,
     JSON.stringify(save.itemLevels),
