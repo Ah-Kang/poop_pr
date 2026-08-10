@@ -1643,7 +1643,7 @@ const App = () => {
     document.documentElement.style.setProperty('--game-background-image', backgroundValue);
     document.body.style.setProperty('--game-background-image', backgroundValue);
     document.body.style.backgroundImage = backgroundValue;
-    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundSize = '100% 100%';
     document.body.style.backgroundPosition = 'center';
     document.body.style.backgroundRepeat = 'no-repeat';
 
@@ -1671,7 +1671,7 @@ const App = () => {
         backgroundImage: currentBgImage
           ? `url(${currentBgImage})`
           : `linear-gradient(to bottom, var(--tw-gradient-stops))`,
-        backgroundSize: currentBgImage ? 'cover' : undefined,
+        backgroundSize: currentBgImage ? '100% 100%' : undefined,
         backgroundPosition: currentBgImage ? 'center' : undefined,
         backgroundRepeat: currentBgImage ? 'no-repeat' : undefined,
       }}
