@@ -2220,84 +2220,10 @@ const App = () => {
 
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
               {poopShopTab === 'cosmetics' && (
-              <div className="rounded-2xl border-[3px] border-teal-700 bg-teal-50 p-4 shadow-[0_5px_0_#115e59]">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <h3 className="font-black text-teal-950">🎨 똥 꾸미기</h3>
-                    <p className="mt-0.5 text-xs font-bold text-teal-700">꾸민 똥은 랭킹 쇼룸에도 같이 보여요</p>
-                  </div>
-                  <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
-                    {renderPoopAvatar(
-                      currentPoop,
-                      poopLevel,
-                      cosmetics,
-                      'h-14 w-14 object-contain',
-                      'absolute -right-1 -top-1 text-xl drop-shadow-lg',
-                      false
-                    )}
-                  </div>
+                <div className="rounded-2xl border-[3px] border-teal-700 bg-teal-50 p-6 text-center shadow-[0_5px_0_#115e59]">
+                  <h3 className="font-black text-teal-950">꾸미기 기능을 준비하고 있어요</h3>
+                  <p className="mt-2 text-sm text-teal-700">추후 업데이트에서 만나요!</p>
                 </div>
-
-                {[
-                  { slot: 'hat', label: '모자' },
-                  { slot: 'aura', label: '오라' },
-                ].map(({ slot, label }) => (
-                  <div key={slot} className="mt-3">
-                    <p className="mb-1.5 text-xs font-black text-teal-900">{label}</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {cosmeticOptions[slot].map((option) => {
-                        const isEquipped = cosmetics[slot] === option.id;
-
-                        return (
-                          <button
-                            key={option.id}
-                            type="button"
-                            onClick={() => handleCosmeticEquip(slot, option)}
-                            disabled={!option.unlocked}
-                            className={`min-h-[48px] rounded-xl border-2 px-2 py-1.5 text-left transition-all ${
-                              isEquipped
-                                ? 'border-amber-700 bg-amber-200 text-amber-950 shadow-[0_3px_0_#92400e]'
-                                : option.unlocked
-                                ? 'border-teal-200 bg-white text-slate-800 active:scale-[0.98]'
-                                : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                            }`}
-                          >
-                            <span className="flex min-w-0 items-center gap-2">
-                              <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/70">
-                                {renderCosmeticVisual(option, slot, 'picker')}
-                              </span>
-                              <span className="block min-w-0 truncate text-xs font-black">{option.name}</span>
-                            </span>
-                            <span className="mt-0.5 block truncate text-[9px] font-bold">
-                              {option.unlocked ? (isEquipped ? '장착 중' : '장착 가능') : option.requirement}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-                <div className="mt-3">
-                  <p className="mb-1.5 text-xs font-black text-teal-900">칭호</p>
-                  <input
-                    type="text"
-                    value={cosmetics.titleText}
-                    onChange={(event) => {
-                      const titleText = event.target.value.slice(0, 12);
-                      setCosmetics((prevCosmetics) => ({
-                        ...prevCosmetics,
-                        titleText,
-                      }));
-                    }}
-                    placeholder="예: 최강 물똥"
-                    className="w-full rounded-xl border-2 border-teal-200 bg-white px-3 py-3 text-sm font-black text-slate-900 outline-none focus:border-teal-600"
-                    maxLength={12}
-                  />
-                  <p className="mt-1 text-[10px] font-bold text-teal-700">
-                    최대 12글자까지 자유롭게 작성할 수 있어요.
-                  </p>
-                </div>
-              </div>
               )}
 
               {poopShopTab === 'upgrade' && (
