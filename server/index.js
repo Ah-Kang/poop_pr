@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import 'dotenv/config';
 import express from 'express';
 import {
+  checkDatabaseConnection,
   createLocalUser,
   getLocalUserByLoginId,
   getDatabaseMode,
@@ -17,7 +18,9 @@ import {
   saveScore,
   saveUser,
   updateUserProfile,
+  transactEconomy,
 } from './database.js';
+import { EconomyError, koreaDay, developmentEconomyEnabled } from '../shared/economy.js';
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
@@ -143,8 +146,14 @@ const verifyPassword = (password, passwordHash) => new Promise((resolve) => {
   });
 });
 
-app.get('/api/health', (_request, response) => {
-  response.json({ ok: true, kakaoConfigured: isConfigured(), database: getDatabaseMode() });
+app.get('/api/health', async (_request, response) => {
+  response.set('Cache-Control', 'no-store');
+  try {
+    await checkDatabaseConnection();
+    return response.json({ ok: true, kakaoConfigured: isConfigured(), database: getDatabaseMode() });
+  } catch {
+    return response.status(503).json({ ok: false, error: 'database_unavailable' });
+  }
 });
 
 app.get('/auth/kakao', (_request, response) => {
@@ -288,6 +297,29 @@ const requireUser = (request, response, next) => {
   return next();
 };
 
+const economyCapabilities = { demo: developmentEconomyEnabled(process.env.NODE_ENV, process.env.ENABLE_ECONOMY_DEMO), ads: false, purchases: false, minigame: true };
+const sendEconomy = (response, state) => response.json({ state, day: koreaDay(), capabilities: economyCapabilities });
+app.get('/api/economy', requireUser, async (request, response) => {
+  response.set('Cache-Control', 'no-store');
+  try { return sendEconomy(response, await transactEconomy(request.authUser.id)); }
+  catch { return response.status(503).json({ error: 'economy_unavailable' }); }
+});
+app.post('/api/economy/actions', requireUser, async (request, response) => {
+  // Puzzle moves are resolved inside the wallet transaction on the server.
+  // Browser-supplied scores, rewards and advertising claims are never trusted.
+  const action = request.body;
+  const allowed = ['claim_daily', 'craft_toilet', 'renovate', 'reset_progress', 'abandon_run', 'puzzle_start', 'puzzle_move', 'puzzle_exit'];
+  if (economyCapabilities.demo) allowed.push('start_run', 'demo_complete', 'demo_ad', 'demo_tokens');
+  if (!allowed.includes(action?.type)) return response.status(403).json({ error: 'integration_not_ready' });
+  try {
+    const state = await transactEconomy(request.authUser.id, action, { allowDemo: economyCapabilities.demo });
+    return sendEconomy(response, state);
+  } catch (error) {
+    if (error instanceof EconomyError) return response.status(409).json({ error: error.code });
+    return response.status(503).json({ error: 'economy_unavailable' });
+  }
+});
+
 const normalizeDisplayNickname = (value) => {
   const nickname = String(value ?? '').trim().replace(/\s+/g, ' ');
   if (nickname.length < 2 || nickname.length > 12) return null;
@@ -338,6 +370,9 @@ app.post('/api/score', requireUser, async (request, response) => {
     return response.status(400).json({ error: 'invalid_score' });
   }
   try {
+    const economy = await transactEconomy(request.authUser.id);
+    score.toiletLevel = economy.toiletLevel;
+    score.toiletSchemaVersion = 2;
     await saveScore(request.authUser.id, score);
     return response.status(204).end();
   } catch (error) {
@@ -398,7 +433,9 @@ const normalizeCosmetics = (value) => {
 
 app.get('/api/game-save', requireUser, async (request, response) => {
   try {
-    return response.json({ save: await getGameSave(request.authUser.id) });
+    const save = await getGameSave(request.authUser.id);
+    const economy = await transactEconomy(request.authUser.id);
+    return response.json({ save: save ? { ...save, toiletLevel: economy.toiletLevel, toiletSchemaVersion: 2 } : null });
   } catch (error) {
     console.error(error);
     return response.status(500).json({ error: 'game_save_load_failed' });
@@ -419,6 +456,9 @@ app.post('/api/game-save', requireUser, async (request, response) => {
     return response.status(400).json({ error: 'invalid_game_save' });
   }
   try {
+    const economy = await transactEconomy(request.authUser.id);
+    save.toiletLevel = economy.toiletLevel;
+    save.toiletSchemaVersion = 2;
     await saveGame(request.authUser.id, save);
     return response.status(204).end();
   } catch (error) {
@@ -434,7 +474,7 @@ app.use((_request, response) => response.sendFile(path.join(distPath, 'index.htm
 
 try {
   const { mode } = await initializeDatabase();
-  app.listen(port, () => {
+  app.listen(port, process.env.HOST || '0.0.0.0', () => {
     console.log(`Game server running at http://localhost:${port}`);
     console.log(`Database mode: ${mode}`);
     if (!isConfigured()) console.log('Kakao login is waiting for values in .env');

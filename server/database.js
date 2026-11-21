@@ -2,6 +2,7 @@ import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import pg from 'pg';
+import { applyEconomyAction, createEconomy, EconomyError, migrateToiletLevel } from '../shared/economy.js';
 
 const { Pool, types } = pg;
 types.setTypeParser(types.builtins.INT8, (value) => Number(value));
@@ -59,6 +60,16 @@ const sqliteSchema = `
     activity_date TEXT NOT NULL,
     play_seconds INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (kakao_id, activity_date)
+  );
+  CREATE TABLE IF NOT EXISTS player_economy (
+    kakao_id TEXT PRIMARY KEY REFERENCES users(kakao_id) ON DELETE CASCADE,
+    state TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS economy_actions (
+    kakao_id TEXT NOT NULL REFERENCES users(kakao_id) ON DELETE CASCADE,
+    action_id TEXT NOT NULL,
+    PRIMARY KEY (kakao_id, action_id)
   );
 `;
 
@@ -130,6 +141,18 @@ const postgresSchema = `
     play_seconds bigint NOT NULL DEFAULT 0,
     PRIMARY KEY (kakao_id, activity_date)
   );
+  CREATE TABLE IF NOT EXISTS public.player_economy (
+    kakao_id text PRIMARY KEY REFERENCES public.users(kakao_id) ON DELETE CASCADE,
+    state jsonb NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
+  );
+  ALTER TABLE public.player_economy ENABLE ROW LEVEL SECURITY;
+  CREATE TABLE IF NOT EXISTS public.economy_actions (
+    kakao_id text NOT NULL REFERENCES public.users(kakao_id) ON DELETE CASCADE,
+    action_id text NOT NULL,
+    PRIMARY KEY (kakao_id, action_id)
+  );
+  ALTER TABLE public.economy_actions ENABLE ROW LEVEL SECURITY;
 `;
 
 const shouldUseSsl = () => {
@@ -139,10 +162,10 @@ const shouldUseSsl = () => {
 
 const initializeSqlite = async () => {
   const { DatabaseSync } = await import('node:sqlite');
-  const dataDirectory = path.resolve('data');
-  fs.mkdirSync(dataDirectory, { recursive: true });
+  const databasePath = path.resolve(process.env.SQLITE_PATH || 'data/game.db');
+  fs.mkdirSync(path.dirname(databasePath), { recursive: true });
 
-  sqliteDatabase = new DatabaseSync(path.join(dataDirectory, 'game.db'));
+  sqliteDatabase = new DatabaseSync(databasePath);
   sqliteDatabase.exec(sqliteSchema);
   const userColumns = sqliteDatabase.prepare('PRAGMA table_info(users)').all();
   if (!userColumns.some((column) => column.name === 'display_nickname')) {
@@ -367,6 +390,12 @@ export const initializeDatabase = async () => {
   postgresPool = new Pool({
     connectionString: databaseUrl,
     ssl: shouldUseSsl() ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 10_000,
+    statement_timeout: 15_000,
+    query_timeout: 20_000,
+  });
+  postgresPool.on('error', (error) => {
+    console.error('Idle database connection failed:', error.code || 'unknown');
   });
   await postgresPool.query(postgresSchema);
   databaseMode = 'postgres';
@@ -375,9 +404,68 @@ export const initializeDatabase = async () => {
 
 export const getDatabaseMode = () => databaseMode;
 
+export const checkDatabaseConnection = async () => {
+  if (postgresPool) {
+    await postgresPool.query('SELECT 1');
+  } else {
+    if (!sqliteDatabase) throw new Error('Database is not initialized.');
+    sqliteDatabase.prepare('SELECT 1').get();
+  }
+};
+
 export const closeDatabase = async () => {
   if (postgresPool) await postgresPool.end();
   if (sqliteDatabase) sqliteDatabase.close();
+};
+
+// Serialize every wallet mutation. Concurrent tabs cannot spend the same balance
+// or claim the same daily gift twice. Account state never comes from localStorage.
+export const transactEconomy = async (kakaoId, action = null, options = {}) => {
+  if (action && (typeof action.id !== 'string' || !/^[\w-]{8,80}$/.test(action.id))) throw new EconomyError('invalid_action_id');
+  const seed = (row) => createEconomy(row
+    ? migrateToiletLevel(row.toilet_level, row.toilet_schema_version ?? 1) : 0);
+  if (postgresPool) {
+    const client = await postgresPool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows: saves } = await client.query(
+        'SELECT toilet_level, toilet_schema_version FROM public.game_saves WHERE kakao_id = $1', [kakaoId]);
+      await client.query('INSERT INTO public.player_economy (kakao_id, state) VALUES ($1, $2::jsonb) ON CONFLICT DO NOTHING',
+        [kakaoId, JSON.stringify(seed(saves[0]))]);
+      const { rows } = await client.query('SELECT state FROM public.player_economy WHERE kakao_id = $1 FOR UPDATE', [kakaoId]);
+      const duplicate = action && (await client.query('SELECT 1 FROM public.economy_actions WHERE kakao_id = $1 AND action_id = $2', [kakaoId, action.id])).rowCount > 0;
+      const state = action && !duplicate ? applyEconomyAction(rows[0].state, action, options) : rows[0].state;
+      if (action && !duplicate) {
+        await client.query('UPDATE public.player_economy SET state = $2::jsonb, updated_at = now() WHERE kakao_id = $1', [kakaoId, JSON.stringify(state)]);
+        await client.query('INSERT INTO public.economy_actions (kakao_id, action_id) VALUES ($1, $2)', [kakaoId, action.id]);
+      }
+      await client.query('COMMIT');
+      return state;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally { client.release(); }
+  }
+  sqliteDatabase.exec('BEGIN IMMEDIATE');
+  try {
+    let row = sqliteDatabase.prepare('SELECT state FROM player_economy WHERE kakao_id = ?').get(kakaoId);
+    if (!row) {
+      const saved = sqliteDatabase.prepare('SELECT toilet_level, toilet_schema_version FROM game_saves WHERE kakao_id = ?').get(kakaoId);
+      row = { state: JSON.stringify(seed(saved)) };
+      sqliteDatabase.prepare('INSERT INTO player_economy (kakao_id, state) VALUES (?, ?)').run(kakaoId, row.state);
+    }
+    const duplicate = action && sqliteDatabase.prepare('SELECT 1 FROM economy_actions WHERE kakao_id = ? AND action_id = ?').get(kakaoId, action.id ?? null);
+    const state = action && !duplicate ? applyEconomyAction(JSON.parse(row.state), action, options) : JSON.parse(row.state);
+    if (action && !duplicate) {
+      sqliteDatabase.prepare('UPDATE player_economy SET state = ?, updated_at = CURRENT_TIMESTAMP WHERE kakao_id = ?').run(JSON.stringify(state), kakaoId);
+      sqliteDatabase.prepare('INSERT INTO economy_actions (kakao_id, action_id) VALUES (?, ?)').run(kakaoId, action.id);
+    }
+    sqliteDatabase.exec('COMMIT');
+    return state;
+  } catch (error) {
+    sqliteDatabase.exec('ROLLBACK');
+    throw error;
+  }
 };
 
 export const saveUser = async (user) => {

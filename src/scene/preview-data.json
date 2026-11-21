@@ -1,0 +1,206 @@
+{
+  "toilets": [
+    {
+      "id": 0,
+      "name": "길가 구덩이 화장실",
+      "image": "/src/assets/toilet-stages/toilet-roadside-pit.webp"
+    },
+    {
+      "id": 1,
+      "name": "시골 푸세식 화장실",
+      "image": "/src/assets/toilet-stages/toilet-rural-outhouse.webp"
+    },
+    {
+      "id": 2,
+      "name": "학교 낡은 화장실",
+      "image": "/src/assets/toilet-stages/toilet-old-school.webp"
+    },
+    {
+      "id": 3,
+      "name": "지하철 공중화장실",
+      "image": "/src/assets/toilet-stages/toilet-subway-public.webp"
+    },
+    {
+      "id": 4,
+      "name": "편의점 화장실",
+      "image": "/src/assets/toilet-stages/toilet-convenience-store.webp"
+    },
+    {
+      "id": 5,
+      "name": "찜질방 화장실",
+      "image": "/src/assets/toilet-stages/toilet-jjimjilbang.webp"
+    },
+    {
+      "id": 6,
+      "name": "카페 감성 화장실",
+      "image": "/src/assets/toilet-stages/toilet-cozy-cafe.webp"
+    },
+    {
+      "id": 7,
+      "name": "백화점 파우더룸",
+      "image": "/src/assets/toilet-stages/toilet-department-powder.webp"
+    },
+    {
+      "id": 8,
+      "name": "호텔 스위트 화장실",
+      "image": "/src/assets/toilet-stages/toilet-hotel-suite.webp"
+    },
+    {
+      "id": 9,
+      "name": "7성급 호텔 화장실",
+      "image": "/src/assets/toilet-stages/toilet-seven-star-hotel.webp"
+    },
+    {
+      "id": 10,
+      "name": "대통령 전용 화장실",
+      "image": "/src/assets/toilet-stages/toilet-presidential-private.webp"
+    },
+    {
+      "id": 11,
+      "name": "왕궁 황금 화장실",
+      "image": "/src/assets/toilet-stages/toilet-royal-palace.webp"
+    },
+    {
+      "id": 12,
+      "name": "심해 잠수함 화장실",
+      "image": "/src/assets/toilet-stages/toilet-deep-sea-submarine.webp"
+    },
+    {
+      "id": 13,
+      "name": "우주선 무중력 화장실",
+      "image": "/src/assets/toilet-stages/toilet-spaceship-zero-g.webp"
+    },
+    {
+      "id": 14,
+      "name": "달 기지 화장실",
+      "image": "/src/assets/toilet-stages/toilet-moon-base.webp"
+    },
+    {
+      "id": 15,
+      "name": "화성 개척지 화장실",
+      "image": "/src/assets/toilet-stages/toilet-mars-colony.webp"
+    },
+    {
+      "id": 16,
+      "name": "은하철도 화장실",
+      "image": "/src/assets/toilet-stages/toilet-galaxy-train.webp"
+    },
+    {
+      "id": 17,
+      "name": "천국 구름 화장실",
+      "image": "/src/assets/toilet-stages/toilet-heaven-cloud.webp"
+    },
+    {
+      "id": 18,
+      "name": "신전의 성스러운 변기",
+      "image": "/src/assets/toilet-stages/toilet-sacred-temple.webp"
+    },
+    {
+      "id": 19,
+      "name": "순금 황제 변기궁전",
+      "image": "/src/assets/toilet-stages/toilet-gold-emperor-palace.webp"
+    }
+  ],
+  "poops": [
+    {
+      "id": 0,
+      "name": "플랑크똥",
+      "image": "/src/assets/PoopImage/plank-poop.png"
+    },
+    {
+      "id": 1,
+      "name": "새우똥",
+      "image": "/src/assets/PoopImage/shrimp-poop.png"
+    },
+    {
+      "id": 2,
+      "name": "피래미똥",
+      "image": "/src/assets/PoopImage/minnow-poop.png"
+    },
+    {
+      "id": 3,
+      "name": "토끼똥",
+      "image": "/src/assets/PoopImage/rabbit-poop.png"
+    },
+    {
+      "id": 4,
+      "name": "물똥",
+      "image": "/src/assets/PoopImage/water-poop.png"
+    },
+    {
+      "id": 5,
+      "name": "말랑똥",
+      "image": "/src/assets/PoopImage/soft-poop.png"
+    },
+    {
+      "id": 6,
+      "name": "푸딩똥",
+      "image": "/src/assets/PoopImage/pudding-poop.png"
+    },
+    {
+      "id": 7,
+      "name": "찰떡똥",
+      "image": "/src/assets/PoopImage/tteok-poop.png"
+    },
+    {
+      "id": 8,
+      "name": "건강똥",
+      "image": "/src/assets/PoopImage/healthy-poop.png"
+    },
+    {
+      "id": 9,
+      "name": "단단똥",
+      "image": "/src/assets/PoopImage/hard-poop.png"
+    },
+    {
+      "id": 10,
+      "name": "근육똥",
+      "image": "/src/assets/PoopImage/muscle-poop.png"
+    },
+    {
+      "id": 11,
+      "name": "강철똥",
+      "image": "/src/assets/PoopImage/steel-poop.png"
+    },
+    {
+      "id": 12,
+      "name": "불꽃똥",
+      "image": "/src/assets/PoopImage/fire-poop.png"
+    },
+    {
+      "id": 13,
+      "name": "화산똥",
+      "image": "/src/assets/PoopImage/volcano-poop.png"
+    },
+    {
+      "id": 14,
+      "name": "용암똥",
+      "image": "/src/assets/PoopImage/lava-poop.png"
+    },
+    {
+      "id": 15,
+      "name": "플래티넘똥",
+      "image": "/src/assets/PoopImage/platinum-poop.png"
+    },
+    {
+      "id": 16,
+      "name": "에메랄드똥",
+      "image": "/src/assets/PoopImage/emerald-poop.png"
+    },
+    {
+      "id": 17,
+      "name": "다이아똥",
+      "image": "/src/assets/PoopImage/diamond-poop.png"
+    },
+    {
+      "id": 18,
+      "name": "왕똥",
+      "image": "/src/assets/PoopImage/king-poop.png"
+    },
+    {
+      "id": 19,
+      "name": "황금똥",
+      "image": "/src/assets/PoopImage/golden-poop.png"
+    }
+  ]
+}

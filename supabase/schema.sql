@@ -72,3 +72,18 @@ revoke all on public.scores from anon, authenticated;
 revoke all on public.game_saves from anon, authenticated;
 revoke all on public.user_activity from anon, authenticated;
 revoke all on public.daily_activity from anon, authenticated;
+
+create table if not exists public.player_economy (
+  kakao_id text primary key references public.users(kakao_id) on delete cascade,
+  state jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.player_economy enable row level security;
+revoke all on public.player_economy from anon, authenticated;
+create table if not exists public.economy_actions (
+  kakao_id text not null references public.users(kakao_id) on delete cascade,
+  action_id text not null,
+  primary key (kakao_id, action_id)
+);
+alter table public.economy_actions enable row level security;
+revoke all on public.economy_actions from anon, authenticated;

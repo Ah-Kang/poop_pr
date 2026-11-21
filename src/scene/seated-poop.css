@@ -1,0 +1,86 @@
+.seat-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+.seat-contact-shadow {
+  position: absolute;
+  left: var(--seat-x);
+  top: var(--seat-y);
+  width: var(--shadow-width);
+  height: var(--shadow-height);
+  transform: translate(-50%, -45%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(40 26 14 / .57) 0%, rgb(40 26 14 / .32) 38%, transparent 74%);
+  transition: opacity 120ms, scale 120ms;
+}
+.seat-poop-button {
+  position: absolute;
+  left: var(--seat-x);
+  top: var(--seat-y);
+  width: var(--poop-width);
+  aspect-ratio: var(--poop-ratio);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  transform: translate(-50%, -100%);
+  overflow: visible;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Keep a comfortable click target even for the smallest distant toilet. */
+.seat-poop-button::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  min-width: 44px;
+  min-height: 44px;
+}
+.seat-poop-button:focus-visible { outline: 3px solid #fbbf24; outline-offset: 8px; border-radius: 16px; }
+.seat-poop-body {
+  display: block;
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+  transform: scale(1);
+  transition: transform 160ms cubic-bezier(.22,.8,.35,1.4);
+  pointer-events: none;
+}
+/* Position the opaque artwork, rather than the padded 512px PNG canvas. */
+.seat-poop-body > img.seat-poop-image {
+  position: absolute;
+  width: var(--sprite-width);
+  height: var(--sprite-height);
+  max-width: none;
+  left: var(--sprite-left);
+  top: var(--sprite-top);
+  object-fit: fill;
+  pointer-events: none;
+}
+.seat-layer.is-pressed .seat-poop-body,
+.seat-poop-button:active .seat-poop-body { transform: scale(1.12, .87); }
+.seat-layer.is-pressed .seat-contact-shadow { opacity: .9; scale: 1.08 1; }
+.seat-click-feedback {
+  position: absolute;
+  left: var(--seat-x);
+  top: var(--seat-y);
+  margin-top: 14px;
+  color: #ecfccb;
+  font-size: 17px;
+  font-weight: 900;
+  text-shadow: 0 2px 3px #23451b, 0 0 5px #23451b;
+  white-space: nowrap;
+  animation: seat-reward 300ms ease-out both;
+}
+@keyframes seat-reward {
+  from { transform: translate(-50%, 0); opacity: 1; }
+  to { transform: translate(-50%, -15px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seat-poop-body, .seat-contact-shadow { transition: none; }
+  .seat-layer.is-pressed .seat-poop-body, .seat-poop-button:active .seat-poop-body { transform: none; }
+  .seat-click-feedback { animation: none; transform: translateX(-50%); }
+}

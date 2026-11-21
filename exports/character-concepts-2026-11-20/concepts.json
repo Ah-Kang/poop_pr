@@ -1,0 +1,145 @@
+{
+  "tool": "Built-in image_gen",
+  "purpose": "Selection-only concepts. Existing game sprites unchanged.",
+  "style": "Warm brown hand-drawn outlines, soft painterly shading, cute black eyes and cheek blush. Reference: existing poop-evolution-contact-sheet.png. Single centered character, ivory background, no text.",
+  "groups": [
+    {
+      "name": "피래미똥",
+      "specs": [
+        {
+          "letter": "A",
+          "title": "작은 물고기형",
+          "prompt": "A tiny tapered warm-brown fish-shaped poop with a clear small forked tail, tiny side fins, plump teardrop body and cute face. The body should read as a small minnow, not a conventional tall poop swirl. Dry solid form.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-8a0fd3ce-d9ec-4e52-aa6d-b433ca44a158.png"
+        },
+        {
+          "letter": "B",
+          "title": "꼬리 달린 꼬마똥",
+          "prompt": "A small upright brown one-turn poop character, with a prominent curved fish tail emerging on its right and two small side fins. Small-scale minnow impression, no water. Distinct squat silhouette.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-61ed3bee-2b13-4a66-b7a1-81848b1a776a.png"
+        },
+        {
+          "letter": "C",
+          "title": "헤엄치는 피래미형",
+          "prompt": "A lively curved S-shaped little minnow made of smooth brown poop, horizontal swimming pose, clear tail fin and cheek fin, expressive tiny face near rounded head. Not a pile.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-25959eac-d1a7-417b-ab6b-3744465700bb.png"
+        }
+      ]
+    },
+    {
+      "name": "푸딩똥",
+      "specs": [
+        {
+          "letter": "A",
+          "title": "클래식 커스터드",
+          "prompt": "An unmistakable squat truncated-cone custard flan pudding character: flat oval top, pale creamy yellow body, broad base, thin amber caramel cap neatly confined to top, two small caramel drips. Cute face centered on custard. No poop spiral.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-be4bd5f3-c608-4987-b9c5-cacb77d9c508.png"
+        },
+        {
+          "letter": "B",
+          "title": "탱글 젤리 푸딩",
+          "prompt": "A soft dome-shaped pale vanilla pudding character with subtly wobbly scalloped base, smooth translucent custard texture, light amber top glaze. A tiny soft curled nub at center of top is allowed but body overwhelmingly pudding. Cute shy face. No chocolate.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-3cd66c13-b1f3-41cd-9f6d-996445e4d3e4.png"
+        },
+        {
+          "letter": "C",
+          "title": "틀에서 꺼낸 푸딩",
+          "prompt": "A low fluted molded custard pudding character with 6 distinct vertical flutes, flat caramel-colored oval top and creamy pale vanilla sides, tiny smiling face. Clear decorative pudding-mold silhouette, no plate, no swirl.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-01233013-5183-4e93-bc63-56b3039995e5.png"
+        }
+      ]
+    },
+    {
+      "name": "건강똥",
+      "specs": [
+        {
+          "letter": "A",
+          "title": "매끈한 바나나형",
+          "prompt": "A smooth, healthy chestnut brown banana-shaped poop character, upright gently curved single continuous form with rounded ends, friendly confident smiling face, tiny cheek blush. No cracks, leaf, muscles or accessories.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-cd53bbf3-63b7-4c3d-8fcc-dfa87d7cbb84.png"
+        },
+        {
+          "letter": "B",
+          "title": "탄탄한 정석형",
+          "prompt": "A balanced compact classic two-and-half-tier poop swirl, rich medium brown, smooth uncracked satin surface, full rounded volume and neatly curled tip, lively wholesome smile and rosy cheeks. No leaves, gold, stone, muscles.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-2cc57b66-ca8f-4232-a83c-cd1b0c8c17d5.png"
+        },
+        {
+          "letter": "C",
+          "title": "통통한 S자형",
+          "prompt": "A plump smooth light chestnut brown S-curved poop log, laid in a compact rounded coil with clearly continuous sausage-like form, silky smooth surface, happy energetic face. Healthy shape, not stacked tiers, no cracks or leaves.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-22d28ca4-ec9f-4b1a-8e7f-fa67a2e3bb14.png"
+        }
+      ]
+    },
+    {
+      "name": "단단똥",
+      "specs": [
+        {
+          "letter": "A",
+          "title": "압축 돌덩이형",
+          "prompt": "A single compressed squat brown poop lump with angular broad planes, flat stable bottom, blunt tip, dense dry matte clay texture, two tiny shallow stress fissures, determined cute face. Brown not gray, no lava or glowing cracks.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-7fb69e2e-8823-448f-88e3-01a60f7f3ed5.png"
+        },
+        {
+          "letter": "B",
+          "title": "단단한 자갈형",
+          "prompt": "A cute compact cluster of three tightly packed rounded dark-brown hard poop pellets, main front pellet bears determined face, all dry slightly rough surfaces, rock-hard dense appearance, no rabbit ears or liquid or glow.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-fc836b2c-cfca-47fa-9ec5-8e9edbcef438.png"
+        },
+        {
+          "letter": "C",
+          "title": "각진 뿔형",
+          "prompt": "A sturdy upright angular dark chestnut poop spiral, chunky faceted tiers and thick flattened blunt point, dry hard pressed-clay material, strong confident face, subtle impact spark to one side. No metal, fire or molten cracks.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-066aa816-8236-4e77-8ba4-7aae0d833df7.png"
+        }
+      ]
+    },
+    {
+      "name": "화산똥",
+      "specs": [
+        {
+          "letter": "A",
+          "title": "분화구 산형",
+          "prompt": "A clearly conical dormant volcano-shaped poop character, dark earthy rocky cone, broad base, visible round summit crater with deep muted red interior, one soft gray smoke puff rising. Cute face on mountain side. No flowing lava and no glowing crack network.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-ce9092da-27a0-4909-9357-c519924d8531.png"
+        },
+        {
+          "letter": "B",
+          "title": "분출 화산형",
+          "prompt": "A squat steep-sided volcano poop character with a wide obvious open crater, a small eruption plume of gray smoke and three tiny orange volcanic sparks above the crater. Matte gray-brown stone slopes clean without magma rivers. Cute energetic face.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-d17b19b5-dd75-4b8c-a9ce-f93affada65b.png"
+        },
+        {
+          "letter": "C",
+          "title": "쌍봉 화산형",
+          "prompt": "A compact asymmetrical twin-peaked rocky volcano poop character, main summit has round crater and one drifting smoke curl, secondary small rocky shoulder, layered brown volcanic rock, cute calm face low on front. No glowing veins or lava flow.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-dddf4c45-a9d9-48a0-99b8-abca0ada48dc.png"
+        }
+      ]
+    },
+    {
+      "name": "용암똥",
+      "specs": [
+        {
+          "letter": "A",
+          "title": "흐르는 마그마형",
+          "prompt": "A flowing luminous orange-red molten poop character, rounded liquid swirl drooping into a thick molten base, bright honey-orange center and deep red edges, a few tiny dark cooled crust islands. Cute face, fluid form. No crater, cone, mountain or smoke.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-4f1ae978-6ab3-4b1a-97f4-4618618ed193.png"
+        },
+        {
+          "letter": "B",
+          "title": "용암 슬라임형",
+          "prompt": "A plump lava-slime poop character, low glowing orange jelly-like body with two viscous lava drips spreading at bottom, one soft curling molten tip, scattered thin dark crust patches, cheeky cute face. Fluid material, not rock mountain.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-198c7aeb-ac2c-4b59-976c-4b5f2ffaaeb8.png"
+        },
+        {
+          "letter": "C",
+          "title": "반쯤 식은 용암형",
+          "prompt": "A clearly rounded molten poop coil wrapped in a few thick broken dark cooled crust plates, wide bright orange molten bands exposed between plates and flowing into a small orange base. Cute brave face, no crater, no smoke, no volcanic mountain.",
+          "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-56ecef9a-4cc0-4409-85dc-978144a26750.png"
+        }
+      ]
+    }
+  ]
+}

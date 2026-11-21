@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
+import ToiletPuzzle from './minigames/ToiletPuzzle.jsx';
 import './index.css';
 
 const preventIosZoom = (event) => {
@@ -30,9 +31,19 @@ if (displayModeQuery.addEventListener) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    {window.location.pathname === '/minigame' ? <ToiletPuzzle /> : <App />}
   </React.StrictMode>
 );
+
+// A previously installed local production worker can cache Vite source modules.
+// Release it in development so navigation doesn't restore an older game UI.
+if ('serviceWorker' in navigator && import.meta.env.DEV) {
+  navigator.serviceWorker.getRegistrations().then(async (registrations) => {
+    if (!registrations.length) return;
+    const removed = await Promise.all(registrations.map(registration => registration.unregister()));
+    if (removed.some(Boolean) && navigator.serviceWorker.controller) window.location.reload();
+  }).catch(error => console.warn('Development service worker cleanup failed:', error));
+}
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {

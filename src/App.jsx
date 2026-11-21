@@ -1,24 +1,8 @@
+import EvolutionCelebration from './scene/EvolutionCelebration.jsx';
+import PoopPortrait from './scene/PoopPortrait.jsx';
+import { poopProgression, getPoopStats, getPoopUpgradePrice } from '../shared/poop-progression.js';
+import { toilets } from './data/toilets.js';
 import React, { useState, useEffect, useRef } from 'react';
-import roadsidePitToiletImage from './assets/toilet-stages/toilet-roadside-pit.webp';
-import ruralOuthouseToiletImage from './assets/toilet-stages/toilet-rural-outhouse.webp';
-import oldSchoolToiletImage from './assets/toilet-stages/toilet-old-school.webp';
-import subwayPublicToiletImage from './assets/toilet-stages/toilet-subway-public.webp';
-import convenienceStoreToiletImage from './assets/toilet-stages/toilet-convenience-store.webp';
-import jjimjilbangToiletImage from './assets/toilet-stages/toilet-jjimjilbang.webp';
-import cozyCafeToiletImage from './assets/toilet-stages/toilet-cozy-cafe.webp';
-import departmentPowderToiletImage from './assets/toilet-stages/toilet-department-powder.webp';
-import hotelSuiteToiletImage from './assets/toilet-stages/toilet-hotel-suite.webp';
-import sevenStarHotelToiletImage from './assets/toilet-stages/toilet-seven-star-hotel.webp';
-import presidentialPrivateToiletImage from './assets/toilet-stages/toilet-presidential-private.webp';
-import royalPalaceToiletImage from './assets/toilet-stages/toilet-royal-palace.webp';
-import deepSeaSubmarineToiletImage from './assets/toilet-stages/toilet-deep-sea-submarine.webp';
-import spaceshipZeroGToiletImage from './assets/toilet-stages/toilet-spaceship-zero-g.webp';
-import moonBaseToiletImage from './assets/toilet-stages/toilet-moon-base.webp';
-import marsColonyToiletImage from './assets/toilet-stages/toilet-mars-colony.webp';
-import galaxyTrainToiletImage from './assets/toilet-stages/toilet-galaxy-train.webp';
-import heavenCloudToiletImage from './assets/toilet-stages/toilet-heaven-cloud.webp';
-import sacredTempleToiletImage from './assets/toilet-stages/toilet-sacred-temple.webp';
-import goldEmperorPalaceToiletImage from './assets/toilet-stages/toilet-gold-emperor-palace.webp';
 import cleanerBrushSwingImage from './assets/cleaner-brush-swing.png';
 import plankPoopImage from './assets/PoopImage/plank-poop.png';
 import shrimpPoopImage from './assets/PoopImage/shrimp-poop.png';
@@ -47,6 +31,10 @@ import cleanerSprayIcon from './assets/cleaning-items/cleaner-spray.png';
 import bidetIcon from './assets/cleaning-items/bidet.png';
 import cleaningRobotIcon from './assets/cleaning-items/cleaning-robot.png';
 import packageJson from '../package.json';
+import EconomyPanel from './economy/EconomyPanel.jsx';
+import { useEconomy } from './economy/useEconomy.js';
+import { renovationMultiplier } from '../shared/economy.js';
+import SeatedPoop from './scene/SeatedPoop.jsx';
 
 const toiletSchemaVersion = 2;
 const legacyToiletIdMap = {
@@ -64,209 +52,8 @@ const normalizeToiletLevel = (level, schemaVersion = 1) => {
 };
 
 // ==================== 화장실 데이터 배열 ====================
-// 각 화장실의 정보: 이름, 가격, dps 보너스, 배경색
-const toilets = [
-  {
-    id: 0,
-    name: '길가 구덩이 화장실',
-    price: 0,
-    dpsBonus: 0,
-    cleanerPenaltyRate: 0.1,
-    bgColor: 'bg-stone-100',
-    bgGradient: 'from-lime-200 to-amber-100',
-    image: roadsidePitToiletImage
-  },
-  {
-    id: 1,
-    name: '시골 푸세식 화장실',
-    price: 180,
-    dpsBonus: 2,
-    cleanerPenaltyRate: 0.12,
-    bgColor: 'bg-amber-100',
-    bgGradient: 'from-amber-200 to-amber-100',
-    image: ruralOuthouseToiletImage
-  },
-  {
-    id: 2,
-    name: '학교 낡은 화장실',
-    price: 650,
-    dpsBonus: 6,
-    cleanerPenaltyRate: 0.15,
-    bgColor: 'bg-emerald-100',
-    bgGradient: 'from-emerald-200 to-stone-200',
-    image: oldSchoolToiletImage
-  },
-  {
-    id: 3,
-    name: '지하철 공중화장실',
-    price: 1800,
-    dpsBonus: 14,
-    cleanerPenaltyRate: 0.18,
-    bgColor: 'bg-gray-200',
-    bgGradient: 'from-gray-300 to-gray-200',
-    image: subwayPublicToiletImage
-  },
-  {
-    id: 4,
-    name: '편의점 화장실',
-    price: 5200,
-    dpsBonus: 32,
-    cleanerPenaltyRate: 0.2,
-    bgColor: 'bg-orange-100',
-    bgGradient: 'from-orange-200 to-stone-100',
-    image: convenienceStoreToiletImage
-  },
-  {
-    id: 5,
-    name: '찜질방 화장실',
-    price: 14000,
-    dpsBonus: 75,
-    cleanerPenaltyRate: 0.21,
-    bgColor: 'bg-amber-100',
-    bgGradient: 'from-amber-300 to-orange-100',
-    image: jjimjilbangToiletImage
-  },
-  {
-    id: 6,
-    name: '카페 감성 화장실',
-    price: 38000,
-    dpsBonus: 150,
-    cleanerPenaltyRate: 0.22,
-    bgColor: 'bg-lime-100',
-    bgGradient: 'from-lime-200 to-amber-100',
-    image: cozyCafeToiletImage
-  },
-  {
-    id: 7,
-    name: '백화점 파우더룸',
-    price: 95000,
-    dpsBonus: 300,
-    cleanerPenaltyRate: 0.23,
-    bgColor: 'bg-pink-200',
-    bgGradient: 'from-pink-300 to-pink-100',
-    image: departmentPowderToiletImage
-  },
-  {
-    id: 8,
-    name: '호텔 스위트 화장실',
-    price: 240000,
-    dpsBonus: 560,
-    cleanerPenaltyRate: 0.24,
-    bgColor: 'bg-stone-200',
-    bgGradient: 'from-stone-300 to-amber-100',
-    image: hotelSuiteToiletImage
-  },
-  {
-    id: 9,
-    name: '7성급 호텔 화장실',
-    price: 600000,
-    dpsBonus: 1000,
-    cleanerPenaltyRate: 0.25,
-    bgColor: 'bg-slate-300',
-    bgGradient: 'from-slate-400 to-yellow-200',
-    image: sevenStarHotelToiletImage
-  },
-  {
-    id: 10,
-    name: '대통령 전용 화장실',
-    price: 1500000,
-    dpsBonus: 1750,
-    cleanerPenaltyRate: 0.25,
-    bgColor: 'bg-blue-200',
-    bgGradient: 'from-blue-300 to-amber-100',
-    image: presidentialPrivateToiletImage
-  },
-  {
-    id: 11,
-    name: '왕궁 황금 화장실',
-    price: 3600000,
-    dpsBonus: 3000,
-    cleanerPenaltyRate: 0.26,
-    bgColor: 'bg-yellow-200',
-    bgGradient: 'from-yellow-300 to-red-200',
-    image: royalPalaceToiletImage
-  },
-  {
-    id: 12,
-    name: '심해 잠수함 화장실',
-    price: 8500000,
-    dpsBonus: 5100,
-    cleanerPenaltyRate: 0.26,
-    bgColor: 'bg-cyan-200',
-    bgGradient: 'from-cyan-400 to-slate-600',
-    image: deepSeaSubmarineToiletImage
-  },
-  {
-    id: 13,
-    name: '우주선 무중력 화장실',
-    price: 20000000,
-    dpsBonus: 8500,
-    cleanerPenaltyRate: 0.27,
-    bgColor: 'bg-indigo-300',
-    bgGradient: 'from-indigo-400 to-slate-700',
-    image: spaceshipZeroGToiletImage
-  },
-  {
-    id: 14,
-    name: '달 기지 화장실',
-    price: 46000000,
-    dpsBonus: 14000,
-    cleanerPenaltyRate: 0.27,
-    bgColor: 'bg-slate-300',
-    bgGradient: 'from-slate-400 to-blue-200',
-    image: moonBaseToiletImage
-  },
-  {
-    id: 15,
-    name: '화성 개척지 화장실',
-    price: 105000000,
-    dpsBonus: 23000,
-    cleanerPenaltyRate: 0.28,
-    bgColor: 'bg-orange-200',
-    bgGradient: 'from-orange-400 to-red-200',
-    image: marsColonyToiletImage
-  },
-  {
-    id: 16,
-    name: '은하철도 화장실',
-    price: 240000000,
-    dpsBonus: 38000,
-    cleanerPenaltyRate: 0.28,
-    bgColor: 'bg-violet-200',
-    bgGradient: 'from-violet-500 to-amber-200',
-    image: galaxyTrainToiletImage
-  },
-  {
-    id: 17,
-    name: '천국 구름 화장실',
-    price: 540000000,
-    dpsBonus: 62000,
-    cleanerPenaltyRate: 0.29,
-    bgColor: 'bg-sky-100',
-    bgGradient: 'from-sky-200 to-yellow-100',
-    image: heavenCloudToiletImage
-  },
-  {
-    id: 18,
-    name: '신전의 성스러운 변기',
-    price: 1200000000,
-    dpsBonus: 100000,
-    cleanerPenaltyRate: 0.29,
-    bgColor: 'bg-stone-300',
-    bgGradient: 'from-stone-500 to-cyan-200',
-    image: sacredTempleToiletImage
-  },
-  {
-    id: 19,
-    name: '순금 황제 변기궁전',
-    price: 2700000000,
-    dpsBonus: 160000,
-    cleanerPenaltyRate: 0.3,
-    bgColor: 'bg-yellow-200',
-    bgGradient: 'from-yellow-300 to-amber-600',
-    image: goldEmperorPalaceToiletImage
-  },
-];
+// 화장실 외형과 생산량. 제작 비용은 shared/economy.js에서 관리합니다.
+
 
 // 반복 구매형 생산 장비: 이전 장비 5레벨 달성 시 다음 장비 해금
 const cleaningItems = [
@@ -288,9 +75,6 @@ const cleanerEventMinGold = 5000;
 const itemUnlockRequiredLevel = 15;
 const developerGoldAmount = 999999999999;
 const developerModeTapWindow = 1000;
-const poopEvolutionLevel = 100;
-const poopUpgradeBasePrice = 20;
-const poopUpgradeGrowth = 1.011;
 const activeClickDpsBonusRate = 0.05;
 const appVersion = packageJson.version;
 const defaultCosmetics = {
@@ -305,27 +89,27 @@ const getRandomCleanerDelay = () =>
 
 // 똥 캐릭터 진화 단계: 각 똥은 자기 레벨 1부터 성장하고, 진화 레벨에 도달하면 다음 똥이 해금
 const poopCharacters = [
-  { id: 0, name: '플랑크똥', badge: '✦', image: plankPoopImage, legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 1, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-stone-200 to-amber-500', description: '눈에 보일 듯 말 듯한 우주 먼지급 똥' },
-  { id: 1, name: '새우똥', badge: '🦐', image: shrimpPoopImage, legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 4, baseDps: 0, clickGrowth: 1, dpsGrowth: 0, gradient: 'from-orange-200 to-rose-400', description: '새우만큼 작고 살짝 굽은 하찮은 똥' },
-  { id: 2, name: '피래미똥', badge: '🐟', image: minnowPoopImage, legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 7, baseDps: 1, clickGrowth: 1, dpsGrowth: 0.2, gradient: 'from-sky-200 to-stone-500', description: '피래미처럼 작고 미끄러운 초소형 똥' },
-  { id: 3, name: '토끼똥', badge: '🐰', image: rabbitPoopImage, legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 10, baseDps: 1, clickGrowth: 1, dpsGrowth: 0.4, gradient: 'from-amber-200 to-stone-600', description: '동글동글 알갱이처럼 모여 있는 똥' },
-  { id: 4, name: '물똥', badge: '💧', legacyRequiredLevel: 1, evolutionLevel: poopEvolutionLevel, baseClickPower: 14, baseDps: 2, clickGrowth: 2, dpsGrowth: 0.8, gradient: 'from-sky-300 to-blue-600', image: waterPoopImage, description: '아직 힘이 없는 촉촉한 초보 똥' },
-  { id: 5, name: '말랑똥', badge: '🫧', legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 24, baseDps: 4, clickGrowth: 2, dpsGrowth: 1.2, gradient: 'from-cyan-300 to-teal-500', image: softPoopImage, description: '형태를 갖추기 시작한 말랑한 똥' },
-  { id: 6, name: '푸딩똥', badge: '🍮', image: puddingPoopImage, legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 38, baseDps: 7, clickGrowth: 3, dpsGrowth: 1.6, gradient: 'from-yellow-200 to-amber-400', description: '카라멜처럼 반짝이는 탱글한 똥' },
-  { id: 7, name: '찰떡똥', badge: '🍡', image: tteokPoopImage, legacyRequiredLevel: 10, evolutionLevel: poopEvolutionLevel, baseClickPower: 58, baseDps: 12, clickGrowth: 4, dpsGrowth: 2, gradient: 'from-stone-100 to-orange-200', description: '쫀득하게 늘어나는 찰진 똥' },
-  { id: 8, name: '건강똥', badge: '🌿', legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 86, baseDps: 20, clickGrowth: 6, dpsGrowth: 3, gradient: 'from-lime-300 to-emerald-600', image: healthyPoopImage, description: '균형 잡힌 영양으로 단단해진 똥' },
-  { id: 9, name: '단단똥', badge: '🪨', image: hardPoopImage, legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 124, baseDps: 34, clickGrowth: 8, dpsGrowth: 4, gradient: 'from-stone-400 to-amber-800', description: '표면이 갈라질 만큼 단단해진 똥' },
-  { id: 10, name: '근육똥', badge: '💪', image: musclePoopImage, legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 176, baseDps: 55, clickGrowth: 11, dpsGrowth: 6, gradient: 'from-orange-300 to-amber-800', description: '작은 팔까지 생긴 힘센 똥' },
-  { id: 11, name: '강철똥', badge: '⚙️', image: steelPoopImage, legacyRequiredLevel: 25, evolutionLevel: poopEvolutionLevel, baseClickPower: 250, baseDps: 86, clickGrowth: 15, dpsGrowth: 8, gradient: 'from-slate-300 to-zinc-700', description: '철판과 리벳으로 무장한 똥' },
-  { id: 12, name: '불꽃똥', badge: '🔥', legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 350, baseDps: 130, clickGrowth: 20, dpsGrowth: 11, gradient: 'from-orange-400 to-red-600', image: firePoopImage, description: '뜨거운 생산력을 뿜어내는 똥' },
-  { id: 13, name: '화산똥', badge: '🌋', image: volcanoPoopImage, legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 480, baseDps: 190, clickGrowth: 26, dpsGrowth: 15, gradient: 'from-zinc-700 to-red-600', description: '금 간 표면 사이로 열기가 새어 나오는 똥' },
-  { id: 14, name: '용암똥', badge: '♨️', image: lavaPoopImage, legacyRequiredLevel: 50, evolutionLevel: poopEvolutionLevel, baseClickPower: 650, baseDps: 280, clickGrowth: 34, dpsGrowth: 20, gradient: 'from-red-500 to-orange-500', description: '용암 줄기가 흐르는 후끈한 똥' },
-  { id: 15, name: '플래티넘똥', badge: '🥈', image: platinumPoopImage, legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 880, baseDps: 400, clickGrowth: 44, dpsGrowth: 27, gradient: 'from-slate-100 to-zinc-400', description: '은백색 광택이 도는 고급 똥' },
-  { id: 16, name: '에메랄드똥', badge: '🟢', image: emeraldPoopImage, legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 1180, baseDps: 570, clickGrowth: 56, dpsGrowth: 36, gradient: 'from-emerald-300 to-green-700', description: '초록 결정 조각이 박힌 보석 똥' },
-  { id: 17, name: '다이아똥', badge: '💎', legacyRequiredLevel: 80, evolutionLevel: poopEvolutionLevel, baseClickPower: 1560, baseDps: 800, clickGrowth: 72, dpsGrowth: 48, gradient: 'from-cyan-300 to-violet-600', image: diamondPoopImage, description: '보석처럼 단단하고 희귀한 똥' },
-  { id: 18, name: '왕똥', badge: '👑', image: kingPoopImage, legacyRequiredLevel: 120, evolutionLevel: poopEvolutionLevel, baseClickPower: 2050, baseDps: 1120, clickGrowth: 92, dpsGrowth: 64, gradient: 'from-red-300 to-amber-600', description: '작은 왕관을 쓴 당당한 똥' },
-  { id: 19, name: '황금똥', badge: '🏆', legacyRequiredLevel: 120, evolutionLevel: null, baseClickPower: 2700, baseDps: 1550, clickGrowth: 120, dpsGrowth: 84, gradient: 'from-yellow-300 to-amber-600', image: goldPoopImage, description: '모든 변기가 꿈꾸는 전설의 황금똥' },
-];
+  { id: 0, name: '플랑크똥', badge: '✦', image: plankPoopImage, legacyRequiredLevel: 1, gradient: 'from-stone-200 to-amber-500', description: '눈에 보일 듯 말 듯한 우주 먼지급 똥' },
+  { id: 1, name: '새우똥', badge: '🦐', image: shrimpPoopImage, legacyRequiredLevel: 1, gradient: 'from-orange-200 to-rose-400', description: '새우만큼 작고 살짝 굽은 하찮은 똥' },
+  { id: 2, name: '피래미똥', badge: '🐟', image: minnowPoopImage, legacyRequiredLevel: 1, gradient: 'from-sky-200 to-stone-500', description: '피래미처럼 작고 미끄러운 초소형 똥' },
+  { id: 3, name: '토끼똥', badge: '🐰', image: rabbitPoopImage, legacyRequiredLevel: 1, gradient: 'from-amber-200 to-stone-600', description: '동글동글 알갱이처럼 모여 있는 똥' },
+  { id: 4, name: '물똥', badge: '💧', legacyRequiredLevel: 1, gradient: 'from-sky-300 to-blue-600', image: waterPoopImage, description: '아직 힘이 없는 촉촉한 초보 똥' },
+  { id: 5, name: '말랑똥', badge: '🫧', legacyRequiredLevel: 10, gradient: 'from-cyan-300 to-teal-500', image: softPoopImage, description: '형태를 갖추기 시작한 말랑한 똥' },
+  { id: 6, name: '푸딩똥', badge: '🍮', image: puddingPoopImage, legacyRequiredLevel: 10, gradient: 'from-yellow-200 to-amber-400', description: '카라멜처럼 반짝이는 탱글한 똥' },
+  { id: 7, name: '찰떡똥', badge: '🍡', image: tteokPoopImage, legacyRequiredLevel: 10, gradient: 'from-stone-100 to-orange-200', description: '쫀득하게 늘어나는 찰진 똥' },
+  { id: 8, name: '건강똥', badge: '🌿', legacyRequiredLevel: 25, gradient: 'from-lime-300 to-emerald-600', image: healthyPoopImage, description: '균형 잡힌 영양으로 단단해진 똥' },
+  { id: 9, name: '단단똥', badge: '🪨', image: hardPoopImage, legacyRequiredLevel: 25, gradient: 'from-stone-400 to-amber-800', description: '표면이 갈라질 만큼 단단해진 똥' },
+  { id: 10, name: '근육똥', badge: '💪', image: musclePoopImage, legacyRequiredLevel: 25, gradient: 'from-orange-300 to-amber-800', description: '작은 팔까지 생긴 힘센 똥' },
+  { id: 11, name: '강철똥', badge: '⚙️', image: steelPoopImage, legacyRequiredLevel: 25, gradient: 'from-slate-300 to-zinc-700', description: '철판과 리벳으로 무장한 똥' },
+  { id: 12, name: '불꽃똥', badge: '🔥', legacyRequiredLevel: 50, gradient: 'from-orange-400 to-red-600', image: firePoopImage, description: '뜨거운 생산력을 뿜어내는 똥' },
+  { id: 13, name: '화산똥', badge: '🌋', image: volcanoPoopImage, legacyRequiredLevel: 50, gradient: 'from-zinc-700 to-red-600', description: '금 간 표면 사이로 열기가 새어 나오는 똥' },
+  { id: 14, name: '용암똥', badge: '♨️', image: lavaPoopImage, legacyRequiredLevel: 50, gradient: 'from-red-500 to-orange-500', description: '용암 줄기가 흐르는 후끈한 똥' },
+  { id: 15, name: '플래티넘똥', badge: '🥈', image: platinumPoopImage, legacyRequiredLevel: 80, gradient: 'from-slate-100 to-zinc-400', description: '은백색 광택이 도는 고급 똥' },
+  { id: 16, name: '에메랄드똥', badge: '🟢', image: emeraldPoopImage, legacyRequiredLevel: 80, gradient: 'from-emerald-300 to-green-700', description: '초록 결정 조각이 박힌 보석 똥' },
+  { id: 17, name: '다이아똥', badge: '💎', legacyRequiredLevel: 80, gradient: 'from-cyan-300 to-violet-600', image: diamondPoopImage, description: '보석처럼 단단하고 희귀한 똥' },
+  { id: 18, name: '왕똥', badge: '👑', image: kingPoopImage, legacyRequiredLevel: 120, gradient: 'from-red-300 to-amber-600', description: '작은 왕관을 쓴 당당한 똥' },
+  { id: 19, name: '황금똥', badge: '🏆', legacyRequiredLevel: 120, gradient: 'from-yellow-300 to-amber-600', image: goldPoopImage, description: '모든 변기가 꿈꾸는 전설의 황금똥' },
+].map((poop) => ({ ...poop, ...poopProgression[poop.id] }));
 const legacyPoopNames = ['물똥', '말랑똥', '건강똥', '불꽃똥', '다이아똥', '황금똥'];
 const getPoopIdByName = (name) => poopCharacters.find((poop) => poop.name === name)?.id ?? 0;
 const initialPoopLevels = poopCharacters.map((_, index) => index === 0 ? 1 : 0);
@@ -345,18 +129,6 @@ const initialScore = {
   toiletSchemaVersion,
   poopLevel: 1,
 };
-const getPoopUpgradeIndex = (poop, level) =>
-  (poop.id * poopEvolutionLevel) + Math.max(0, level - 1);
-const getPoopUpgradePrice = (poop, level) =>
-  Math.ceil(poopUpgradeBasePrice * Math.pow(poopUpgradeGrowth, getPoopUpgradeIndex(poop, level)));
-const getPoopStats = (poop, level) => {
-  const stageLevel = Math.max(0, level - 1);
-
-  return {
-    clickPower: Math.floor(poop.baseClickPower + poop.clickGrowth * stageLevel),
-    dps: Math.floor(poop.baseDps + poop.dpsGrowth * stageLevel),
-  };
-};
 const getHighestUnlockedPoopId = (levels) =>
   levels.reduce((highestId, level, index) => level > 0 ? index : highestId, 0);
 const migrateLegacyPoopLevels = (legacyLevels = []) => {
@@ -371,7 +143,7 @@ const migrateLegacyPoopLevels = (legacyLevels = []) => {
   if (migratedLevels[highestUnlockedId] <= 0) return initialPoopLevels;
 
   return migratedLevels.map((level, index) => {
-    if (index < highestUnlockedId) return poopCharacters[index].evolutionLevel ?? 1;
+    if (index < highestUnlockedId) return Math.max(level, 100); // Preserve the old migration baseline.
     return level;
   });
 };
@@ -412,7 +184,7 @@ const normalizePoopProgress = (source = {}) => {
     .reverse()
     .find((poop) => legacyLevel >= poop.legacyRequiredLevel) ?? poopCharacters[0];
   const legacyLevels = poopCharacters.map((poop) => {
-    if (poop.id < legacyPoop.id) return poop.evolutionLevel ?? 1;
+    if (poop.id < legacyPoop.id) return 100; // Legacy saves used a uniform Lv.100 evolution.
     if (poop.id === legacyPoop.id) return Math.max(1, legacyLevel - poop.legacyRequiredLevel + 1);
     return 0;
   });
@@ -675,6 +447,13 @@ const App = () => {
 
   const [authUser, setAuthUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isLoginOpen, setIsLoginOpen] = useState(() => {
+    try {
+      return sessionStorage.getItem('poop-pr-guest-mode') !== 'true';
+    } catch {
+      return true;
+    }
+  });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profileNicknameDraft, setProfileNicknameDraft] = useState('');
   const [profileSaveStatus, setProfileSaveStatus] = useState('idle');
@@ -693,8 +472,8 @@ const App = () => {
   // 현재 보유한 영양분 코인 수량
   const [gold, setGold] = useState(0);
   
-  // 현재 매입한 화장실 단계 (0 = 시골 푸세식, 5 = 순금 황제 변기궁전)
-  const [currentToiletLevel, setCurrentToiletLevel] = useState(0);
+  // 기존 저장의 화장실 단계. 공방 로드 후에는 공통 경제 상태를 사용합니다.
+  const [legacyToiletLevel, setCurrentToiletLevel] = useState(0);
 
   // 똥 캐릭터별 강화 레벨 (0 = 잠김, 1 이상 = 해금)
   const [poopLevels, setPoopLevels] = useState(initialPoopLevels);
@@ -708,8 +487,8 @@ const App = () => {
   // 똥 꾸미기 장착 상태
   const [cosmetics, setCosmetics] = useState(defaultCosmetics);
   
-  // 화장실 매입 상점 팝업창의 열림/닫힘 상태
-  const [isShopOpen, setIsShopOpen] = useState(false);
+  // 화장실 공방 팝업창의 열림/닫힘 상태
+  const [isShopOpen, setIsShopOpen] = useState(() => new URLSearchParams(window.location.search).get('workshop') === '1');
 
   // 청소 장비 상점 팝업창의 열림/닫힘 상태
   const [isItemShopOpen, setIsItemShopOpen] = useState(false);
@@ -718,6 +497,8 @@ const App = () => {
   const [isPoopShopOpen, setIsPoopShopOpen] = useState(false);
 
   // 똥 강화 모달 상단 탭
+  const [evolution, setEvolution] = useState(null);
+  const evolutionLock = useRef(false);
   const [poopShopTab, setPoopShopTab] = useState('upgrade');
   
   // 클릭 애니메이션 트리거 (팝핑 효과)
@@ -742,6 +523,8 @@ const App = () => {
   const goldRef = useRef(gold);
 
   const localStorageKey = 'poop-pr-save';
+  const economy = useEconomy({ authUser, isAuthLoading, isSaveLoaded });
+  const currentToiletLevel = economy.state?.toiletLevel ?? legacyToiletLevel;
 
   useEffect(() => {
     let isMounted = true;
@@ -771,6 +554,17 @@ const App = () => {
     setLocalPassword('');
     setLocalNickname('');
     setLocalAuthStatus('idle');
+  };
+
+  const handleGuestPlay = () => {
+    setIsLoginOpen(false);
+    setLocalAuthMode('hidden');
+    resetLocalAuthForm();
+    try {
+      sessionStorage.setItem('poop-pr-guest-mode', 'true');
+    } catch {
+      // 브라우저 저장소가 제한되어도 비로그인 플레이는 허용합니다.
+    }
   };
 
   const handleLocalAuthSubmit = async () => {
@@ -822,6 +616,7 @@ const App = () => {
   const handleLogout = async () => {
     await fetch('/api/logout', { method: 'POST' });
     setAuthUser(null);
+    setIsLoginOpen(true);
     setIsProfileOpen(false);
     setProfileNicknameDraft('');
     setProfileSaveStatus('idle');
@@ -878,7 +673,8 @@ const App = () => {
   const activeCleaningItems = cleaningItems.filter(
     (_, index) => (itemLevels[index] ?? 0) > 0
   );
-  const toiletDps = toilets[currentToiletLevel]?.dpsBonus ?? 0;
+  const toiletDps = Math.floor((toilets[currentToiletLevel]?.dpsBonus ?? 0)
+    * renovationMultiplier(economy.state?.renovationLevel ?? 0));
   const currentCleanerPenaltyRate = toilets[currentToiletLevel]?.cleanerPenaltyRate ?? 0.1;
   const currentPoopLevel = getHighestUnlockedPoopId(poopLevels);
   const unlockedPoop = poopCharacters[currentPoopLevel] ?? poopCharacters[0];
@@ -888,7 +684,8 @@ const App = () => {
   const nextPoop = poopCharacters[currentPoop.id + 1] ?? null;
   const canEvolvePoop = Boolean(nextPoop && (poopLevels[nextPoop.id] ?? 0) === 0 && poopLevel >= currentPoop.evolutionLevel);
   const poopUpgradePrice = getPoopUpgradePrice(currentPoop, poopLevel);
-  const { clickPower: baseClickPower, dps: characterDps } = getPoopStats(currentPoop, poopLevel);
+  const { clickPower: baseClickPower, dps: characterDps } = getPoopStats(currentPoop, poopLevel, poopLevels);
+  const nextPoopStats = nextPoop ? getPoopStats(nextPoop, 1, poopLevels) : null;
   const dps = toiletDps + characterDps + itemDps;
   const activeClickBonus = Math.floor(dps * activeClickDpsBonusRate);
   const clickPower = baseClickPower + activeClickBonus;
@@ -1430,25 +1227,6 @@ const App = () => {
     });
   };
 
-  // ==================== 화장실 매입 핸들러 ====================
-  // 화장실을 매입했을 때 호출되는 함수
-  const handleToiletPurchase = (toiletId) => {
-    const toilet = toilets[toiletId];
-    
-    // 매입 조건 재확인 (방어 코드)
-    if (gold < toilet.price) return;
-    if (toiletId > 0 && currentToiletLevel < toiletId - 1) return;
-
-    // 1. 코인 차감
-    setGold(prevGold => prevGold - toilet.price);
-    
-    // 2. 현재 화장실 단계 업데이트
-    setCurrentToiletLevel(toiletId);
-    
-    // 3. 모달 자동 닫기 (매입 성공 후)
-    setIsShopOpen(false);
-  };
-
   // ==================== 청소 장비 구매 핸들러 ====================
   const handleItemPurchase = (itemId) => {
     const item = cleaningItems[itemId];
@@ -1475,7 +1253,10 @@ const App = () => {
   };
 
   const handlePoopEvolve = () => {
-    if (!canEvolvePoop || !nextPoop) return;
+    if (!canEvolvePoop || !nextPoop || evolutionLock.current) return;
+    evolutionLock.current = true;
+    setEvolution({ from: currentPoop, to: nextPoop,
+      before: { clickPower: baseClickPower, dps: characterDps }, after: nextPoopStats });
 
     setPoopLevels(prevLevels =>
       prevLevels.map((level, index) => index === nextPoop.id ? 1 : level)
@@ -1492,6 +1273,8 @@ const App = () => {
 
   // ==================== 게임 초기화 리셋 핸들러 ====================
   const handleResetGame = async () => {
+    const resetEconomy = await economy.act({ type: 'reset_progress' });
+    if (!resetEconomy) return;
     if (resetTimerRef.current) {
       clearTimeout(resetTimerRef.current);
       resetTimerRef.current = null;
@@ -1594,17 +1377,6 @@ const App = () => {
 
   const handleDeveloperGoldCharge = () => {
     setGold(prevGold => prevGold + developerGoldAmount);
-  };
-
-  // ==================== 마지막 구매 가능 화장실 인덱스 계산 ====================
-  // 사용자가 현재 살 수 있는 화장실 중 가장 높은 단계 계산
-  const getMaxAvailableToilet = () => {
-    // 사용자가 현재 보유한 다음 단계를 살 수 있는지 확인
-    if (currentToiletLevel < toilets.length - 1) {
-      return currentToiletLevel + 1;
-    }
-    // 모든 화장실을 소유한 경우
-    return currentToiletLevel;
   };
 
   // ==================== 숫자 포맷팅 함수 ====================
@@ -1719,8 +1491,8 @@ const App = () => {
               <p className="text-[10px] font-black text-slate-700">로그인하면 랭킹에 참여할 수 있어요</p>
               <div className="flex shrink-0 gap-1.5">
                 <button type="button" onClick={handleRankingOpen} className="rounded-xl bg-amber-400 px-2.5 py-1.5 text-[10px] font-black text-amber-950 shadow-[0_2px_0_#92400e] active:translate-y-0.5 active:shadow-none">🏆</button>
-                <button type="button" onClick={handleKakaoLogin} disabled={isAuthLoading} className="rounded-xl border-2 border-[#3c1e1e] bg-[#FEE500] px-3 py-1.5 text-[10px] font-black text-[#191919] shadow-[0_2px_0_#3c1e1e] active:translate-y-0.5 active:shadow-none disabled:opacity-50">
-                  카카오 로그인
+                <button type="button" onClick={() => setIsLoginOpen(true)} disabled={isAuthLoading} className="rounded-xl border-2 border-[#3c1e1e] bg-[#FEE500] px-3 py-1.5 text-[10px] font-black text-[#191919] shadow-[0_2px_0_#3c1e1e] active:translate-y-0.5 active:shadow-none disabled:opacity-50">
+                  로그인
                 </button>
               </div>
             </>
@@ -1788,7 +1560,7 @@ const App = () => {
 
       {/* ==================== 중앙: 똥 클릭 버튼 ==================== */}
       <div
-        className="relative z-20 flex min-h-0 w-full flex-1 cursor-pointer flex-col items-center justify-center py-2"
+        className="relative flex min-h-0 w-full flex-1 cursor-pointer flex-col items-center justify-center py-2"
         onClick={handlePoopClick}
       >
         {/* 구매한 청소 장비가 변기 주변 슬롯에 나타나는 전시 레이어 */}
@@ -1821,7 +1593,7 @@ const App = () => {
         </div>
 
         {(cleanerEvent || cleanerMessage) && (
-          <div className="absolute left-1/2 top-2 z-40 w-[min(100%,360px)] -translate-x-1/2 rounded-lg border border-red-200/80 bg-red-950/85 p-3 text-white shadow-2xl backdrop-blur-md">
+          <div className="pointer-events-auto absolute left-1/2 top-2 z-40 w-[min(100%,360px)] -translate-x-1/2 rounded-lg border border-red-200/80 bg-red-950/85 p-3 text-white shadow-2xl backdrop-blur-md">
             {cleanerEvent ? (
               <>
                 <div className="flex items-center justify-between gap-3">
@@ -1868,52 +1640,30 @@ const App = () => {
           </div>
         )}
 
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            handlePoopClick();
-          }}
-          className={`
-            relative z-20 flex h-56 w-56 cursor-pointer touch-manipulation items-center justify-center rounded-full
-            text-8xl transition-transform duration-300 ease-out
-            filter drop-shadow-lg hover:drop-shadow-2xl
-            ${isClicking ? 'scale-125' : 'scale-100'}
-          `}
-          aria-label={`${currentPoop.name} 터치해서 영양분 얻기`}
-          style={{
-            transform: isClicking ? 'scale(1.25)' : 'scale(1)',
-            filter: isClicking 
-              ? 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3))' 
-              : 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2))',
-          }}
-        >
-          {activeCleaningItems.length >= 1 && (
+      </div>
+
+      <SeatedPoop
+        toiletId={currentToiletLevel}
+        poopId={currentPoop.id}
+        name={currentPoop.name}
+        clicking={isClicking}
+        onClick={handlePoopClick}
+        feedback={formatNumber(clickPower)}
+      >
+        {activeCleaningItems.length >= 1 && (
             <>
               <span className="absolute -left-5 top-3 text-2xl" style={{ animation: 'cleaningSparkle 1.8s ease-in-out infinite' }} aria-hidden="true">🫧</span>
               <span className="absolute -right-4 bottom-3 text-xl" style={{ animation: 'cleaningSparkle 1.8s ease-in-out infinite .6s' }} aria-hidden="true">🫧</span>
             </>
-          )}
-          {activeCleaningItems.length >= 3 && (
-            <span className="absolute -right-5 top-8 text-2xl" style={{ animation: 'cleaningSparkle 1.4s ease-in-out infinite .2s' }} aria-hidden="true">✨</span>
-          )}
-          {activeCleaningItems.length >= 5 && (
-            <span className="absolute -left-5 bottom-8 text-2xl" style={{ animation: 'cleaningSparkle 1.2s ease-in-out infinite .4s' }} aria-hidden="true">💨</span>
-          )}
-          {renderPoopAvatar(currentPoop, poopLevel, cosmetics)}
-        </button>
-
-        {/* 클릭 시 떠오르는 텍스트 효과 (선택사항) */}
-        {isClicking && (
-          <div
-            className="text-2xl font-bold text-green-600 mt-4 animate-bounce"
-            style={{
-              animation: 'bounce 0.6s ease-out'
-            }}
-          >
-            +{formatNumber(clickPower)} 😊
-          </div>
         )}
-      </div>
+        {activeCleaningItems.length >= 3 && (
+            <span className="absolute -right-5 top-8 text-2xl" style={{ animation: 'cleaningSparkle 1.4s ease-in-out infinite .2s' }} aria-hidden="true">✨</span>
+        )}
+        {activeCleaningItems.length >= 5 && (
+            <span className="absolute -left-5 bottom-8 text-2xl" style={{ animation: 'cleaningSparkle 1.2s ease-in-out infinite .4s' }} aria-hidden="true">💨</span>
+        )}
+        {renderPoopAvatar(currentPoop, poopLevel, cosmetics, 'seat-poop-image')}
+      </SeatedPoop>
 
       {/* ==================== 하단: 성장 상점 버튼 ==================== */}
       <div className="relative z-30 grid w-full shrink-0 grid-cols-3 gap-2">
@@ -1939,19 +1689,19 @@ const App = () => {
           className="flex min-h-[62px] flex-col items-center justify-center rounded-[1.35rem] border-[3px] border-orange-800 bg-gradient-to-b from-orange-300 via-orange-300 to-red-400 px-2 py-1.5 text-[11px] font-black text-red-950 shadow-[0_6px_0_#9a3412,0_10px_16px_rgba(0,0,0,0.26)] transition-all hover:brightness-105 active:translate-y-1 active:shadow-[0_2px_0_#9a3412]"
         >
           <span className="text-2xl drop-shadow-sm" aria-hidden="true">🚽</span>
-          <span className="mt-0.5">화장실 매입</span>
+          <span className="mt-0.5">화장실 공방</span>
         </button>
       </div>
 
-      {!isAuthLoading && !authUser && (
+      {!isAuthLoading && !authUser && isLoginOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/65 p-4">
           <div className="max-h-[88vh] w-full max-w-sm overflow-y-auto rounded-[1.75rem] border-[3px] border-amber-950 bg-[#fff8e8] p-5 text-center text-slate-900 shadow-[0_8px_0_#78350f,0_18px_40px_rgba(0,0,0,0.45)]">
             <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border-[3px] border-amber-800 bg-amber-200 text-3xl shadow-[0_4px_0_#92400e]">
               💩
             </div>
             <h2 className="mt-4 text-xl font-black">카카오 로그인</h2>
-            <p className="mt-2 text-sm font-bold text-slate-600">
-              저장, 랭킹, 똥 꾸미기를 사용하려면 먼저 로그인해주세요.
+            <p className="mt-2 break-keep text-sm font-bold text-slate-600">
+              로그인하면 온라인 저장과 랭킹을 이용할 수 있어요.
             </p>
             <button
               type="button"
@@ -1971,6 +1721,16 @@ const App = () => {
             >
               다른 계정으로 시작하기
             </button>
+            <button
+              type="button"
+              onClick={handleGuestPlay}
+              className="mt-3 w-full rounded-2xl border-2 border-teal-800 bg-teal-100 px-4 py-3 text-sm font-black text-teal-950 shadow-[0_4px_0_#115e59] active:translate-y-0.5 active:shadow-none"
+            >
+              로그인 안 하고 게임하기
+            </button>
+            <p className="mt-3 text-xs font-bold text-slate-500">
+              로그인 없이 플레이한 기록은 이 브라우저에 저장돼요.
+            </p>
 
             {localAuthMode !== 'hidden' && (
               <div className="mt-4 rounded-2xl border-2 border-amber-200 bg-white/80 p-3 text-left">
@@ -2356,8 +2116,9 @@ const App = () => {
               </span>
             </div>
             <p className="mt-2 text-sm font-semibold text-gray-600">
-              저장된 영양분, 똥 레벨, 장비, 화장실을 모두 처음으로 되돌릴까요?
+              영양분, 똥 레벨, 장비, 부품과 화장실을 처음으로 되돌릴까요? 똥 토큰과 무료 보상 수령 기록은 유지돼요.
             </p>
+            {economy.error && <p className="mt-2 text-xs font-bold text-red-700" role="alert">{economy.error}</p>}
             {isDeveloperModeOpen && (
               <div className="mt-4 rounded-xl border-2 border-yellow-300 bg-yellow-50 p-3">
                 <p className="text-sm font-black text-yellow-900">개발자 모드</p>
@@ -2543,15 +2304,8 @@ const App = () => {
               <>
               <div className="rounded-2xl border-[3px] border-amber-700 bg-amber-50 p-4 shadow-[0_5px_0_#92400e]">
                 <div className="flex items-center gap-3">
-                  <div className="relative flex h-20 w-20 shrink-0 items-center justify-center">
-                    {renderPoopAvatar(
-                      currentPoop,
-                      poopLevel,
-                      cosmetics,
-                      'h-20 w-20 object-contain',
-                      'absolute -right-1 -top-1 text-2xl',
-                      false
-                    )}
+                  <div className="poop-upgrade-portrait">
+                    <PoopPortrait poop={currentPoop} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <h3 className="font-black text-gray-900">
@@ -2572,6 +2326,13 @@ const App = () => {
                   </div>
                 </div>
 
+                {nextPoopStats && (poopLevels[nextPoop.id] ?? 0) === 0 && (
+                  <div className="mt-3 rounded-xl bg-amber-100 p-3 text-xs font-bold text-amber-950">
+                    <p>Lv.{currentPoop.evolutionLevel} 달성 시 {nextPoop.name}으로 무료 진화</p>
+                    <p className="mt-1">똥 자체 능력 최소 30% 상승 · 이전 성장 이어받기</p>
+                    <p className="mt-1">기본 클릭 {formatNumber(baseClickPower)} → {formatNumber(nextPoopStats.clickPower)} · 자동 {formatNumber(characterDps)} → {formatNumber(nextPoopStats.dps)}/초</p>
+                  </div>
+                )}
                 {canEvolvePoop ? (
                   <button
                     onClick={handlePoopEvolve}
@@ -2598,7 +2359,7 @@ const App = () => {
                 const ownedLevel = poopLevels[poop.id] ?? 0;
                 const isOwned = ownedLevel > 0;
                 const isSelected = currentPoop.id === poop.id;
-                const stageStats = getPoopStats(poop, Math.max(1, ownedLevel));
+                const stageStats = getPoopStats(poop, Math.max(1, ownedLevel), poopLevels);
 
                 return (
                   <div
@@ -2638,7 +2399,7 @@ const App = () => {
                             {poop.evolutionLevel ? `Lv.${poop.evolutionLevel} 진화` : '최종 단계'}
                           </span>
                           <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">
-                            {isOwned ? `클릭 +${formatNumber(stageStats.clickPower)}` : `기본 클릭 +${formatNumber(poop.baseClickPower)}`}
+                            {isOwned ? `클릭 +${formatNumber(stageStats.clickPower)}` : `기본 클릭 +${formatNumber(stageStats.clickPower)}`}
                           </span>
                         </div>
                       </div>
@@ -2755,131 +2516,19 @@ const App = () => {
         </div>
       )}
 
-      {/* ==================== 모달: 화장실 매입 상점 팝업 ==================== */}
       {isShopOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3">
-          <div className="flex max-h-[86vh] w-full max-w-[440px] flex-col overflow-hidden rounded-t-[1.75rem] border-[3px] border-b-0 border-cyan-950 bg-[#fff8e8] shadow-2xl">
-            {/* 모달 헤더 */}
-            <div className="flex items-center justify-between border-b-[3px] border-cyan-950 bg-gradient-to-b from-cyan-400 to-cyan-600 p-4 text-white">
-              <div>
-                <h2 className="text-xl font-black">🏢 화장실 매입</h2>
-                <p className="mt-1 text-xs font-semibold text-cyan-950">배경과 기본 생산량을 업그레이드해요</p>
-              </div>
-              <button
-                onClick={() => setIsShopOpen(false)}
-                className="rounded-xl border-2 border-cyan-950 bg-white/80 px-2.5 py-1 text-xl font-black text-cyan-950 shadow-[0_3px_0_#083344] active:translate-y-0.5"
-                aria-label="화장실 매입 상점 닫기"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* 모달 콘텐츠 (스크롤 가능) */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {toilets.map((toilet) => {
-                // 해당 화장실을 구매할 수 있는지 판단
-                const canPurchase =
-                  gold >= toilet.price && // 충분한 코인 보유
-                  (toilet.id === 0 || currentToiletLevel >= toilet.id - 1) && // 이전 단계 보유
-                  currentToiletLevel < toilet.id; // 아직 구매하지 않음
-
-                // 이미 구매한 화장실인지 판단
-                const isOwned = currentToiletLevel >= toilet.id;
-
-                return (
-	                  <div
-	                    key={toilet.id}
-	                    className={`
-	                      mb-3 rounded-2xl border-[3px] p-3 shadow-[0_4px_0_rgba(15,23,42,0.22)] transition-all
-	                      ${isOwned
-	                        ? 'border-emerald-300 bg-emerald-50'
-	                        : canPurchase
-	                        ? 'border-amber-300 bg-amber-50'
-	                        : 'border-slate-200 bg-white'
-	                      }
-	                    `}
-	                  >
-	                    {toilet.image && (
-	                      <img
-	                        src={toilet.image}
-	                        alt={toilet.name}
-	                        className="mb-3 h-28 w-full rounded-lg object-cover"
-	                      />
-	                    )}
-	                    {/* 화장실 이름 및 상태 배지 */}
-	                    <div className="mb-2 flex items-center justify-between gap-2">
-	                      <h3 className="min-w-0 truncate text-base font-black text-slate-900">
-	                        {toilet.name}
-	                      </h3>
-	                      {isOwned && (
-	                        <span className="shrink-0 rounded bg-emerald-500 px-2 py-1 text-xs font-bold text-white">
-	                          ✓ 보유중
-	                        </span>
-	                      )}
-                    </div>
-
-                    {/* 화장실 정보 */}
-	                    <div className="mb-3 grid grid-cols-2 gap-2 text-sm">
-	                      <div>
-	                        <p className="text-xs font-bold text-slate-500">가격</p>
-	                        <p className={`font-black ${gold >= toilet.price && !isOwned ? 'text-emerald-600' : 'text-slate-900'}`}>
-	                          {formatNumber(toilet.price)} 💰
-	                        </p>
-	                      </div>
-	                      <div>
-	                        <p className="text-xs font-bold text-slate-500">DPS 보너스</p>
-	                        <p className="font-black text-sky-600">
-	                          +{formatNumber(toilet.dpsBonus)}
-	                        </p>
-	                      </div>
-                    </div>
-
-                    {/* 매입하기 버튼 또는 소유 표시 */}
-                    {isOwned ? (
-	                      <button
-	                        disabled
-	                        className="w-full cursor-default rounded-lg bg-emerald-500 py-2 font-bold text-white opacity-70"
-	                      >
-	                        ✓ 이미 구매함
-	                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleToiletPurchase(toilet.id)}
-                        disabled={!canPurchase}
-                        className={`
-	                          w-full rounded-2xl border-[3px] py-2 font-black transition-all
-	                          ${canPurchase
-	                            ? 'cursor-pointer border-cyan-800 bg-gradient-to-b from-cyan-300 to-cyan-500 text-cyan-950 shadow-[0_4px_0_#155e75] active:translate-y-1 active:shadow-[0_1px_0_#155e75]'
-	                            : 'cursor-not-allowed border-slate-300 bg-slate-200 text-slate-500 opacity-70'
-	                          }
-	                        `}
-                      >
-                        {toilet.price === 0
-                          ? '선택'
-                          : gold < toilet.price
-                          ? '코인 부족'
-                          : currentToiletLevel < toilet.id - 1
-                          ? '이전 단계 필요'
-                          : '매입하기'}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* 모달 푸터 */}
-            <div className="border-t border-slate-200 bg-white p-3">
-              <button
-                onClick={() => setIsShopOpen(false)}
-                className="w-full rounded-lg bg-slate-200 px-4 py-2 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-300"
-              >
-                닫기
-              </button>
-            </div>
-          </div>
-        </div>
+        <EconomyPanel
+          economy={economy}
+          toilets={toilets}
+          onClose={() => setIsShopOpen(false)}
+          onLogin={() => { setIsShopOpen(false); setIsLoginOpen(true); }}
+        />
       )}
+
+      {evolution && <EvolutionCelebration evolution={evolution} onClose={() => {
+        setEvolution(null);
+        evolutionLock.current = false;
+      }} />}
 
       {/* ==================== CSS 애니메이션 정의 ==================== */}
       <style>{`

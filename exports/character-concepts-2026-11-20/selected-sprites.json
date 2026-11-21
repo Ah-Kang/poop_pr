@@ -1,0 +1,53 @@
+{
+  "tool": "Built-in image_gen",
+  "rows": [
+    {
+      "name": "피래미똥",
+      "concept": "01-피래미똥-B.png",
+      "target": "minnow-poop.png",
+      "id": 2,
+      "prompt": "Use case: background-extraction. Exact background removal of this approved 피래미똥 image, NOT a redraw. Keep the original square canvas and same character size, location, outline, silhouette, eyes and face, material texture, caramel/fin details and colors exactly unchanged. Remove ivory background and ground shadow only. CRITICAL: clean hard-edged character cutout, no glow, no aura, no halo, no diffuse orange haze around it, no vignette, no relighting. Fully opaque character with anti-aliased boundary and completely transparent exterior. Genuine transparent RGBA PNG, not a black or white background. Keep all light custard areas opaque.",
+      "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-51e99f4c-8cd2-481e-a104-1b5430c56ddc.png"
+    },
+    {
+      "name": "푸딩똥",
+      "concept": "02-푸딩똥-A.png",
+      "target": "pudding-poop.png",
+      "id": 6,
+      "prompt": "Use case: background-extraction. Exact background removal of this approved 푸딩똥 image, NOT a redraw. Keep the original square canvas and same character size, location, outline, silhouette, eyes and face, material texture, caramel/fin details and colors exactly unchanged. Remove ivory background and ground shadow only. CRITICAL: clean hard-edged character cutout, no glow, no aura, no halo, no diffuse orange haze around it, no vignette, no relighting. Fully opaque character with anti-aliased boundary and completely transparent exterior. Genuine transparent RGBA PNG, not a black or white background. Keep all light custard areas opaque.",
+      "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-6e6cb2c6-4242-4cde-b8b7-a43f3f90a27c.png"
+    },
+    {
+      "name": "건강똥",
+      "concept": "03-건강똥-C.png",
+      "target": "healthy-poop.png",
+      "id": 8,
+      "prompt": "Use case: background-extraction. Edit the supplied SELECTED approved character illustration (건강똥). Remove only the ivory paper background and the painted ground/drop shadow. Return a genuinely transparent RGBA PNG sprite. Preserve the EXACT existing character silhouette, facial expression, pose, eyes, cheeks, colors, painterly texture, outline, proportions and all character details, including any small decorative marks. Do not redesign, recolor, add objects or add a white sticker outline. Keep the complete character with a comfortable transparent margin on all sides. All blank space must be transparent, not white, beige or a checkerboard pattern. Keep interior light-colored areas opaque.",
+      "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-7ff483d8-d1a9-42db-b930-2f342e46f354.png"
+    },
+    {
+      "name": "단단똥",
+      "concept": "04-단단똥-C.png",
+      "target": "hard-poop.png",
+      "id": 9,
+      "prompt": "Use case: background-extraction. Edit this approved 단단똥 game character artwork. Remove ONLY the ivory background and ground shadow, producing a clean transparent-alpha PNG cutout. Preserve the EXACT selected character design, face, colors, pose, proportions, outlines, painterly detail, rock plates, decorative spark marks or volcano smoke if present. No redesign. No glow or halo added around the character. No opaque black/white/beige backdrop, no checkerboard drawing. Preserve solid character interiors as opaque; only outside background is transparent. Entire character including smoke inside canvas with transparent margins.",
+      "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-c9a8f039-5c56-4651-b7d7-721b4c659ad5.png"
+    },
+    {
+      "name": "화산똥",
+      "concept": "05-화산똥-A.png",
+      "target": "volcano-poop.png",
+      "id": 13,
+      "prompt": "Use case: background-extraction. Edit this approved 화산똥 game character artwork. Remove ONLY the ivory background and ground shadow, producing a clean transparent-alpha PNG cutout. Preserve the EXACT selected character design, face, colors, pose, proportions, outlines, painterly detail, rock plates, decorative spark marks or volcano smoke if present. No redesign. No glow or halo added around the character. No opaque black/white/beige backdrop, no checkerboard drawing. Preserve solid character interiors as opaque; only outside background is transparent. Entire character including smoke inside canvas with transparent margins.",
+      "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-77a84c16-9e18-4aa8-9b49-ddbf2fda1fa8.png"
+    },
+    {
+      "name": "용암똥",
+      "concept": "06-용암똥-C.png",
+      "target": "lava-poop.png",
+      "id": 14,
+      "prompt": "Use case: background-extraction. Edit this approved 용암똥 game character artwork. Remove ONLY the ivory background and ground shadow, producing a clean transparent-alpha PNG cutout. Preserve the EXACT selected character design, face, colors, pose, proportions, outlines, painterly detail, rock plates, decorative spark marks or volcano smoke if present. No redesign. No glow or halo added around the character. No opaque black/white/beige backdrop, no checkerboard drawing. Preserve solid character interiors as opaque; only outside background is transparent. Entire character including smoke inside canvas with transparent margins.",
+      "source": "/Users/kangsanlee/.codex/generated_images/01a0a902-fa73-7303-a772-0988b036bbc8/exec-cc3d5885-5f8b-46c9-99e9-96c3bb64af25.png"
+    }
+  ]
+}
