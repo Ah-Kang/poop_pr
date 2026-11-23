@@ -1,3 +1,5 @@
+import { normalizeCosmetics } from '../shared/cosmetics.js';
+import { availableCosmetics, getWardrobeRewards } from '../shared/wardrobe.js';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -421,21 +423,11 @@ const normalizeLevelArray = (value, maxLength) => {
   return normalized.some((level) => level === null) ? null : normalized;
 };
 
-const normalizeCosmetics = (value) => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-
-  return {
-    hat: typeof value.hat === 'string' ? value.hat.slice(0, 40) : 'none',
-    aura: typeof value.aura === 'string' ? value.aura.slice(0, 40) : 'none',
-    titleText: typeof value.titleText === 'string' ? value.titleText.slice(0, 12) : '',
-  };
-};
-
 app.get('/api/game-save', requireUser, async (request, response) => {
   try {
     const save = await getGameSave(request.authUser.id);
     const economy = await transactEconomy(request.authUser.id);
-    return response.json({ save: save ? { ...save, toiletLevel: economy.toiletLevel, toiletSchemaVersion: 2 } : null });
+    return response.json({ save: save ? { ...save, cosmetics: availableCosmetics(save.cosmetics, getWardrobeRewards(economy)), toiletLevel: economy.toiletLevel, toiletSchemaVersion: 2 } : null });
   } catch (error) {
     console.error(error);
     return response.status(500).json({ error: 'game_save_load_failed' });
@@ -456,7 +448,8 @@ app.post('/api/game-save', requireUser, async (request, response) => {
     return response.status(400).json({ error: 'invalid_game_save' });
   }
   try {
-    const economy = await transactEconomy(request.authUser.id);
+    const economy = await transactEconomy(request.authUser.id, null, { poopLevels: save.poopLevels });
+    save.cosmetics = availableCosmetics(save.cosmetics, getWardrobeRewards(economy));
     save.toiletLevel = economy.toiletLevel;
     save.toiletSchemaVersion = 2;
     await saveGame(request.authUser.id, save);
@@ -469,6 +462,9 @@ app.post('/api/game-save', requireUser, async (request, response) => {
 
 const currentFile = fileURLToPath(import.meta.url);
 const distPath = path.resolve(path.dirname(currentFile), '..', 'dist');
+// Content hashes change the URL whenever a skin changes; cached files stay valid.
+app.use('/skins', express.static(path.join(distPath, 'skins'), { maxAge: '1y', immutable: true }));
+app.use('/skins', (_request, response) => response.status(404).end());
 app.use(express.static(distPath));
 app.use((_request, response) => response.sendFile(path.join(distPath, 'index.html')));
 

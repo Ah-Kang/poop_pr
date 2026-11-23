@@ -1,3 +1,8 @@
+import { defaultCosmetics, normalizeCosmetics } from '../shared/cosmetics.js';
+import { availableCosmetics, getWardrobeRewards } from '../shared/wardrobe.js';
+import { getSkin } from './cosmetics/skins.js';
+import SkinPicker from './cosmetics/SkinPicker.jsx';
+import VisibleSkin from './cosmetics/VisibleSkin.jsx';
 import EvolutionCelebration from './scene/EvolutionCelebration.jsx';
 import PoopPortrait from './scene/PoopPortrait.jsx';
 import { poopProgression, getPoopStats, getPoopUpgradePrice } from '../shared/poop-progression.js';
@@ -77,11 +82,6 @@ const developerGoldAmount = 999999999999;
 const developerModeTapWindow = 1000;
 const activeClickDpsBonusRate = 0.05;
 const appVersion = packageJson.version;
-const defaultCosmetics = {
-  hat: 'none',
-  aura: 'none',
-  titleText: '',
-};
 const getRandomCleanerDelay = () =>
   Math.floor(
     cleanerEventMinDelay + Math.random() * (cleanerEventMaxDelay - cleanerEventMinDelay)
@@ -206,15 +206,6 @@ const getPoopVisual = (poop, className = '') => {
     </span>
   );
 };
-const normalizeCosmetics = (value) => ({
-  hat: typeof value?.hat === 'string' ? value.hat : defaultCosmetics.hat,
-  aura: typeof value?.aura === 'string' ? value.aura : defaultCosmetics.aura,
-  titleText: typeof value?.titleText === 'string'
-    ? value.titleText
-    : typeof value?.title === 'string' && value.title !== 'none'
-    ? value.title
-    : defaultCosmetics.titleText,
-});
 const formatDuration = (seconds) => {
   const totalSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
   const hours = Math.floor(totalSeconds / 3600);
@@ -680,6 +671,13 @@ const App = () => {
   const unlockedPoop = poopCharacters[currentPoopLevel] ?? poopCharacters[0];
   const selectedPoop = poopCharacters.find((poop) => poop.id === selectedPoopId && (poopLevels[poop.id] ?? 0) > 0) ?? unlockedPoop;
   const currentPoop = selectedPoop;
+  const wardrobeReady = Boolean(isSaveLoaded && economy.state && (!authUser || ['saved', 'saving'].includes(cloudSaveStatus)));
+  const wardrobeRewards = getWardrobeRewards(economy.state, wardrobeReady ? poopLevels : undefined);
+  const equippedCosmetics = wardrobeReady ? availableCosmetics(cosmetics, wardrobeRewards) : cosmetics;
+  const currentSkin = getSkin(currentPoop.id, equippedCosmetics);
+  useEffect(() => {
+    if (wardrobeReady && JSON.stringify(equippedCosmetics) !== JSON.stringify(cosmetics)) setCosmetics(equippedCosmetics);
+  }, [wardrobeReady, JSON.stringify(equippedCosmetics), cosmetics]);
   const poopLevel = poopLevels[currentPoop.id] ?? 1;
   const nextPoop = poopCharacters[currentPoop.id + 1] ?? null;
   const canEvolvePoop = Boolean(nextPoop && (poopLevels[nextPoop.id] ?? 0) === 0 && poopLevel >= currentPoop.evolutionLevel);
@@ -858,6 +856,7 @@ const App = () => {
     showTitle = true
   ) => {
     const normalizedCosmetics = normalizeCosmetics(cosmeticState);
+    const skin = getSkin(poop.id, normalizedCosmetics);
     const hat = getCosmeticOption('hat', normalizedCosmetics.hat);
     const aura = getCosmeticOption('aura', normalizedCosmetics.aura);
     const titleText = normalizedCosmetics.titleText.trim();
@@ -867,8 +866,9 @@ const App = () => {
         {renderCosmeticVisual(aura, 'aura')}
         {poop.image ? (
           <img
-            src={poop.image}
+            src={skin?.image ?? poop.image}
             alt={poop.name}
+            decoding="async"
             className={`relative z-10 ${imageClassName}`}
             draggable="false"
           />
@@ -877,7 +877,7 @@ const App = () => {
             {poop.emoji ?? '💩'}
           </span>
         )}
-        {hat?.id !== 'none' && (
+        {normalizedCosmetics.outfit === 'none' && hat?.id !== 'none' && (
           <span className="absolute -top-5 left-1/2 z-20 -translate-x-1/2 drop-shadow-lg" aria-hidden="true">
             {renderCosmeticVisual(hat, 'hat')}
           </span>
@@ -1118,6 +1118,11 @@ const App = () => {
       console.warn('게임 데이터를 저장하는 중 오류가 발생했습니다.', error);
     }
   }, [gold, currentToiletLevel, currentPoopLevel, poopLevel, poopLevels, currentPoop.id, itemLevels, cosmetics, isSaveLoaded]);
+
+  // Refresh after the local save has recorded newly discovered characters.
+  useEffect(() => {
+    if (isSaveLoaded && !authUser) economy.refresh();
+  }, [poopLevels, isSaveLoaded, authUser, economy.refresh]);
 
   useEffect(() => {
     if ((poopLevels[selectedPoopId] ?? 0) === 0) {
@@ -1645,6 +1650,7 @@ const App = () => {
       <SeatedPoop
         toiletId={currentToiletLevel}
         poopId={currentPoop.id}
+        spriteBounds={currentSkin?.bounds}
         name={currentPoop.name}
         clicking={isClicking}
         onClick={handlePoopClick}
@@ -1662,7 +1668,7 @@ const App = () => {
         {activeCleaningItems.length >= 5 && (
             <span className="absolute -left-5 bottom-8 text-2xl" style={{ animation: 'cleaningSparkle 1.2s ease-in-out infinite .4s' }} aria-hidden="true">💨</span>
         )}
-        {renderPoopAvatar(currentPoop, poopLevel, cosmetics, 'seat-poop-image')}
+        {isSaveLoaded && renderPoopAvatar(currentPoop, poopLevel, equippedCosmetics, 'seat-poop-image')}
       </SeatedPoop>
 
       {/* ==================== 하단: 성장 상점 버튼 ==================== */}
@@ -1937,6 +1943,7 @@ const App = () => {
                 const ownedItems = cleaningItems.filter((item) => (entry.itemLevels?.[item.id] ?? 0) > 0);
                 const rankingCosmetics = normalizeCosmetics(entry.cosmetics);
                 const rankingHat = getCosmeticOption('hat', rankingCosmetics.hat);
+                const rankingSkin = getSkin(rankingPoop.id, rankingCosmetics);
                 const rankingTitleText = rankingCosmetics.titleText.trim();
 
                 return (
@@ -1960,8 +1967,8 @@ const App = () => {
                     <div className="mt-2 grid grid-cols-2 gap-1.5 border-t border-amber-900/15 pt-2 text-[9px] font-bold text-slate-700">
                       <div className="flex min-w-0 items-center gap-1.5 rounded-lg bg-amber-100/80 px-2 py-1">
                         <span className="relative flex h-7 w-7 shrink-0 items-center justify-center">
-                          {getPoopVisual(rankingPoop, 'h-7 w-7 object-contain')}
-                          {rankingHat?.id !== 'none' && (
+                          <VisibleSkin key={rankingSkin.key} src={rankingSkin.thumb} alt={rankingPoop.name} className="skin-thumb" />
+                          {rankingCosmetics.outfit === 'none' && rankingHat?.id !== 'none' && (
                             <span className="absolute -right-2 -top-3 scale-50">
                               {renderCosmeticVisual(rankingHat, 'hat')}
                             </span>
@@ -2160,11 +2167,11 @@ const App = () => {
       {/* ==================== 모달: 똥 레벨 강화 ==================== */}
       {isPoopShopOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3">
-          <div className="flex max-h-[86vh] w-full max-w-[440px] flex-col overflow-hidden rounded-t-[1.75rem] border-[3px] border-b-0 border-cyan-950 bg-[#fff8e8] shadow-2xl">
-            <div className="flex items-center justify-between border-b-[3px] border-cyan-950 bg-gradient-to-b from-cyan-400 to-cyan-600 p-4 text-white">
+          <div className={`flex w-full max-w-[440px] flex-col overflow-hidden rounded-t-[1.75rem] border-[3px] border-b-0 border-cyan-950 bg-[#fff8e8] shadow-2xl ${poopShopTab === 'cosmetics' ? 'skin-dialog' : 'max-h-[86vh]'}`}>
+            <div className="flex shrink-0 items-center justify-between border-b-[3px] border-cyan-950 bg-gradient-to-b from-cyan-400 to-cyan-600 px-4 py-3 text-white">
               <div>
-                <h2 className="text-xl font-black">💩 똥 강화</h2>
-                <p className="mt-1 text-xs font-semibold text-cyan-950">각 똥은 Lv.1부터 성장하고 조건 달성 시 진화해요</p>
+                <h2 className="text-xl font-black">{poopShopTab === 'cosmetics' ? '🎀 똥 꾸미기' : '💩 똥 강화'}</h2>
+                <p className="mt-1 text-xs font-semibold text-cyan-950">{poopShopTab === 'cosmetics' ? '키우고, 놀고, 나만의 스타일을 모아요' : '각 똥은 Lv.1부터 성장하고 조건 달성 시 진화해요'}</p>
               </div>
               <button
                 onClick={() => setIsPoopShopOpen(false)}
@@ -2175,8 +2182,8 @@ const App = () => {
               </button>
             </div>
 
-            <div className="border-b border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900">
-              <div className="mb-3 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+            <div className="shrink-0 border-b border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-900">
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
                 <button
                   type="button"
                   onClick={() => setPoopShopTab('upgrade')}
@@ -2200,7 +2207,7 @@ const App = () => {
                   똥 꾸미기
                 </button>
               </div>
-              <div className="flex items-center justify-between gap-3">
+              {poopShopTab === 'upgrade' && <><div className="mt-3 flex items-center justify-between gap-3">
                 <span>현재 {currentPoop.badge} {currentPoop.name} Lv.{poopLevel}</span>
                 <span className="shrink-0 rounded bg-amber-400 px-2.5 py-1 text-xs text-slate-950">
                   +{formatNumber(clickPower)} 클릭
@@ -2215,15 +2222,39 @@ const App = () => {
                     : `${nextPoop.name}까지 ${currentPoop.evolutionLevel - poopLevel}레벨`
                     : '최종 진화 완료'}
                 </span>
-              </div>
+              </div></>}
             </div>
 
-            <div className="flex-1 space-y-3 overflow-y-auto p-4">
+            <div className={poopShopTab === 'cosmetics' ? 'min-h-0 flex-1 overflow-hidden p-3' : 'flex-1 space-y-3 overflow-y-auto p-4'}>
               {poopShopTab === 'cosmetics' && (
-                <div className="rounded-2xl border-[3px] border-teal-700 bg-teal-50 p-6 text-center shadow-[0_5px_0_#115e59]">
-                  <h3 className="font-black text-teal-950">꾸미기 기능을 준비하고 있어요</h3>
-                  <p className="mt-2 text-sm text-teal-700">추후 업데이트에서 만나요!</p>
-                </div>
+                <SkinPicker key={currentPoop.id} poop={currentPoop} cosmetics={equippedCosmetics} rewards={wardrobeRewards} ready={wardrobeReady}
+                  onEquip={async style => {
+                    if (!wardrobeReady) return false;
+                    const next = availableCosmetics(style, wardrobeRewards);
+                    if (authUser) {
+                      setCloudSaveStatus('saving');
+                      try {
+                        const response = await fetch('/api/game-save', {
+                          method: 'POST', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ ...gameSaveRef.current, cosmetics: next }),
+                        });
+                        if (!response.ok) throw new Error('skin_save_failed');
+                        setCloudSaveStatus('saved');
+                      } catch {
+                        // Keep the previously saved outfit; the picker reports
+                        // this failed attempt and remains available for retry.
+                        setCloudSaveStatus('saved');
+                        return false;
+                      }
+                    }
+                    setCosmetics(next);
+                    return true;
+                  }}
+                  onGoal={destination => {
+                    if (destination === 'growth') setPoopShopTab('upgrade');
+                    if (destination === 'workshop') { setIsPoopShopOpen(false); setIsShopOpen(true); }
+                    if (destination === 'puzzle') window.location.assign('/minigame');
+                  }} />
               )}
 
               {poopShopTab === 'upgrade' && (
@@ -2231,7 +2262,7 @@ const App = () => {
               <div className="rounded-2xl border-[3px] border-amber-700 bg-amber-50 p-4 shadow-[0_5px_0_#92400e]">
                 <div className="flex items-center gap-3">
                   <div className="poop-upgrade-portrait">
-                    <PoopPortrait poop={currentPoop} />
+                    <PoopPortrait poop={{...currentPoop, image: currentSkin?.image ?? currentPoop.image}} spriteBounds={currentSkin?.bounds} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <h3 className="font-black text-gray-900">
@@ -2359,7 +2390,7 @@ const App = () => {
       {isItemShopOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3">
           <div className="flex max-h-[86vh] w-full max-w-[440px] flex-col overflow-hidden rounded-t-[1.75rem] border-[3px] border-b-0 border-cyan-950 bg-[#fff8e8] shadow-2xl">
-            <div className="flex items-center justify-between border-b-[3px] border-cyan-950 bg-gradient-to-b from-cyan-400 to-cyan-600 p-4 text-white">
+            <div className="flex items-center justify-between border-b-[3px] border-cyan-950 bg-gradient-to-b from-cyan-400 to-cyan-600 px-4 py-3 text-white">
               <div>
                 <h2 className="text-xl font-black">🧰 청소 장비</h2>
                 <p className="mt-1 text-xs font-semibold text-cyan-950">장비를 강화해 초당 생산량을 늘리세요</p>

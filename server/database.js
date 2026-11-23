@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import pg from 'pg';
 import { applyEconomyAction, createEconomy, EconomyError, migrateToiletLevel } from '../shared/economy.js';
+import { updateWardrobe } from '../shared/wardrobe.js';
 
 const { Pool, types } = pg;
 types.setTypeParser(types.builtins.INT8, (value) => Number(value));
@@ -429,14 +430,17 @@ export const transactEconomy = async (kakaoId, action = null, options = {}) => {
     try {
       await client.query('BEGIN');
       const { rows: saves } = await client.query(
-        'SELECT toilet_level, toilet_schema_version FROM public.game_saves WHERE kakao_id = $1', [kakaoId]);
+        'SELECT toilet_level, toilet_schema_version, poop_levels FROM public.game_saves WHERE kakao_id = $1', [kakaoId]);
       await client.query('INSERT INTO public.player_economy (kakao_id, state) VALUES ($1, $2::jsonb) ON CONFLICT DO NOTHING',
         [kakaoId, JSON.stringify(seed(saves[0]))]);
       const { rows } = await client.query('SELECT state FROM public.player_economy WHERE kakao_id = $1 FOR UPDATE', [kakaoId]);
       const duplicate = action && (await client.query('SELECT 1 FROM public.economy_actions WHERE kakao_id = $1 AND action_id = $2', [kakaoId, action.id])).rowCount > 0;
-      const state = action && !duplicate ? applyEconomyAction(rows[0].state, action, options) : rows[0].state;
-      if (action && !duplicate) {
+      const previous = updateWardrobe(rows[0].state, { ...options, poopLevels: options.poopLevels ?? parseJsonArray(saves[0]?.poop_levels) });
+      const state = action && !duplicate ? applyEconomyAction(previous, action, options) : previous;
+      if (state !== rows[0].state) {
         await client.query('UPDATE public.player_economy SET state = $2::jsonb, updated_at = now() WHERE kakao_id = $1', [kakaoId, JSON.stringify(state)]);
+      }
+      if (action && !duplicate) {
         await client.query('INSERT INTO public.economy_actions (kakao_id, action_id) VALUES ($1, $2)', [kakaoId, action.id]);
       }
       await client.query('COMMIT');
@@ -448,16 +452,20 @@ export const transactEconomy = async (kakaoId, action = null, options = {}) => {
   }
   sqliteDatabase.exec('BEGIN IMMEDIATE');
   try {
+    const saved = sqliteDatabase.prepare('SELECT toilet_level, toilet_schema_version, poop_levels FROM game_saves WHERE kakao_id = ?').get(kakaoId);
     let row = sqliteDatabase.prepare('SELECT state FROM player_economy WHERE kakao_id = ?').get(kakaoId);
     if (!row) {
-      const saved = sqliteDatabase.prepare('SELECT toilet_level, toilet_schema_version FROM game_saves WHERE kakao_id = ?').get(kakaoId);
       row = { state: JSON.stringify(seed(saved)) };
       sqliteDatabase.prepare('INSERT INTO player_economy (kakao_id, state) VALUES (?, ?)').run(kakaoId, row.state);
     }
     const duplicate = action && sqliteDatabase.prepare('SELECT 1 FROM economy_actions WHERE kakao_id = ? AND action_id = ?').get(kakaoId, action.id ?? null);
-    const state = action && !duplicate ? applyEconomyAction(JSON.parse(row.state), action, options) : JSON.parse(row.state);
-    if (action && !duplicate) {
+    const original = JSON.parse(row.state);
+    const previous = updateWardrobe(original, { ...options, poopLevels: options.poopLevels ?? parseJsonArray(saved?.poop_levels) });
+    const state = action && !duplicate ? applyEconomyAction(previous, action, options) : previous;
+    if (state !== original) {
       sqliteDatabase.prepare('UPDATE player_economy SET state = ?, updated_at = CURRENT_TIMESTAMP WHERE kakao_id = ?').run(JSON.stringify(state), kakaoId);
+    }
+    if (action && !duplicate) {
       sqliteDatabase.prepare('INSERT INTO economy_actions (kakao_id, action_id) VALUES (?, ?)').run(kakaoId, action.id);
     }
     sqliteDatabase.exec('COMMIT');

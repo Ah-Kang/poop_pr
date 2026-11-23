@@ -2,7 +2,7 @@ import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
@@ -22,6 +22,31 @@ const request = async (route, body, expected = 200, session = cookie) => {
   return text ? JSON.parse(text) : null;
 };
 const act = (type, payload = {}, expected = 200) => request('/api/economy/actions', { id: randomUUID(), type, ...payload }, expected);
+
+test('equipped skin persists across login and hashed images have immutable caching', async () => {
+  await request('/api/auth/local/register', { loginId: 'skin_save_test', password: 'test-only-123', displayNickname: '스킨테스트' }, 201, '');
+  const cosmetics = { material: 'berry', expression: 'wink', outfit: 'none', hat: 'none', aura: 'none', titleText: '' };
+  const save = { gold: 0, toiletLevel: 0, toiletSchemaVersion: 2, poopLevels: [1,...Array(19).fill(0)], selectedPoopId: 0, itemLevels: Array(6).fill(0), cosmetics: { ...cosmetics, material: 'mint', expression: 'sleepy', outfit: 'royal' }, wardrobe: { visits: 3, combos: 9999, upgrades: 3 } };
+  await request('/api/game-save', save, 204);
+  assert.deepEqual((await request('/api/game-save')).save.cosmetics, { ...cosmetics, material: 'original', expression: 'default' });
+  assert.equal((await request('/api/economy')).state.wardrobe.visits, 1);
+  // Existing character progress grants the corresponding styles, but toilet
+  // skins still require actual wallet upgrades, not a supplied toilet level.
+  await request('/api/game-save', { ...save, toiletLevel: 19, poopLevels: [1,1,1,1,1,...Array(15).fill(0)], cosmetics: { ...cosmetics, outfit: 'royal' } }, 204);
+  await request('/api/logout', {}, 204);
+  await request('/api/auth/local/login', { loginId: 'skin_save_test', password: 'test-only-123' });
+  assert.deepEqual((await request('/api/game-save')).save.cosmetics, cosmetics);
+  await act('reset_progress');
+  await request('/api/game-save', { ...save, cosmetics }, 204);
+  assert.deepEqual((await request('/api/game-save')).save.cosmetics, cosmetics);
+  const catalog = JSON.parse(await readFile(new URL('../src/cosmetics/skin-catalog.json', import.meta.url), 'utf8'));
+  const image = await fetch(base + catalog[0].image);
+  assert.equal(image.status,200);
+  assert.match(image.headers.get('content-type'), /image\/webp/);
+  assert.match(image.headers.get('cache-control'), /max-age=31536000/);
+  assert.match(image.headers.get('cache-control'), /immutable/);
+  assert.equal((await fetch(base+'/skins/missing.image.0000000000000000.webp')).status,404);
+});
 before(async () => {
   directory = await mkdtemp(path.join(tmpdir(), 'poop-economy-test-'));
   const reservation = net.createServer();
@@ -127,6 +152,7 @@ test('account puzzle validates moves and atomically awards parts once', async ()
     const round = response.state.activeRun.puzzle;
     const [a, b] = findMove(round.board);
     const reward = bankCombo(response.state.comboProgress, resolvePuzzleMove(round, a, b).comboGained);
+    const expectedCombos = response.state.wardrobe.combos + resolvePuzzleMove(round, a, b).comboGained;
     const previousParts = response.state.parts;
     finalAction = { id: randomUUID(), runId, turn: round.turn, a, b, parts: 9999, score: 99999, comboGained: 9999, comboProgress: 9 };
     const copies = await Promise.all([act('puzzle_move', finalAction), act('puzzle_move', finalAction)]);
@@ -134,6 +160,7 @@ test('account puzzle validates moves and atomically awards parts once', async ()
     response = copies[0];
     assert.equal(response.state.comboProgress, reward.progress);
     assert.equal(response.state.parts, previousParts + reward.parts);
+    assert.equal(response.state.wardrobe.combos, expectedCombos);
     if (response.state.activeRun) await act('puzzle_move', { ...finalAction, id: randomUUID() }, 409);
   }
   assert.equal(response.state.totalRuns, 0);

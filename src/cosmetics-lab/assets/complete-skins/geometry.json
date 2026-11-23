@@ -1,0 +1,35 @@
+{
+  "pudding": {
+    "width": 1254,
+    "height": 1254,
+    "bounds": [
+      93,
+      249,
+      1158,
+      957
+    ],
+    "transparent": true
+  },
+  "muscle": {
+    "width": 1254,
+    "height": 1254,
+    "bounds": [
+      198,
+      219,
+      1052,
+      954
+    ],
+    "transparent": true
+  },
+  "volcano": {
+    "width": 1254,
+    "height": 1254,
+    "bounds": [
+      107,
+      68,
+      1147,
+      1188
+    ],
+    "transparent": true
+  }
+}

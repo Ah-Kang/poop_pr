@@ -1,0 +1,541 @@
+﻿파일명,캐릭터,재질,표정,의상
+images/00-plank__original__default__none.png,플랑크똥,기본색,기본 표정,기본 의상
+images/00-plank__original__default__royal.png,플랑크똥,기본색,기본 표정,왕관과 망토
+images/00-plank__original__default__ribbon.png,플랑크똥,기본색,기본 표정,분홍 리본
+images/00-plank__original__wink__none.png,플랑크똥,기본색,윙크,기본 의상
+images/00-plank__original__wink__royal.png,플랑크똥,기본색,윙크,왕관과 망토
+images/00-plank__original__wink__ribbon.png,플랑크똥,기본색,윙크,분홍 리본
+images/00-plank__original__sleepy__none.png,플랑크똥,기본색,졸려,기본 의상
+images/00-plank__original__sleepy__royal.png,플랑크똥,기본색,졸려,왕관과 망토
+images/00-plank__original__sleepy__ribbon.png,플랑크똥,기본색,졸려,분홍 리본
+images/00-plank__mint__default__none.png,플랑크똥,민트 크림,기본 표정,기본 의상
+images/00-plank__mint__default__royal.png,플랑크똥,민트 크림,기본 표정,왕관과 망토
+images/00-plank__mint__default__ribbon.png,플랑크똥,민트 크림,기본 표정,분홍 리본
+images/00-plank__mint__wink__none.png,플랑크똥,민트 크림,윙크,기본 의상
+images/00-plank__mint__wink__royal.png,플랑크똥,민트 크림,윙크,왕관과 망토
+images/00-plank__mint__wink__ribbon.png,플랑크똥,민트 크림,윙크,분홍 리본
+images/00-plank__mint__sleepy__none.png,플랑크똥,민트 크림,졸려,기본 의상
+images/00-plank__mint__sleepy__royal.png,플랑크똥,민트 크림,졸려,왕관과 망토
+images/00-plank__mint__sleepy__ribbon.png,플랑크똥,민트 크림,졸려,분홍 리본
+images/00-plank__berry__default__none.png,플랑크똥,딸기 크림,기본 표정,기본 의상
+images/00-plank__berry__default__royal.png,플랑크똥,딸기 크림,기본 표정,왕관과 망토
+images/00-plank__berry__default__ribbon.png,플랑크똥,딸기 크림,기본 표정,분홍 리본
+images/00-plank__berry__wink__none.png,플랑크똥,딸기 크림,윙크,기본 의상
+images/00-plank__berry__wink__royal.png,플랑크똥,딸기 크림,윙크,왕관과 망토
+images/00-plank__berry__wink__ribbon.png,플랑크똥,딸기 크림,윙크,분홍 리본
+images/00-plank__berry__sleepy__none.png,플랑크똥,딸기 크림,졸려,기본 의상
+images/00-plank__berry__sleepy__royal.png,플랑크똥,딸기 크림,졸려,왕관과 망토
+images/00-plank__berry__sleepy__ribbon.png,플랑크똥,딸기 크림,졸려,분홍 리본
+images/01-shrimp__original__default__none.png,새우똥,기본색,기본 표정,기본 의상
+images/01-shrimp__original__default__royal.png,새우똥,기본색,기본 표정,왕관과 망토
+images/01-shrimp__original__default__ribbon.png,새우똥,기본색,기본 표정,분홍 리본
+images/01-shrimp__original__wink__none.png,새우똥,기본색,윙크,기본 의상
+images/01-shrimp__original__wink__royal.png,새우똥,기본색,윙크,왕관과 망토
+images/01-shrimp__original__wink__ribbon.png,새우똥,기본색,윙크,분홍 리본
+images/01-shrimp__original__sleepy__none.png,새우똥,기본색,졸려,기본 의상
+images/01-shrimp__original__sleepy__royal.png,새우똥,기본색,졸려,왕관과 망토
+images/01-shrimp__original__sleepy__ribbon.png,새우똥,기본색,졸려,분홍 리본
+images/01-shrimp__mint__default__none.png,새우똥,민트 크림,기본 표정,기본 의상
+images/01-shrimp__mint__default__royal.png,새우똥,민트 크림,기본 표정,왕관과 망토
+images/01-shrimp__mint__default__ribbon.png,새우똥,민트 크림,기본 표정,분홍 리본
+images/01-shrimp__mint__wink__none.png,새우똥,민트 크림,윙크,기본 의상
+images/01-shrimp__mint__wink__royal.png,새우똥,민트 크림,윙크,왕관과 망토
+images/01-shrimp__mint__wink__ribbon.png,새우똥,민트 크림,윙크,분홍 리본
+images/01-shrimp__mint__sleepy__none.png,새우똥,민트 크림,졸려,기본 의상
+images/01-shrimp__mint__sleepy__royal.png,새우똥,민트 크림,졸려,왕관과 망토
+images/01-shrimp__mint__sleepy__ribbon.png,새우똥,민트 크림,졸려,분홍 리본
+images/01-shrimp__berry__default__none.png,새우똥,딸기 크림,기본 표정,기본 의상
+images/01-shrimp__berry__default__royal.png,새우똥,딸기 크림,기본 표정,왕관과 망토
+images/01-shrimp__berry__default__ribbon.png,새우똥,딸기 크림,기본 표정,분홍 리본
+images/01-shrimp__berry__wink__none.png,새우똥,딸기 크림,윙크,기본 의상
+images/01-shrimp__berry__wink__royal.png,새우똥,딸기 크림,윙크,왕관과 망토
+images/01-shrimp__berry__wink__ribbon.png,새우똥,딸기 크림,윙크,분홍 리본
+images/01-shrimp__berry__sleepy__none.png,새우똥,딸기 크림,졸려,기본 의상
+images/01-shrimp__berry__sleepy__royal.png,새우똥,딸기 크림,졸려,왕관과 망토
+images/01-shrimp__berry__sleepy__ribbon.png,새우똥,딸기 크림,졸려,분홍 리본
+images/02-minnow__original__default__none.png,피래미똥,기본색,기본 표정,기본 의상
+images/02-minnow__original__default__royal.png,피래미똥,기본색,기본 표정,왕관과 망토
+images/02-minnow__original__default__ribbon.png,피래미똥,기본색,기본 표정,분홍 리본
+images/02-minnow__original__wink__none.png,피래미똥,기본색,윙크,기본 의상
+images/02-minnow__original__wink__royal.png,피래미똥,기본색,윙크,왕관과 망토
+images/02-minnow__original__wink__ribbon.png,피래미똥,기본색,윙크,분홍 리본
+images/02-minnow__original__sleepy__none.png,피래미똥,기본색,졸려,기본 의상
+images/02-minnow__original__sleepy__royal.png,피래미똥,기본색,졸려,왕관과 망토
+images/02-minnow__original__sleepy__ribbon.png,피래미똥,기본색,졸려,분홍 리본
+images/02-minnow__mint__default__none.png,피래미똥,민트 크림,기본 표정,기본 의상
+images/02-minnow__mint__default__royal.png,피래미똥,민트 크림,기본 표정,왕관과 망토
+images/02-minnow__mint__default__ribbon.png,피래미똥,민트 크림,기본 표정,분홍 리본
+images/02-minnow__mint__wink__none.png,피래미똥,민트 크림,윙크,기본 의상
+images/02-minnow__mint__wink__royal.png,피래미똥,민트 크림,윙크,왕관과 망토
+images/02-minnow__mint__wink__ribbon.png,피래미똥,민트 크림,윙크,분홍 리본
+images/02-minnow__mint__sleepy__none.png,피래미똥,민트 크림,졸려,기본 의상
+images/02-minnow__mint__sleepy__royal.png,피래미똥,민트 크림,졸려,왕관과 망토
+images/02-minnow__mint__sleepy__ribbon.png,피래미똥,민트 크림,졸려,분홍 리본
+images/02-minnow__berry__default__none.png,피래미똥,딸기 크림,기본 표정,기본 의상
+images/02-minnow__berry__default__royal.png,피래미똥,딸기 크림,기본 표정,왕관과 망토
+images/02-minnow__berry__default__ribbon.png,피래미똥,딸기 크림,기본 표정,분홍 리본
+images/02-minnow__berry__wink__none.png,피래미똥,딸기 크림,윙크,기본 의상
+images/02-minnow__berry__wink__royal.png,피래미똥,딸기 크림,윙크,왕관과 망토
+images/02-minnow__berry__wink__ribbon.png,피래미똥,딸기 크림,윙크,분홍 리본
+images/02-minnow__berry__sleepy__none.png,피래미똥,딸기 크림,졸려,기본 의상
+images/02-minnow__berry__sleepy__royal.png,피래미똥,딸기 크림,졸려,왕관과 망토
+images/02-minnow__berry__sleepy__ribbon.png,피래미똥,딸기 크림,졸려,분홍 리본
+images/03-rabbit__original__default__none.png,토끼똥,기본색,기본 표정,기본 의상
+images/03-rabbit__original__default__royal.png,토끼똥,기본색,기본 표정,왕관과 망토
+images/03-rabbit__original__default__ribbon.png,토끼똥,기본색,기본 표정,분홍 리본
+images/03-rabbit__original__wink__none.png,토끼똥,기본색,윙크,기본 의상
+images/03-rabbit__original__wink__royal.png,토끼똥,기본색,윙크,왕관과 망토
+images/03-rabbit__original__wink__ribbon.png,토끼똥,기본색,윙크,분홍 리본
+images/03-rabbit__original__sleepy__none.png,토끼똥,기본색,졸려,기본 의상
+images/03-rabbit__original__sleepy__royal.png,토끼똥,기본색,졸려,왕관과 망토
+images/03-rabbit__original__sleepy__ribbon.png,토끼똥,기본색,졸려,분홍 리본
+images/03-rabbit__mint__default__none.png,토끼똥,민트 크림,기본 표정,기본 의상
+images/03-rabbit__mint__default__royal.png,토끼똥,민트 크림,기본 표정,왕관과 망토
+images/03-rabbit__mint__default__ribbon.png,토끼똥,민트 크림,기본 표정,분홍 리본
+images/03-rabbit__mint__wink__none.png,토끼똥,민트 크림,윙크,기본 의상
+images/03-rabbit__mint__wink__royal.png,토끼똥,민트 크림,윙크,왕관과 망토
+images/03-rabbit__mint__wink__ribbon.png,토끼똥,민트 크림,윙크,분홍 리본
+images/03-rabbit__mint__sleepy__none.png,토끼똥,민트 크림,졸려,기본 의상
+images/03-rabbit__mint__sleepy__royal.png,토끼똥,민트 크림,졸려,왕관과 망토
+images/03-rabbit__mint__sleepy__ribbon.png,토끼똥,민트 크림,졸려,분홍 리본
+images/03-rabbit__berry__default__none.png,토끼똥,딸기 크림,기본 표정,기본 의상
+images/03-rabbit__berry__default__royal.png,토끼똥,딸기 크림,기본 표정,왕관과 망토
+images/03-rabbit__berry__default__ribbon.png,토끼똥,딸기 크림,기본 표정,분홍 리본
+images/03-rabbit__berry__wink__none.png,토끼똥,딸기 크림,윙크,기본 의상
+images/03-rabbit__berry__wink__royal.png,토끼똥,딸기 크림,윙크,왕관과 망토
+images/03-rabbit__berry__wink__ribbon.png,토끼똥,딸기 크림,윙크,분홍 리본
+images/03-rabbit__berry__sleepy__none.png,토끼똥,딸기 크림,졸려,기본 의상
+images/03-rabbit__berry__sleepy__royal.png,토끼똥,딸기 크림,졸려,왕관과 망토
+images/03-rabbit__berry__sleepy__ribbon.png,토끼똥,딸기 크림,졸려,분홍 리본
+images/04-water__original__default__none.png,물똥,기본색,기본 표정,기본 의상
+images/04-water__original__default__royal.png,물똥,기본색,기본 표정,왕관과 망토
+images/04-water__original__default__ribbon.png,물똥,기본색,기본 표정,분홍 리본
+images/04-water__original__wink__none.png,물똥,기본색,윙크,기본 의상
+images/04-water__original__wink__royal.png,물똥,기본색,윙크,왕관과 망토
+images/04-water__original__wink__ribbon.png,물똥,기본색,윙크,분홍 리본
+images/04-water__original__sleepy__none.png,물똥,기본색,졸려,기본 의상
+images/04-water__original__sleepy__royal.png,물똥,기본색,졸려,왕관과 망토
+images/04-water__original__sleepy__ribbon.png,물똥,기본색,졸려,분홍 리본
+images/04-water__mint__default__none.png,물똥,민트 크림,기본 표정,기본 의상
+images/04-water__mint__default__royal.png,물똥,민트 크림,기본 표정,왕관과 망토
+images/04-water__mint__default__ribbon.png,물똥,민트 크림,기본 표정,분홍 리본
+images/04-water__mint__wink__none.png,물똥,민트 크림,윙크,기본 의상
+images/04-water__mint__wink__royal.png,물똥,민트 크림,윙크,왕관과 망토
+images/04-water__mint__wink__ribbon.png,물똥,민트 크림,윙크,분홍 리본
+images/04-water__mint__sleepy__none.png,물똥,민트 크림,졸려,기본 의상
+images/04-water__mint__sleepy__royal.png,물똥,민트 크림,졸려,왕관과 망토
+images/04-water__mint__sleepy__ribbon.png,물똥,민트 크림,졸려,분홍 리본
+images/04-water__berry__default__none.png,물똥,딸기 크림,기본 표정,기본 의상
+images/04-water__berry__default__royal.png,물똥,딸기 크림,기본 표정,왕관과 망토
+images/04-water__berry__default__ribbon.png,물똥,딸기 크림,기본 표정,분홍 리본
+images/04-water__berry__wink__none.png,물똥,딸기 크림,윙크,기본 의상
+images/04-water__berry__wink__royal.png,물똥,딸기 크림,윙크,왕관과 망토
+images/04-water__berry__wink__ribbon.png,물똥,딸기 크림,윙크,분홍 리본
+images/04-water__berry__sleepy__none.png,물똥,딸기 크림,졸려,기본 의상
+images/04-water__berry__sleepy__royal.png,물똥,딸기 크림,졸려,왕관과 망토
+images/04-water__berry__sleepy__ribbon.png,물똥,딸기 크림,졸려,분홍 리본
+images/05-soft__original__default__none.png,말랑똥,기본색,기본 표정,기본 의상
+images/05-soft__original__default__royal.png,말랑똥,기본색,기본 표정,왕관과 망토
+images/05-soft__original__default__ribbon.png,말랑똥,기본색,기본 표정,분홍 리본
+images/05-soft__original__wink__none.png,말랑똥,기본색,윙크,기본 의상
+images/05-soft__original__wink__royal.png,말랑똥,기본색,윙크,왕관과 망토
+images/05-soft__original__wink__ribbon.png,말랑똥,기본색,윙크,분홍 리본
+images/05-soft__original__sleepy__none.png,말랑똥,기본색,졸려,기본 의상
+images/05-soft__original__sleepy__royal.png,말랑똥,기본색,졸려,왕관과 망토
+images/05-soft__original__sleepy__ribbon.png,말랑똥,기본색,졸려,분홍 리본
+images/05-soft__mint__default__none.png,말랑똥,민트 크림,기본 표정,기본 의상
+images/05-soft__mint__default__royal.png,말랑똥,민트 크림,기본 표정,왕관과 망토
+images/05-soft__mint__default__ribbon.png,말랑똥,민트 크림,기본 표정,분홍 리본
+images/05-soft__mint__wink__none.png,말랑똥,민트 크림,윙크,기본 의상
+images/05-soft__mint__wink__royal.png,말랑똥,민트 크림,윙크,왕관과 망토
+images/05-soft__mint__wink__ribbon.png,말랑똥,민트 크림,윙크,분홍 리본
+images/05-soft__mint__sleepy__none.png,말랑똥,민트 크림,졸려,기본 의상
+images/05-soft__mint__sleepy__royal.png,말랑똥,민트 크림,졸려,왕관과 망토
+images/05-soft__mint__sleepy__ribbon.png,말랑똥,민트 크림,졸려,분홍 리본
+images/05-soft__berry__default__none.png,말랑똥,딸기 크림,기본 표정,기본 의상
+images/05-soft__berry__default__royal.png,말랑똥,딸기 크림,기본 표정,왕관과 망토
+images/05-soft__berry__default__ribbon.png,말랑똥,딸기 크림,기본 표정,분홍 리본
+images/05-soft__berry__wink__none.png,말랑똥,딸기 크림,윙크,기본 의상
+images/05-soft__berry__wink__royal.png,말랑똥,딸기 크림,윙크,왕관과 망토
+images/05-soft__berry__wink__ribbon.png,말랑똥,딸기 크림,윙크,분홍 리본
+images/05-soft__berry__sleepy__none.png,말랑똥,딸기 크림,졸려,기본 의상
+images/05-soft__berry__sleepy__royal.png,말랑똥,딸기 크림,졸려,왕관과 망토
+images/05-soft__berry__sleepy__ribbon.png,말랑똥,딸기 크림,졸려,분홍 리본
+images/06-pudding__original__default__none.png,푸딩똥,기본색,기본 표정,기본 의상
+images/06-pudding__original__default__royal.png,푸딩똥,기본색,기본 표정,왕관과 망토
+images/06-pudding__original__default__ribbon.png,푸딩똥,기본색,기본 표정,분홍 리본
+images/06-pudding__original__wink__none.png,푸딩똥,기본색,윙크,기본 의상
+images/06-pudding__original__wink__royal.png,푸딩똥,기본색,윙크,왕관과 망토
+images/06-pudding__original__wink__ribbon.png,푸딩똥,기본색,윙크,분홍 리본
+images/06-pudding__original__sleepy__none.png,푸딩똥,기본색,졸려,기본 의상
+images/06-pudding__original__sleepy__royal.png,푸딩똥,기본색,졸려,왕관과 망토
+images/06-pudding__original__sleepy__ribbon.png,푸딩똥,기본색,졸려,분홍 리본
+images/06-pudding__mint__default__none.png,푸딩똥,민트 크림,기본 표정,기본 의상
+images/06-pudding__mint__default__royal.png,푸딩똥,민트 크림,기본 표정,왕관과 망토
+images/06-pudding__mint__default__ribbon.png,푸딩똥,민트 크림,기본 표정,분홍 리본
+images/06-pudding__mint__wink__none.png,푸딩똥,민트 크림,윙크,기본 의상
+images/06-pudding__mint__wink__royal.png,푸딩똥,민트 크림,윙크,왕관과 망토
+images/06-pudding__mint__wink__ribbon.png,푸딩똥,민트 크림,윙크,분홍 리본
+images/06-pudding__mint__sleepy__none.png,푸딩똥,민트 크림,졸려,기본 의상
+images/06-pudding__mint__sleepy__royal.png,푸딩똥,민트 크림,졸려,왕관과 망토
+images/06-pudding__mint__sleepy__ribbon.png,푸딩똥,민트 크림,졸려,분홍 리본
+images/06-pudding__berry__default__none.png,푸딩똥,딸기 크림,기본 표정,기본 의상
+images/06-pudding__berry__default__royal.png,푸딩똥,딸기 크림,기본 표정,왕관과 망토
+images/06-pudding__berry__default__ribbon.png,푸딩똥,딸기 크림,기본 표정,분홍 리본
+images/06-pudding__berry__wink__none.png,푸딩똥,딸기 크림,윙크,기본 의상
+images/06-pudding__berry__wink__royal.png,푸딩똥,딸기 크림,윙크,왕관과 망토
+images/06-pudding__berry__wink__ribbon.png,푸딩똥,딸기 크림,윙크,분홍 리본
+images/06-pudding__berry__sleepy__none.png,푸딩똥,딸기 크림,졸려,기본 의상
+images/06-pudding__berry__sleepy__royal.png,푸딩똥,딸기 크림,졸려,왕관과 망토
+images/06-pudding__berry__sleepy__ribbon.png,푸딩똥,딸기 크림,졸려,분홍 리본
+images/07-tteok__original__default__none.png,찰떡똥,기본색,기본 표정,기본 의상
+images/07-tteok__original__default__royal.png,찰떡똥,기본색,기본 표정,왕관과 망토
+images/07-tteok__original__default__ribbon.png,찰떡똥,기본색,기본 표정,분홍 리본
+images/07-tteok__original__wink__none.png,찰떡똥,기본색,윙크,기본 의상
+images/07-tteok__original__wink__royal.png,찰떡똥,기본색,윙크,왕관과 망토
+images/07-tteok__original__wink__ribbon.png,찰떡똥,기본색,윙크,분홍 리본
+images/07-tteok__original__sleepy__none.png,찰떡똥,기본색,졸려,기본 의상
+images/07-tteok__original__sleepy__royal.png,찰떡똥,기본색,졸려,왕관과 망토
+images/07-tteok__original__sleepy__ribbon.png,찰떡똥,기본색,졸려,분홍 리본
+images/07-tteok__mint__default__none.png,찰떡똥,민트 크림,기본 표정,기본 의상
+images/07-tteok__mint__default__royal.png,찰떡똥,민트 크림,기본 표정,왕관과 망토
+images/07-tteok__mint__default__ribbon.png,찰떡똥,민트 크림,기본 표정,분홍 리본
+images/07-tteok__mint__wink__none.png,찰떡똥,민트 크림,윙크,기본 의상
+images/07-tteok__mint__wink__royal.png,찰떡똥,민트 크림,윙크,왕관과 망토
+images/07-tteok__mint__wink__ribbon.png,찰떡똥,민트 크림,윙크,분홍 리본
+images/07-tteok__mint__sleepy__none.png,찰떡똥,민트 크림,졸려,기본 의상
+images/07-tteok__mint__sleepy__royal.png,찰떡똥,민트 크림,졸려,왕관과 망토
+images/07-tteok__mint__sleepy__ribbon.png,찰떡똥,민트 크림,졸려,분홍 리본
+images/07-tteok__berry__default__none.png,찰떡똥,딸기 크림,기본 표정,기본 의상
+images/07-tteok__berry__default__royal.png,찰떡똥,딸기 크림,기본 표정,왕관과 망토
+images/07-tteok__berry__default__ribbon.png,찰떡똥,딸기 크림,기본 표정,분홍 리본
+images/07-tteok__berry__wink__none.png,찰떡똥,딸기 크림,윙크,기본 의상
+images/07-tteok__berry__wink__royal.png,찰떡똥,딸기 크림,윙크,왕관과 망토
+images/07-tteok__berry__wink__ribbon.png,찰떡똥,딸기 크림,윙크,분홍 리본
+images/07-tteok__berry__sleepy__none.png,찰떡똥,딸기 크림,졸려,기본 의상
+images/07-tteok__berry__sleepy__royal.png,찰떡똥,딸기 크림,졸려,왕관과 망토
+images/07-tteok__berry__sleepy__ribbon.png,찰떡똥,딸기 크림,졸려,분홍 리본
+images/08-healthy__original__default__none.png,건강똥,기본색,기본 표정,기본 의상
+images/08-healthy__original__default__royal.png,건강똥,기본색,기본 표정,왕관과 망토
+images/08-healthy__original__default__ribbon.png,건강똥,기본색,기본 표정,분홍 리본
+images/08-healthy__original__wink__none.png,건강똥,기본색,윙크,기본 의상
+images/08-healthy__original__wink__royal.png,건강똥,기본색,윙크,왕관과 망토
+images/08-healthy__original__wink__ribbon.png,건강똥,기본색,윙크,분홍 리본
+images/08-healthy__original__sleepy__none.png,건강똥,기본색,졸려,기본 의상
+images/08-healthy__original__sleepy__royal.png,건강똥,기본색,졸려,왕관과 망토
+images/08-healthy__original__sleepy__ribbon.png,건강똥,기본색,졸려,분홍 리본
+images/08-healthy__mint__default__none.png,건강똥,민트 크림,기본 표정,기본 의상
+images/08-healthy__mint__default__royal.png,건강똥,민트 크림,기본 표정,왕관과 망토
+images/08-healthy__mint__default__ribbon.png,건강똥,민트 크림,기본 표정,분홍 리본
+images/08-healthy__mint__wink__none.png,건강똥,민트 크림,윙크,기본 의상
+images/08-healthy__mint__wink__royal.png,건강똥,민트 크림,윙크,왕관과 망토
+images/08-healthy__mint__wink__ribbon.png,건강똥,민트 크림,윙크,분홍 리본
+images/08-healthy__mint__sleepy__none.png,건강똥,민트 크림,졸려,기본 의상
+images/08-healthy__mint__sleepy__royal.png,건강똥,민트 크림,졸려,왕관과 망토
+images/08-healthy__mint__sleepy__ribbon.png,건강똥,민트 크림,졸려,분홍 리본
+images/08-healthy__berry__default__none.png,건강똥,딸기 크림,기본 표정,기본 의상
+images/08-healthy__berry__default__royal.png,건강똥,딸기 크림,기본 표정,왕관과 망토
+images/08-healthy__berry__default__ribbon.png,건강똥,딸기 크림,기본 표정,분홍 리본
+images/08-healthy__berry__wink__none.png,건강똥,딸기 크림,윙크,기본 의상
+images/08-healthy__berry__wink__royal.png,건강똥,딸기 크림,윙크,왕관과 망토
+images/08-healthy__berry__wink__ribbon.png,건강똥,딸기 크림,윙크,분홍 리본
+images/08-healthy__berry__sleepy__none.png,건강똥,딸기 크림,졸려,기본 의상
+images/08-healthy__berry__sleepy__royal.png,건강똥,딸기 크림,졸려,왕관과 망토
+images/08-healthy__berry__sleepy__ribbon.png,건강똥,딸기 크림,졸려,분홍 리본
+images/09-hard__original__default__none.png,단단똥,기본색,기본 표정,기본 의상
+images/09-hard__original__default__royal.png,단단똥,기본색,기본 표정,왕관과 망토
+images/09-hard__original__default__ribbon.png,단단똥,기본색,기본 표정,분홍 리본
+images/09-hard__original__wink__none.png,단단똥,기본색,윙크,기본 의상
+images/09-hard__original__wink__royal.png,단단똥,기본색,윙크,왕관과 망토
+images/09-hard__original__wink__ribbon.png,단단똥,기본색,윙크,분홍 리본
+images/09-hard__original__sleepy__none.png,단단똥,기본색,졸려,기본 의상
+images/09-hard__original__sleepy__royal.png,단단똥,기본색,졸려,왕관과 망토
+images/09-hard__original__sleepy__ribbon.png,단단똥,기본색,졸려,분홍 리본
+images/09-hard__mint__default__none.png,단단똥,민트 크림,기본 표정,기본 의상
+images/09-hard__mint__default__royal.png,단단똥,민트 크림,기본 표정,왕관과 망토
+images/09-hard__mint__default__ribbon.png,단단똥,민트 크림,기본 표정,분홍 리본
+images/09-hard__mint__wink__none.png,단단똥,민트 크림,윙크,기본 의상
+images/09-hard__mint__wink__royal.png,단단똥,민트 크림,윙크,왕관과 망토
+images/09-hard__mint__wink__ribbon.png,단단똥,민트 크림,윙크,분홍 리본
+images/09-hard__mint__sleepy__none.png,단단똥,민트 크림,졸려,기본 의상
+images/09-hard__mint__sleepy__royal.png,단단똥,민트 크림,졸려,왕관과 망토
+images/09-hard__mint__sleepy__ribbon.png,단단똥,민트 크림,졸려,분홍 리본
+images/09-hard__berry__default__none.png,단단똥,딸기 크림,기본 표정,기본 의상
+images/09-hard__berry__default__royal.png,단단똥,딸기 크림,기본 표정,왕관과 망토
+images/09-hard__berry__default__ribbon.png,단단똥,딸기 크림,기본 표정,분홍 리본
+images/09-hard__berry__wink__none.png,단단똥,딸기 크림,윙크,기본 의상
+images/09-hard__berry__wink__royal.png,단단똥,딸기 크림,윙크,왕관과 망토
+images/09-hard__berry__wink__ribbon.png,단단똥,딸기 크림,윙크,분홍 리본
+images/09-hard__berry__sleepy__none.png,단단똥,딸기 크림,졸려,기본 의상
+images/09-hard__berry__sleepy__royal.png,단단똥,딸기 크림,졸려,왕관과 망토
+images/09-hard__berry__sleepy__ribbon.png,단단똥,딸기 크림,졸려,분홍 리본
+images/10-muscle__original__default__none.png,근육똥,기본색,기본 표정,기본 의상
+images/10-muscle__original__default__royal.png,근육똥,기본색,기본 표정,왕관과 망토
+images/10-muscle__original__default__ribbon.png,근육똥,기본색,기본 표정,분홍 리본
+images/10-muscle__original__wink__none.png,근육똥,기본색,윙크,기본 의상
+images/10-muscle__original__wink__royal.png,근육똥,기본색,윙크,왕관과 망토
+images/10-muscle__original__wink__ribbon.png,근육똥,기본색,윙크,분홍 리본
+images/10-muscle__original__sleepy__none.png,근육똥,기본색,졸려,기본 의상
+images/10-muscle__original__sleepy__royal.png,근육똥,기본색,졸려,왕관과 망토
+images/10-muscle__original__sleepy__ribbon.png,근육똥,기본색,졸려,분홍 리본
+images/10-muscle__mint__default__none.png,근육똥,민트 크림,기본 표정,기본 의상
+images/10-muscle__mint__default__royal.png,근육똥,민트 크림,기본 표정,왕관과 망토
+images/10-muscle__mint__default__ribbon.png,근육똥,민트 크림,기본 표정,분홍 리본
+images/10-muscle__mint__wink__none.png,근육똥,민트 크림,윙크,기본 의상
+images/10-muscle__mint__wink__royal.png,근육똥,민트 크림,윙크,왕관과 망토
+images/10-muscle__mint__wink__ribbon.png,근육똥,민트 크림,윙크,분홍 리본
+images/10-muscle__mint__sleepy__none.png,근육똥,민트 크림,졸려,기본 의상
+images/10-muscle__mint__sleepy__royal.png,근육똥,민트 크림,졸려,왕관과 망토
+images/10-muscle__mint__sleepy__ribbon.png,근육똥,민트 크림,졸려,분홍 리본
+images/10-muscle__berry__default__none.png,근육똥,딸기 크림,기본 표정,기본 의상
+images/10-muscle__berry__default__royal.png,근육똥,딸기 크림,기본 표정,왕관과 망토
+images/10-muscle__berry__default__ribbon.png,근육똥,딸기 크림,기본 표정,분홍 리본
+images/10-muscle__berry__wink__none.png,근육똥,딸기 크림,윙크,기본 의상
+images/10-muscle__berry__wink__royal.png,근육똥,딸기 크림,윙크,왕관과 망토
+images/10-muscle__berry__wink__ribbon.png,근육똥,딸기 크림,윙크,분홍 리본
+images/10-muscle__berry__sleepy__none.png,근육똥,딸기 크림,졸려,기본 의상
+images/10-muscle__berry__sleepy__royal.png,근육똥,딸기 크림,졸려,왕관과 망토
+images/10-muscle__berry__sleepy__ribbon.png,근육똥,딸기 크림,졸려,분홍 리본
+images/11-steel__original__default__none.png,강철똥,기본색,기본 표정,기본 의상
+images/11-steel__original__default__royal.png,강철똥,기본색,기본 표정,왕관과 망토
+images/11-steel__original__default__ribbon.png,강철똥,기본색,기본 표정,분홍 리본
+images/11-steel__original__wink__none.png,강철똥,기본색,윙크,기본 의상
+images/11-steel__original__wink__royal.png,강철똥,기본색,윙크,왕관과 망토
+images/11-steel__original__wink__ribbon.png,강철똥,기본색,윙크,분홍 리본
+images/11-steel__original__sleepy__none.png,강철똥,기본색,졸려,기본 의상
+images/11-steel__original__sleepy__royal.png,강철똥,기본색,졸려,왕관과 망토
+images/11-steel__original__sleepy__ribbon.png,강철똥,기본색,졸려,분홍 리본
+images/11-steel__mint__default__none.png,강철똥,민트 크림,기본 표정,기본 의상
+images/11-steel__mint__default__royal.png,강철똥,민트 크림,기본 표정,왕관과 망토
+images/11-steel__mint__default__ribbon.png,강철똥,민트 크림,기본 표정,분홍 리본
+images/11-steel__mint__wink__none.png,강철똥,민트 크림,윙크,기본 의상
+images/11-steel__mint__wink__royal.png,강철똥,민트 크림,윙크,왕관과 망토
+images/11-steel__mint__wink__ribbon.png,강철똥,민트 크림,윙크,분홍 리본
+images/11-steel__mint__sleepy__none.png,강철똥,민트 크림,졸려,기본 의상
+images/11-steel__mint__sleepy__royal.png,강철똥,민트 크림,졸려,왕관과 망토
+images/11-steel__mint__sleepy__ribbon.png,강철똥,민트 크림,졸려,분홍 리본
+images/11-steel__berry__default__none.png,강철똥,딸기 크림,기본 표정,기본 의상
+images/11-steel__berry__default__royal.png,강철똥,딸기 크림,기본 표정,왕관과 망토
+images/11-steel__berry__default__ribbon.png,강철똥,딸기 크림,기본 표정,분홍 리본
+images/11-steel__berry__wink__none.png,강철똥,딸기 크림,윙크,기본 의상
+images/11-steel__berry__wink__royal.png,강철똥,딸기 크림,윙크,왕관과 망토
+images/11-steel__berry__wink__ribbon.png,강철똥,딸기 크림,윙크,분홍 리본
+images/11-steel__berry__sleepy__none.png,강철똥,딸기 크림,졸려,기본 의상
+images/11-steel__berry__sleepy__royal.png,강철똥,딸기 크림,졸려,왕관과 망토
+images/11-steel__berry__sleepy__ribbon.png,강철똥,딸기 크림,졸려,분홍 리본
+images/12-fire__original__default__none.png,불꽃똥,기본색,기본 표정,기본 의상
+images/12-fire__original__default__royal.png,불꽃똥,기본색,기본 표정,왕관과 망토
+images/12-fire__original__default__ribbon.png,불꽃똥,기본색,기본 표정,분홍 리본
+images/12-fire__original__wink__none.png,불꽃똥,기본색,윙크,기본 의상
+images/12-fire__original__wink__royal.png,불꽃똥,기본색,윙크,왕관과 망토
+images/12-fire__original__wink__ribbon.png,불꽃똥,기본색,윙크,분홍 리본
+images/12-fire__original__sleepy__none.png,불꽃똥,기본색,졸려,기본 의상
+images/12-fire__original__sleepy__royal.png,불꽃똥,기본색,졸려,왕관과 망토
+images/12-fire__original__sleepy__ribbon.png,불꽃똥,기본색,졸려,분홍 리본
+images/12-fire__mint__default__none.png,불꽃똥,민트 크림,기본 표정,기본 의상
+images/12-fire__mint__default__royal.png,불꽃똥,민트 크림,기본 표정,왕관과 망토
+images/12-fire__mint__default__ribbon.png,불꽃똥,민트 크림,기본 표정,분홍 리본
+images/12-fire__mint__wink__none.png,불꽃똥,민트 크림,윙크,기본 의상
+images/12-fire__mint__wink__royal.png,불꽃똥,민트 크림,윙크,왕관과 망토
+images/12-fire__mint__wink__ribbon.png,불꽃똥,민트 크림,윙크,분홍 리본
+images/12-fire__mint__sleepy__none.png,불꽃똥,민트 크림,졸려,기본 의상
+images/12-fire__mint__sleepy__royal.png,불꽃똥,민트 크림,졸려,왕관과 망토
+images/12-fire__mint__sleepy__ribbon.png,불꽃똥,민트 크림,졸려,분홍 리본
+images/12-fire__berry__default__none.png,불꽃똥,딸기 크림,기본 표정,기본 의상
+images/12-fire__berry__default__royal.png,불꽃똥,딸기 크림,기본 표정,왕관과 망토
+images/12-fire__berry__default__ribbon.png,불꽃똥,딸기 크림,기본 표정,분홍 리본
+images/12-fire__berry__wink__none.png,불꽃똥,딸기 크림,윙크,기본 의상
+images/12-fire__berry__wink__royal.png,불꽃똥,딸기 크림,윙크,왕관과 망토
+images/12-fire__berry__wink__ribbon.png,불꽃똥,딸기 크림,윙크,분홍 리본
+images/12-fire__berry__sleepy__none.png,불꽃똥,딸기 크림,졸려,기본 의상
+images/12-fire__berry__sleepy__royal.png,불꽃똥,딸기 크림,졸려,왕관과 망토
+images/12-fire__berry__sleepy__ribbon.png,불꽃똥,딸기 크림,졸려,분홍 리본
+images/13-volcano__original__default__none.png,화산똥,기본색,기본 표정,기본 의상
+images/13-volcano__original__default__royal.png,화산똥,기본색,기본 표정,왕관과 망토
+images/13-volcano__original__default__ribbon.png,화산똥,기본색,기본 표정,분홍 리본
+images/13-volcano__original__wink__none.png,화산똥,기본색,윙크,기본 의상
+images/13-volcano__original__wink__royal.png,화산똥,기본색,윙크,왕관과 망토
+images/13-volcano__original__wink__ribbon.png,화산똥,기본색,윙크,분홍 리본
+images/13-volcano__original__sleepy__none.png,화산똥,기본색,졸려,기본 의상
+images/13-volcano__original__sleepy__royal.png,화산똥,기본색,졸려,왕관과 망토
+images/13-volcano__original__sleepy__ribbon.png,화산똥,기본색,졸려,분홍 리본
+images/13-volcano__mint__default__none.png,화산똥,민트 크림,기본 표정,기본 의상
+images/13-volcano__mint__default__royal.png,화산똥,민트 크림,기본 표정,왕관과 망토
+images/13-volcano__mint__default__ribbon.png,화산똥,민트 크림,기본 표정,분홍 리본
+images/13-volcano__mint__wink__none.png,화산똥,민트 크림,윙크,기본 의상
+images/13-volcano__mint__wink__royal.png,화산똥,민트 크림,윙크,왕관과 망토
+images/13-volcano__mint__wink__ribbon.png,화산똥,민트 크림,윙크,분홍 리본
+images/13-volcano__mint__sleepy__none.png,화산똥,민트 크림,졸려,기본 의상
+images/13-volcano__mint__sleepy__royal.png,화산똥,민트 크림,졸려,왕관과 망토
+images/13-volcano__mint__sleepy__ribbon.png,화산똥,민트 크림,졸려,분홍 리본
+images/13-volcano__berry__default__none.png,화산똥,딸기 크림,기본 표정,기본 의상
+images/13-volcano__berry__default__royal.png,화산똥,딸기 크림,기본 표정,왕관과 망토
+images/13-volcano__berry__default__ribbon.png,화산똥,딸기 크림,기본 표정,분홍 리본
+images/13-volcano__berry__wink__none.png,화산똥,딸기 크림,윙크,기본 의상
+images/13-volcano__berry__wink__royal.png,화산똥,딸기 크림,윙크,왕관과 망토
+images/13-volcano__berry__wink__ribbon.png,화산똥,딸기 크림,윙크,분홍 리본
+images/13-volcano__berry__sleepy__none.png,화산똥,딸기 크림,졸려,기본 의상
+images/13-volcano__berry__sleepy__royal.png,화산똥,딸기 크림,졸려,왕관과 망토
+images/13-volcano__berry__sleepy__ribbon.png,화산똥,딸기 크림,졸려,분홍 리본
+images/14-lava__original__default__none.png,용암똥,기본색,기본 표정,기본 의상
+images/14-lava__original__default__royal.png,용암똥,기본색,기본 표정,왕관과 망토
+images/14-lava__original__default__ribbon.png,용암똥,기본색,기본 표정,분홍 리본
+images/14-lava__original__wink__none.png,용암똥,기본색,윙크,기본 의상
+images/14-lava__original__wink__royal.png,용암똥,기본색,윙크,왕관과 망토
+images/14-lava__original__wink__ribbon.png,용암똥,기본색,윙크,분홍 리본
+images/14-lava__original__sleepy__none.png,용암똥,기본색,졸려,기본 의상
+images/14-lava__original__sleepy__royal.png,용암똥,기본색,졸려,왕관과 망토
+images/14-lava__original__sleepy__ribbon.png,용암똥,기본색,졸려,분홍 리본
+images/14-lava__mint__default__none.png,용암똥,민트 크림,기본 표정,기본 의상
+images/14-lava__mint__default__royal.png,용암똥,민트 크림,기본 표정,왕관과 망토
+images/14-lava__mint__default__ribbon.png,용암똥,민트 크림,기본 표정,분홍 리본
+images/14-lava__mint__wink__none.png,용암똥,민트 크림,윙크,기본 의상
+images/14-lava__mint__wink__royal.png,용암똥,민트 크림,윙크,왕관과 망토
+images/14-lava__mint__wink__ribbon.png,용암똥,민트 크림,윙크,분홍 리본
+images/14-lava__mint__sleepy__none.png,용암똥,민트 크림,졸려,기본 의상
+images/14-lava__mint__sleepy__royal.png,용암똥,민트 크림,졸려,왕관과 망토
+images/14-lava__mint__sleepy__ribbon.png,용암똥,민트 크림,졸려,분홍 리본
+images/14-lava__berry__default__none.png,용암똥,딸기 크림,기본 표정,기본 의상
+images/14-lava__berry__default__royal.png,용암똥,딸기 크림,기본 표정,왕관과 망토
+images/14-lava__berry__default__ribbon.png,용암똥,딸기 크림,기본 표정,분홍 리본
+images/14-lava__berry__wink__none.png,용암똥,딸기 크림,윙크,기본 의상
+images/14-lava__berry__wink__royal.png,용암똥,딸기 크림,윙크,왕관과 망토
+images/14-lava__berry__wink__ribbon.png,용암똥,딸기 크림,윙크,분홍 리본
+images/14-lava__berry__sleepy__none.png,용암똥,딸기 크림,졸려,기본 의상
+images/14-lava__berry__sleepy__royal.png,용암똥,딸기 크림,졸려,왕관과 망토
+images/14-lava__berry__sleepy__ribbon.png,용암똥,딸기 크림,졸려,분홍 리본
+images/15-platinum__original__default__none.png,플래티넘똥,기본색,기본 표정,기본 의상
+images/15-platinum__original__default__royal.png,플래티넘똥,기본색,기본 표정,왕관과 망토
+images/15-platinum__original__default__ribbon.png,플래티넘똥,기본색,기본 표정,분홍 리본
+images/15-platinum__original__wink__none.png,플래티넘똥,기본색,윙크,기본 의상
+images/15-platinum__original__wink__royal.png,플래티넘똥,기본색,윙크,왕관과 망토
+images/15-platinum__original__wink__ribbon.png,플래티넘똥,기본색,윙크,분홍 리본
+images/15-platinum__original__sleepy__none.png,플래티넘똥,기본색,졸려,기본 의상
+images/15-platinum__original__sleepy__royal.png,플래티넘똥,기본색,졸려,왕관과 망토
+images/15-platinum__original__sleepy__ribbon.png,플래티넘똥,기본색,졸려,분홍 리본
+images/15-platinum__mint__default__none.png,플래티넘똥,민트 크림,기본 표정,기본 의상
+images/15-platinum__mint__default__royal.png,플래티넘똥,민트 크림,기본 표정,왕관과 망토
+images/15-platinum__mint__default__ribbon.png,플래티넘똥,민트 크림,기본 표정,분홍 리본
+images/15-platinum__mint__wink__none.png,플래티넘똥,민트 크림,윙크,기본 의상
+images/15-platinum__mint__wink__royal.png,플래티넘똥,민트 크림,윙크,왕관과 망토
+images/15-platinum__mint__wink__ribbon.png,플래티넘똥,민트 크림,윙크,분홍 리본
+images/15-platinum__mint__sleepy__none.png,플래티넘똥,민트 크림,졸려,기본 의상
+images/15-platinum__mint__sleepy__royal.png,플래티넘똥,민트 크림,졸려,왕관과 망토
+images/15-platinum__mint__sleepy__ribbon.png,플래티넘똥,민트 크림,졸려,분홍 리본
+images/15-platinum__berry__default__none.png,플래티넘똥,딸기 크림,기본 표정,기본 의상
+images/15-platinum__berry__default__royal.png,플래티넘똥,딸기 크림,기본 표정,왕관과 망토
+images/15-platinum__berry__default__ribbon.png,플래티넘똥,딸기 크림,기본 표정,분홍 리본
+images/15-platinum__berry__wink__none.png,플래티넘똥,딸기 크림,윙크,기본 의상
+images/15-platinum__berry__wink__royal.png,플래티넘똥,딸기 크림,윙크,왕관과 망토
+images/15-platinum__berry__wink__ribbon.png,플래티넘똥,딸기 크림,윙크,분홍 리본
+images/15-platinum__berry__sleepy__none.png,플래티넘똥,딸기 크림,졸려,기본 의상
+images/15-platinum__berry__sleepy__royal.png,플래티넘똥,딸기 크림,졸려,왕관과 망토
+images/15-platinum__berry__sleepy__ribbon.png,플래티넘똥,딸기 크림,졸려,분홍 리본
+images/16-emerald__original__default__none.png,에메랄드똥,기본색,기본 표정,기본 의상
+images/16-emerald__original__default__royal.png,에메랄드똥,기본색,기본 표정,왕관과 망토
+images/16-emerald__original__default__ribbon.png,에메랄드똥,기본색,기본 표정,분홍 리본
+images/16-emerald__original__wink__none.png,에메랄드똥,기본색,윙크,기본 의상
+images/16-emerald__original__wink__royal.png,에메랄드똥,기본색,윙크,왕관과 망토
+images/16-emerald__original__wink__ribbon.png,에메랄드똥,기본색,윙크,분홍 리본
+images/16-emerald__original__sleepy__none.png,에메랄드똥,기본색,졸려,기본 의상
+images/16-emerald__original__sleepy__royal.png,에메랄드똥,기본색,졸려,왕관과 망토
+images/16-emerald__original__sleepy__ribbon.png,에메랄드똥,기본색,졸려,분홍 리본
+images/16-emerald__mint__default__none.png,에메랄드똥,민트 크림,기본 표정,기본 의상
+images/16-emerald__mint__default__royal.png,에메랄드똥,민트 크림,기본 표정,왕관과 망토
+images/16-emerald__mint__default__ribbon.png,에메랄드똥,민트 크림,기본 표정,분홍 리본
+images/16-emerald__mint__wink__none.png,에메랄드똥,민트 크림,윙크,기본 의상
+images/16-emerald__mint__wink__royal.png,에메랄드똥,민트 크림,윙크,왕관과 망토
+images/16-emerald__mint__wink__ribbon.png,에메랄드똥,민트 크림,윙크,분홍 리본
+images/16-emerald__mint__sleepy__none.png,에메랄드똥,민트 크림,졸려,기본 의상
+images/16-emerald__mint__sleepy__royal.png,에메랄드똥,민트 크림,졸려,왕관과 망토
+images/16-emerald__mint__sleepy__ribbon.png,에메랄드똥,민트 크림,졸려,분홍 리본
+images/16-emerald__berry__default__none.png,에메랄드똥,딸기 크림,기본 표정,기본 의상
+images/16-emerald__berry__default__royal.png,에메랄드똥,딸기 크림,기본 표정,왕관과 망토
+images/16-emerald__berry__default__ribbon.png,에메랄드똥,딸기 크림,기본 표정,분홍 리본
+images/16-emerald__berry__wink__none.png,에메랄드똥,딸기 크림,윙크,기본 의상
+images/16-emerald__berry__wink__royal.png,에메랄드똥,딸기 크림,윙크,왕관과 망토
+images/16-emerald__berry__wink__ribbon.png,에메랄드똥,딸기 크림,윙크,분홍 리본
+images/16-emerald__berry__sleepy__none.png,에메랄드똥,딸기 크림,졸려,기본 의상
+images/16-emerald__berry__sleepy__royal.png,에메랄드똥,딸기 크림,졸려,왕관과 망토
+images/16-emerald__berry__sleepy__ribbon.png,에메랄드똥,딸기 크림,졸려,분홍 리본
+images/17-diamond__original__default__none.png,다이아똥,기본색,기본 표정,기본 의상
+images/17-diamond__original__default__royal.png,다이아똥,기본색,기본 표정,왕관과 망토
+images/17-diamond__original__default__ribbon.png,다이아똥,기본색,기본 표정,분홍 리본
+images/17-diamond__original__wink__none.png,다이아똥,기본색,윙크,기본 의상
+images/17-diamond__original__wink__royal.png,다이아똥,기본색,윙크,왕관과 망토
+images/17-diamond__original__wink__ribbon.png,다이아똥,기본색,윙크,분홍 리본
+images/17-diamond__original__sleepy__none.png,다이아똥,기본색,졸려,기본 의상
+images/17-diamond__original__sleepy__royal.png,다이아똥,기본색,졸려,왕관과 망토
+images/17-diamond__original__sleepy__ribbon.png,다이아똥,기본색,졸려,분홍 리본
+images/17-diamond__mint__default__none.png,다이아똥,민트 크림,기본 표정,기본 의상
+images/17-diamond__mint__default__royal.png,다이아똥,민트 크림,기본 표정,왕관과 망토
+images/17-diamond__mint__default__ribbon.png,다이아똥,민트 크림,기본 표정,분홍 리본
+images/17-diamond__mint__wink__none.png,다이아똥,민트 크림,윙크,기본 의상
+images/17-diamond__mint__wink__royal.png,다이아똥,민트 크림,윙크,왕관과 망토
+images/17-diamond__mint__wink__ribbon.png,다이아똥,민트 크림,윙크,분홍 리본
+images/17-diamond__mint__sleepy__none.png,다이아똥,민트 크림,졸려,기본 의상
+images/17-diamond__mint__sleepy__royal.png,다이아똥,민트 크림,졸려,왕관과 망토
+images/17-diamond__mint__sleepy__ribbon.png,다이아똥,민트 크림,졸려,분홍 리본
+images/17-diamond__berry__default__none.png,다이아똥,딸기 크림,기본 표정,기본 의상
+images/17-diamond__berry__default__royal.png,다이아똥,딸기 크림,기본 표정,왕관과 망토
+images/17-diamond__berry__default__ribbon.png,다이아똥,딸기 크림,기본 표정,분홍 리본
+images/17-diamond__berry__wink__none.png,다이아똥,딸기 크림,윙크,기본 의상
+images/17-diamond__berry__wink__royal.png,다이아똥,딸기 크림,윙크,왕관과 망토
+images/17-diamond__berry__wink__ribbon.png,다이아똥,딸기 크림,윙크,분홍 리본
+images/17-diamond__berry__sleepy__none.png,다이아똥,딸기 크림,졸려,기본 의상
+images/17-diamond__berry__sleepy__royal.png,다이아똥,딸기 크림,졸려,왕관과 망토
+images/17-diamond__berry__sleepy__ribbon.png,다이아똥,딸기 크림,졸려,분홍 리본
+images/18-king__original__default__none.png,왕똥,기본색,기본 표정,기본 의상
+images/18-king__original__default__royal.png,왕똥,기본색,기본 표정,왕관과 망토
+images/18-king__original__default__ribbon.png,왕똥,기본색,기본 표정,분홍 리본
+images/18-king__original__wink__none.png,왕똥,기본색,윙크,기본 의상
+images/18-king__original__wink__royal.png,왕똥,기본색,윙크,왕관과 망토
+images/18-king__original__wink__ribbon.png,왕똥,기본색,윙크,분홍 리본
+images/18-king__original__sleepy__none.png,왕똥,기본색,졸려,기본 의상
+images/18-king__original__sleepy__royal.png,왕똥,기본색,졸려,왕관과 망토
+images/18-king__original__sleepy__ribbon.png,왕똥,기본색,졸려,분홍 리본
+images/18-king__mint__default__none.png,왕똥,민트 크림,기본 표정,기본 의상
+images/18-king__mint__default__royal.png,왕똥,민트 크림,기본 표정,왕관과 망토
+images/18-king__mint__default__ribbon.png,왕똥,민트 크림,기본 표정,분홍 리본
+images/18-king__mint__wink__none.png,왕똥,민트 크림,윙크,기본 의상
+images/18-king__mint__wink__royal.png,왕똥,민트 크림,윙크,왕관과 망토
+images/18-king__mint__wink__ribbon.png,왕똥,민트 크림,윙크,분홍 리본
+images/18-king__mint__sleepy__none.png,왕똥,민트 크림,졸려,기본 의상
+images/18-king__mint__sleepy__royal.png,왕똥,민트 크림,졸려,왕관과 망토
+images/18-king__mint__sleepy__ribbon.png,왕똥,민트 크림,졸려,분홍 리본
+images/18-king__berry__default__none.png,왕똥,딸기 크림,기본 표정,기본 의상
+images/18-king__berry__default__royal.png,왕똥,딸기 크림,기본 표정,왕관과 망토
+images/18-king__berry__default__ribbon.png,왕똥,딸기 크림,기본 표정,분홍 리본
+images/18-king__berry__wink__none.png,왕똥,딸기 크림,윙크,기본 의상
+images/18-king__berry__wink__royal.png,왕똥,딸기 크림,윙크,왕관과 망토
+images/18-king__berry__wink__ribbon.png,왕똥,딸기 크림,윙크,분홍 리본
+images/18-king__berry__sleepy__none.png,왕똥,딸기 크림,졸려,기본 의상
+images/18-king__berry__sleepy__royal.png,왕똥,딸기 크림,졸려,왕관과 망토
+images/18-king__berry__sleepy__ribbon.png,왕똥,딸기 크림,졸려,분홍 리본
+images/19-golden__original__default__none.png,황금똥,기본색,기본 표정,기본 의상
+images/19-golden__original__default__royal.png,황금똥,기본색,기본 표정,왕관과 망토
+images/19-golden__original__default__ribbon.png,황금똥,기본색,기본 표정,분홍 리본
+images/19-golden__original__wink__none.png,황금똥,기본색,윙크,기본 의상
+images/19-golden__original__wink__royal.png,황금똥,기본색,윙크,왕관과 망토
+images/19-golden__original__wink__ribbon.png,황금똥,기본색,윙크,분홍 리본
+images/19-golden__original__sleepy__none.png,황금똥,기본색,졸려,기본 의상
+images/19-golden__original__sleepy__royal.png,황금똥,기본색,졸려,왕관과 망토
+images/19-golden__original__sleepy__ribbon.png,황금똥,기본색,졸려,분홍 리본
+images/19-golden__mint__default__none.png,황금똥,민트 크림,기본 표정,기본 의상
+images/19-golden__mint__default__royal.png,황금똥,민트 크림,기본 표정,왕관과 망토
+images/19-golden__mint__default__ribbon.png,황금똥,민트 크림,기본 표정,분홍 리본
+images/19-golden__mint__wink__none.png,황금똥,민트 크림,윙크,기본 의상
+images/19-golden__mint__wink__royal.png,황금똥,민트 크림,윙크,왕관과 망토
+images/19-golden__mint__wink__ribbon.png,황금똥,민트 크림,윙크,분홍 리본
+images/19-golden__mint__sleepy__none.png,황금똥,민트 크림,졸려,기본 의상
+images/19-golden__mint__sleepy__royal.png,황금똥,민트 크림,졸려,왕관과 망토
+images/19-golden__mint__sleepy__ribbon.png,황금똥,민트 크림,졸려,분홍 리본
+images/19-golden__berry__default__none.png,황금똥,딸기 크림,기본 표정,기본 의상
+images/19-golden__berry__default__royal.png,황금똥,딸기 크림,기본 표정,왕관과 망토
+images/19-golden__berry__default__ribbon.png,황금똥,딸기 크림,기본 표정,분홍 리본
+images/19-golden__berry__wink__none.png,황금똥,딸기 크림,윙크,기본 의상
+images/19-golden__berry__wink__royal.png,황금똥,딸기 크림,윙크,왕관과 망토
+images/19-golden__berry__wink__ribbon.png,황금똥,딸기 크림,윙크,분홍 리본
+images/19-golden__berry__sleepy__none.png,황금똥,딸기 크림,졸려,기본 의상
+images/19-golden__berry__sleepy__royal.png,황금똥,딸기 크림,졸려,왕관과 망토
+images/19-golden__berry__sleepy__ribbon.png,황금똥,딸기 크림,졸려,분홍 리본

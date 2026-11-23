@@ -3,8 +3,8 @@ import bounds from './poopBounds.json';
 import './evolution.css';
 
 // Fit the visible character, not the transparent padding around its PNG.
-export default function PoopPortrait({ poop }) {
-  const box = bounds[poop.id];
+export default function PoopPortrait({ poop, spriteBounds }) {
+  const box = spriteBounds || bounds[poop.id];
   const size = box ? Math.max(box.width, box.height) / 0.8 : 0;
   return <span className="poop-portrait">
     <img src={poop.image} alt={poop.name} draggable="false" style={box ? {

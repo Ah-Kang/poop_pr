@@ -1,4 +1,5 @@
 import { applyEconomyAction, createEconomy, koreaDay, migrateToiletLevel, validateEconomy } from '../../shared/economy.js';
+import { updateWardrobe } from '../../shared/wardrobe.js';
 
 export const GUEST_ECONOMY_KEY = 'poop-pr-guest-economy-v1';
 export const ECONOMY_EVENT = 'poop-pr-economy-changed';
@@ -39,6 +40,10 @@ export function createEconomyClient({ userId = null, legacyToiletLevel = 0 } = {
     }
     return guestLock(() => {
       let state = readGuest(legacyToiletLevel);
+      const save = JSON.parse(localStorage.getItem('poop-pr-save') || 'null');
+      const updated = updateWardrobe(state, { poopLevels: save?.poopLevels });
+      if (updated !== state) localStorage.setItem(GUEST_ECONOMY_KEY, JSON.stringify(updated));
+      state = updated;
       if (action) {
         if (['start_run', 'demo_ad', 'demo_complete', 'demo_tokens'].includes(action.type) && !DEMO_ECONOMY) throw new Error('integration_not_ready');
         state = applyEconomyAction(state, action, { allowDemo: DEMO_ECONOMY });

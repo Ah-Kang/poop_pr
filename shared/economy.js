@@ -1,5 +1,6 @@
 import { COMBO_TARGET, bankCombo } from './match3.js';
 import { createComboPuzzle, asComboPuzzle, resolvePuzzleMove } from './puzzle.js';
+import { updateWardrobe } from './wardrobe.js';
 // Shared rules for guest play, the account API, and minigame adapters.
 export const ECONOMY_VERSION = 1;
 export const STARTER_TOKENS = 30;
@@ -57,7 +58,7 @@ export function applyEconomyAction(previous, action, { now = Date.now(), allowDe
   validateEconomy(previous);
   if (!action || typeof action.id !== 'string' || !/^[\w-]{8,80}$/.test(action.id)) fail('invalid_action_id');
   if (previous.recentActions.includes(action.id)) return previous;
-  const next = structuredClone(previous);
+  const next = structuredClone(updateWardrobe(previous, { now }));
   const day = koreaDay(now);
   switch (action.type) {
     case 'demo_tokens':
@@ -83,6 +84,7 @@ export function applyEconomyAction(previous, action, { now = Date.now(), allowDe
       run.puzzle = resolved.round;
       const reward = bankCombo(next.comboProgress ?? 0, resolved.comboGained);
       next.comboProgress = reward.progress;
+      next.wardrobe.combos = Math.min(Number.MAX_SAFE_INTEGER, next.wardrobe.combos + resolved.comboGained);
       next.parts += reward.parts;
       run.puzzle.partsEarned = (run.puzzle.partsEarned || 0) + reward.parts;
       next.bestScore = Math.max(next.bestScore, run.puzzle.score);
@@ -144,6 +146,7 @@ export function applyEconomyAction(previous, action, { now = Date.now(), allowDe
       if (next.parts < cost) fail('not_enough_parts');
       next.parts -= cost;
       next.toiletLevel = action.toiletLevel;
+      next.wardrobe.upgrades += 1;
       break;
     }
     case 'renovate': {

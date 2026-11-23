@@ -14,3 +14,7 @@ pnpm-debug.log*
 .vercel
 .codex-backups/
 .codex-*.log
+__pycache__/
+*.pyc
+# The individual source images are versioned; keep this duplicate archive local.
+exports/cosmetics-production-2026-11-23/poop-complete-skins-540.zip

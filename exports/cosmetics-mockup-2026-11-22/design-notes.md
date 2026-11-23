@@ -1,0 +1,21 @@
+# 똥 꾸미기 적용 목업
+
+현재 푸딩똥과 지하철 화장실 게임 화면을 참조한 정적 디자인 목업입니다. 실제 꾸미기 기능은 변경하지 않았습니다.
+
+- 01 재질: 소다 젤리. 몸통에만 질감 적용, 캐러멜과 얼굴 유지.
+- 02 표정: 윙크. 기존 눈과 입을 교체해 중복되지 않도록 구현 예정.
+- 03 의상: 작은 왕관과 망토. 왕관은 상단 곡면, 망토는 몸 뒤와 앞 가장자리로 분리해 구현 예정.
+
+실제 구현 시 캐릭터별 몸통 마스크, 얼굴 위치, 머리와 의상 기준점을 정의하고 몸통·표정·의상을 같은 좌표계에서 함께 확대하고 움직여야 합니다. 재질에는 얼굴/의상이 포함되지 않도록 분리합니다. 진화별 체형과 작은 화면에서의 잘림은 별도 검증이 필요합니다. 이 목업만으로 모든 캐릭터의 호환성을 검증한 것은 아닙니다.
+
+생성 방식: 기본 내장 이미지 생성 도구. 원본 캐릭터 이미지와 실제 게임 캡처를 참조했습니다.
+
+## 생성 프롬프트
+
+Use case: ui-mockup. Create ONE high-resolution landscape presentation board with THREE equal portrait mobile game screen mockups side by side, with generous clear margins. This is a proposed cosmetic editor for the user's existing Korean idle game, not a redesign of the character.
+REFERENCE 1 is the CURRENT ACTUAL GAME SCREEN: preserve the visual family of thick warm brown borders, cream panels, chunky yellow and turquoise gradient buttons, compact currency/production stats, the grey tiled subway toilet room and white toilet. REFERENCE 2 is the ORIGINAL PUDDING CHARACTER: exact identity, low wide truncated-cone silhouette, elliptical caramel top with drips, two eye positions, little smile, rosy cheeks, painterly soft edges. Treat reference 2 as the invariant base model. No arms/legs, no new body shapes, no pixel art.
+Board background warm ivory. Above each column short Korean label: "01 재질", "02 표정", "03 의상". Each mobile screen has the same layout and scaling: compact cream top bar titled "똥 꾸미기" with back and reset icon, slim turquoise stats bar "푸딩똥 Lv.1"; main center preview uses the existing grey subway toilet room, subdued to emphasize the large pudding character naturally resting on the toilet seat with consistent contact shadow. Character approx 60% of screen width, large enough to see exact details, fully visible without clipping or overlap with menus. Lower 36% of each screen is a cream rounded selection drawer, brown outline and soft shadow. Three tabs "재질", "표정", "의상", with the matching active tab highlighted teal. Below are three tidy illustrated item tiles, selected item checkmark, short selected item name, and full-width warm yellow button "적용하기". Fit complete interface in each screen, no scrolling, no device hardware.
+LEFT: material tab. Same exact original pudding silhouette, original caramel top and face. ONLY the custard body becomes translucent pale aqua soda jelly with a few small internal bubbles, soft edge refraction and cohesive painterly highlights. Caramel top remains amber. Smooth clean alpha-like outline, no jagged edges, texture strictly contained inside body. Three material thumbnails: original custard, selected soda jelly, strawberry milk; selected label "소다 젤리".
+MIDDLE: expression tab. EXACT original golden custard and caramel, same original silhouette, no costume. REPLACE eyes and mouth in their existing locations with a playful wink: one open glossy brown eye, one curved closed eye, small happy smile and original rosy cheeks. No duplicated original eyes or pasted sticker rectangle. Three face thumbnails: smiling, selected wink, sleepy. Selected label "윙크".
+RIGHT: outfit tab. EXACT original golden custard/caramel silhouette and original happy face. Add a SMALL carefully fitted golden crown centered on caramel top following the elliptical perspective, its rear band naturally occluded and lower band resting on top. A burgundy velvet short royal cape goes BEHIND body and drapes down both sides; only two narrow front fabric edges and small clasp below the mouth are visible, leaving face and most body uncovered. No humanoid torso, shoulders, neck, arms, floating emoji or disconnected accessories. Cape bottom stays near body base. Accurate shared lighting and soft contact shadows where costume touches character. Three outfit thumbnails: none, selected crown and cape, soft ribbon. Selected label "작은 왕관과 망토".
+All three scenes use the SAME framing, background, character proportions and game UI to make category differences easy to compare. Clearly coherent polished actual-game application mockups, not generic apps, no logos from reference games. Crisp readable Korean. Do not add explanations or technical labels. Render large, polished, charming, highly legible.

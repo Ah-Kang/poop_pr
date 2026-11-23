@@ -1,4 +1,28 @@
-const CACHE_NAME = 'poop-pr-shell-v29';
+const CACHE_NAME = 'poop-pr-shell-v31';
+const SKIN_CACHE = 'poop-pr-skins-v1';
+const SKIN_CACHE_LIMIT = 180;
+const skinRequests = new Map();
+
+async function skinResponse(request) {
+  const cache = await caches.open(SKIN_CACHE);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  // Share concurrent requests for the same equipped image and preview.
+  if (!skinRequests.has(request.url)) {
+    const pending = fetch(request).then(async response => {
+      if (response.ok && response.headers.get('content-type')?.includes('image/webp')) {
+        try {
+          await cache.put(request, response.clone());
+          const keys = await cache.keys();
+          await Promise.all(keys.slice(0, Math.max(0, keys.length - SKIN_CACHE_LIMIT)).map(key => cache.delete(key)));
+        } catch { /* Storage full/private mode: still display the fetched image. */ }
+      }
+      return response;
+    }).finally(() => skinRequests.delete(request.url));
+    skinRequests.set(request.url, pending);
+  }
+  return (await skinRequests.get(request.url)).clone();
+}
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -20,7 +44,7 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
+        Promise.all(keys.filter((key) => key.startsWith('poop-pr-') && key !== CACHE_NAME && key !== SKIN_CACHE).map((key) => caches.delete(key)))
       )
   );
   self.clients.claim();
@@ -32,6 +56,12 @@ self.addEventListener('fetch', (event) => {
 
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return;
+
+  // Only requested skins are cached. Do not prefetch the collection or revalidate hits.
+  if (/^\/skins\/[a-z0-9_.-]+\.[a-f0-9]{16}\.webp$/.test(url.pathname)) {
+    event.respondWith(skinResponse(request));
+    return;
+  }
 
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
