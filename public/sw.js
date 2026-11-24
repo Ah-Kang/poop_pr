@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poop-game-v34';
+const CACHE_NAME = 'poop-pr-v35';
 const SKIN_CACHE = 'poop-pr-skins-v1';
 const SKIN_CACHE_LIMIT = 180;
 const skinRequests = new Map();
@@ -44,7 +44,7 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key.startsWith('poop-pr-') && key !== CACHE_NAME && key !== SKIN_CACHE).map((key) => caches.delete(key)))
+        Promise.all(keys.filter((key) => (key.startsWith('poop-pr-') || key === 'poop-game-v34') && key !== CACHE_NAME && key !== SKIN_CACHE).map((key) => caches.delete(key)))
       )
   );
   self.clients.claim();
