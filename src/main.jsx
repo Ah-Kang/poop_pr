@@ -4,6 +4,8 @@ import App from './App.jsx';
 import ToiletPuzzle from './minigames/ToiletPuzzle.jsx';
 import './index.css';
 
+const AdminDashboard = React.lazy(() => import('./admin/AdminDashboard.jsx'));
+
 const preventIosZoom = (event) => {
   if (event.touches?.length > 1) {
     event.preventDefault();
@@ -31,7 +33,9 @@ if (displayModeQuery.addEventListener) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {window.location.pathname === '/minigame' ? <ToiletPuzzle /> : <App />}
+    {window.location.pathname === '/admin'
+      ? <React.Suspense fallback={<p style={{padding:32}}>개발자 대시보드를 불러오는 중…</p>}><AdminDashboard /></React.Suspense>
+      : window.location.pathname === '/minigame' ? <ToiletPuzzle /> : <App />}
   </React.StrictMode>
 );
 

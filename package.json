@@ -21,7 +21,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:cosmetics": "node --test tests/cosmetics.test.js",
-    "skins:build": "python3 scripts/build-skin-assets.py"
+    "skins:build": "python3 scripts/build-skin-assets.py",
+    "test:analytics": "node --test tests/analytics.test.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",

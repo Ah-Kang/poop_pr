@@ -1,3 +1,4 @@
+import { useTelemetry } from '../analytics/useTelemetry.js';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import poop from '../assets/PoopImage/healthy-poop.png';
 import water from '../assets/PoopImage/water-poop.png';
@@ -35,6 +36,7 @@ export default function ToiletPuzzle() {
     }).catch((error) => { if (error.name !== 'AbortError') setAuth({ loading: true, user: null, error: true }); });
     return () => controller.abort();
   }, []);
+  useTelemetry(auth.user?.id, 'puzzle');
   const economy = useEconomy({ authUser: auth.user, isAuthLoading: auth.loading, isSaveLoaded: true });
   const { state, pending, error } = economy;
   const [difficulty, setDifficulty] = useState('normal');

@@ -8,6 +8,8 @@ import path from 'node:path';
 import net from 'node:net';
 import { fileURLToPath } from 'node:url';
 
+const adminTestToken = 'analytics-test-' + randomUUID();
+const adminTestPassword = 'dashboard-test-' + randomUUID();
 let child, directory, base, cookie = '';
 const request = async (route, body, expected = 200, session = cookie) => {
   const response = await fetch(`${base}${route}`, {
@@ -58,7 +60,7 @@ before(async () => {
     cwd: fileURLToPath(new URL('..', import.meta.url)),
     env: { ...process.env, DATABASE_URL: '', NODE_ENV: 'development', SQLITE_PATH: path.join(directory, 'test.db'),
       PORT: String(port), HOST: '127.0.0.1', SESSION_SECRET: 'temporary-test-secret',
-      KAKAO_REST_API_KEY: '', KAKAO_CLIENT_SECRET: '', ENABLE_ECONOMY_DEMO: 'true' },
+      KAKAO_REST_API_KEY: '', KAKAO_CLIENT_SECRET: '', ENABLE_ECONOMY_DEMO: 'true', ADMIN_TOKEN: adminTestToken, ADMIN_PASSWORD: adminTestPassword },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   await new Promise((resolve, reject) => {
@@ -186,6 +188,12 @@ test('account puzzle validates moves and atomically awards parts once', async ()
   assert.equal(response.state.tokens, 14);
   assert.equal(response.state.parts, earned);
   assert.equal(response.state.comboProgress, savedCombo);
+  const reportResponse=await fetch(base+'/api/admin/analytics?'+new URLSearchParams({search:'퍼즐테스트'}),{headers:{'x-admin-token':adminTestToken}});
+  assert.equal(reportResponse.status,200);
+  const report=(await reportResponse.json()).summary;
+  assert.equal(report.puzzleEntries,2);assert.equal(report.puzzleMoves,20);
+  assert.equal(report.partsEarned,earned);assert.equal(report.tokensSpent,16);
+
 });
 
 
@@ -201,4 +209,75 @@ test('development account token grants are fixed, persistent and paid once per a
   await request('/api/logout', {}, 204);
   await request('/api/auth/local/login', { loginId: 'dev_token_test', password: 'test-only-123' });
   assert.equal((await request('/api/economy')).state.tokens, 2030);
+});
+
+test('analytics authenticate admins, deduplicate telemetry, separate days and accounts, and export safe CSV', async () => {
+  const { koreaDay } = await import('../shared/economy.js');
+  const { shiftDay } = await import('../shared/analytics.js');
+  const today=koreaDay(),yesterday=shiftDay(today,-1);
+  const filters=new URLSearchParams({from:yesterday,to:today,search:'분석',provider:'local'});
+  const admin=async route=>{
+    const response=await fetch(base+route,{headers:{'x-admin-token':adminTestToken}});
+    assert.equal(response.status,200,await response.clone().text());
+    assert.equal(response.headers.get('cache-control'),'no-store');
+    return response.json();
+  };
+  assert.equal((await fetch(base+'/api/admin/analytics')).status,403);
+  assert.equal((await fetch(base+'/api/admin/analytics?token='+adminTestToken)).status,403);
+  assert.equal((await fetch(base+'/api/admin/export.csv')).status,403);
+  await request('/api/telemetry',{},401,'');
+  await request('/api/auth/local/register',{loginId:'analytics_one',password:'test-only-123',displayNickname:'분석 하나'},201,'');
+  const firstCookie=cookie;
+  const firstUser=(await request('/api/me')).user.id;
+  const packet={sessionId:randomUUID(),streamId:randomUUID(),day:today,counters:{clicks:12,mainSeconds:30,wardrobeOpens:1}};
+  await Promise.all(Array.from({length:4},()=>request('/api/telemetry',packet,204)));
+  let report=await admin('/api/admin/analytics?'+filters);
+  assert.equal(report.summary.clicks,12);assert.equal(report.summary.playSeconds,30);assert.equal(report.summary.sessions,1);
+  assert.equal(report.summary.totalUsers,1);assert.equal(report.summary.activeUsers,1);
+  await request('/api/telemetry',{...packet,counters:{clicks:20,mainSeconds:50,wardrobeOpens:2}},204);
+  await request('/api/telemetry',packet,204); // Stale retry must not decrement or double-count.
+  await request('/api/telemetry',{...packet,streamId:randomUUID(),counters:{clicks:5,puzzleSeconds:15}},204);
+  await request('/api/telemetry',{...packet,day:yesterday,counters:{clicks:2,mainSeconds:20}},204);
+  await request('/api/telemetry',{...packet,sessionId:randomUUID()},400);
+  await request('/api/telemetry',{...packet,counters:{partsEarned:900}},400);
+  report=await admin('/api/admin/analytics?'+filters);
+  assert.equal(report.summary.clicks,27);assert.equal(report.summary.playSeconds,85);assert.equal(report.summary.sessions,1);
+  assert.equal(report.summary.returningUsers,1);assert.equal(report.daily.length,2);
+  assert.equal(report.daily[0].clicks,2);assert.equal(report.daily[1].clicks,25);
+  await request('/api/activity',{seconds:45,sessionStart:true},204); // Preserve legacy data without inventing historical clicks.
+  report=await admin('/api/admin/analytics?'+filters);
+  assert.equal(report.summary.playSeconds,130);assert.equal(report.summary.legacySeconds,45);
+  await request('/api/auth/local/register',{loginId:'analytics_two',password:'test-only-123',displayNickname:'분석 둘'},201,'');
+  await request('/api/telemetry',{...packet,userId:firstUser,counters:{clicks:3}},204);
+  report=await admin('/api/admin/analytics?'+filters);
+  assert.equal(report.summary.totalUsers,2);assert.equal(report.summary.clicks,30);
+  assert.equal(report.users.find(u=>u.id===firstUser).clicks,27);
+  assert.ok(!JSON.stringify(report).includes('password'));
+  const detail=await admin(`/api/admin/users/${encodeURIComponent(firstUser)}?${filters}`);
+  assert.equal(detail.user.clicks,27);assert.equal(detail.daily.length,2);
+  const empty=await admin('/api/admin/analytics?'+new URLSearchParams({from:yesterday,to:today,provider:'kakao',search:'분석'}));
+  assert.equal(empty.summary.totalUsers,0);assert.equal(empty.daily.length,2);
+  assert.equal((await fetch(base+'/api/admin/analytics?from=2000-01-01',{headers:{'x-admin-token':adminTestToken}})).status,400);
+  const tokenLogin=await fetch(base+'/api/admin/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminTestToken})});
+  assert.equal(tokenLogin.status,403); // An explicitly configured dashboard password is separate from the API token.
+  assert.equal((await fetch(base+'/api/admin/analytics',{headers:{'x-admin-token':adminTestPassword}})).status,403);
+  const login=await fetch(base+'/api/admin/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminTestPassword})});
+  assert.equal(login.status,200);
+  assert.match(login.headers.get('set-cookie'),/HttpOnly/i);assert.match(login.headers.get('set-cookie'),/SameSite=Strict/i);
+  const adminCookie=login.headers.get('set-cookie').split(';')[0];
+  assert.equal((await fetch(base+'/api/admin/analytics?'+filters,{headers:{Cookie:adminCookie}})).status,200);
+  // More than one page; export must contain all matching users, not only the visible 20.
+  for(let i=0;i<21;i++)await request('/api/auth/local/register',{loginId:`analytics_extra_${i}`,password:'test-only-123',displayNickname:`분석 추가${i}`},201,'');
+  report=await admin('/api/admin/analytics?'+filters);
+  assert.equal(report.summary.totalUsers,23);assert.equal(report.users.length,20);
+  const page2=await admin('/api/admin/analytics?'+filters+'&page=2');assert.equal(page2.users.length,3);
+  const csv=await fetch(base+'/api/admin/export.csv?'+filters,{headers:{Cookie:adminCookie}});
+  assert.equal(csv.status,200);assert.match(csv.headers.get('content-type'),/text\/csv/);
+  assert.equal((await csv.text()).trim().split('\r\n').length,24);
+  await request('/api/auth/local/register',{loginId:'analytics_formula',password:'test-only-123',displayNickname:'=1+1'},201,'');
+  const formula=await fetch(base+'/api/admin/export.csv?'+new URLSearchParams({from:yesterday,to:today,search:'=1+1'}),{headers:{Cookie:adminCookie}});
+  assert.ok((await formula.text()).includes('"\'=1+1"'));
+  assert.equal((await fetch(base+'/api/admin/logout',{method:'POST',headers:{Cookie:adminCookie}})).status,204);
+  // Collection does not alter the wallet or gameplay save.
+  assert.equal((await request('/api/economy',undefined,200,firstCookie)).state.tokens,30);
 });

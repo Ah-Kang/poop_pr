@@ -1,3 +1,4 @@
+import { initializeAnalytics, recordEconomyAnalyticsPg, recordEconomyAnalyticsSqlite } from './analytics.js';
 import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -385,6 +386,7 @@ export const initializeDatabase = async () => {
     }
 
     await initializeSqlite();
+    await initializeAnalytics(null, sqliteDatabase);
     return { mode: databaseMode };
   }
 
@@ -399,6 +401,7 @@ export const initializeDatabase = async () => {
     console.error('Idle database connection failed:', error.code || 'unknown');
   });
   await postgresPool.query(postgresSchema);
+  await initializeAnalytics(postgresPool, null);
   databaseMode = 'postgres';
   return { mode: databaseMode };
 };
@@ -441,6 +444,7 @@ export const transactEconomy = async (kakaoId, action = null, options = {}) => {
         await client.query('UPDATE public.player_economy SET state = $2::jsonb, updated_at = now() WHERE kakao_id = $1', [kakaoId, JSON.stringify(state)]);
       }
       if (action && !duplicate) {
+        await recordEconomyAnalyticsPg(client, kakaoId, previous, state, action);
         await client.query('INSERT INTO public.economy_actions (kakao_id, action_id) VALUES ($1, $2)', [kakaoId, action.id]);
       }
       await client.query('COMMIT');
@@ -466,6 +470,7 @@ export const transactEconomy = async (kakaoId, action = null, options = {}) => {
       sqliteDatabase.prepare('UPDATE player_economy SET state = ?, updated_at = CURRENT_TIMESTAMP WHERE kakao_id = ?').run(JSON.stringify(state), kakaoId);
     }
     if (action && !duplicate) {
+      recordEconomyAnalyticsSqlite(sqliteDatabase, kakaoId, previous, state, action);
       sqliteDatabase.prepare('INSERT INTO economy_actions (kakao_id, action_id) VALUES (?, ?)').run(kakaoId, action.id);
     }
     sqliteDatabase.exec('COMMIT');
