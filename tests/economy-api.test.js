@@ -25,6 +25,16 @@ const request = async (route, body, expected = 200, session = cookie) => {
 };
 const act = (type, payload = {}, expected = 200) => request('/api/economy/actions', { id: randomUUID(), type, ...payload }, expected);
 
+test('Android website verification serves the public certificate as JSON', async () => {
+  const response = await fetch(base + '/.well-known/assetlinks.json');
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /application\/json/);
+  const statements = await response.json();
+  assert.equal(statements[0].target.package_name, 'com.ahkang.pooppr');
+  assert.ok(statements[0].relation.includes('delegate_permission/common.handle_all_urls'));
+  assert.ok(statements[0].target.sha256_cert_fingerprints.every(value => /^(?:[A-F0-9]{2}:){31}[A-F0-9]{2}$/.test(value)));
+});
+
 test('equipped skin persists across login and hashed images have immutable caching', async () => {
   await request('/api/auth/local/register', { loginId: 'skin_save_test', password: 'test-only-123', displayNickname: '스킨테스트' }, 201, '');
   const cosmetics = { material: 'berry', expression: 'wink', outfit: 'none', hat: 'none', aura: 'none', titleText: '' };

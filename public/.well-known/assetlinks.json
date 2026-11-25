@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.ahkang.pooppr",
+      "sha256_cert_fingerprints": [
+        "EB:B7:D6:5E:AC:3F:3E:AA:51:59:03:09:89:B1:FC:B1:A0:30:23:76:7E:1A:78:D8:0A:78:E9:3A:61:64:15:D7"
+      ]
+    }
+  }
+]

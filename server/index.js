@@ -529,6 +529,11 @@ app.post('/api/game-save', requireUser, async (request, response) => {
 
 const currentFile = fileURLToPath(import.meta.url);
 const distPath = path.resolve(path.dirname(currentFile), '..', 'dist');
+// Express hides dot directories by default; Android verifies this exact URL.
+app.get('/.well-known/assetlinks.json', (_request, response) => {
+  response.set('Cache-Control', 'public, max-age=300');
+  return response.sendFile(path.join(distPath, '.well-known', 'assetlinks.json'), { dotfiles: 'allow' });
+});
 // Content hashes change the URL whenever a skin changes; cached files stay valid.
 app.use('/skins', express.static(path.join(distPath, 'skins'), { maxAge: '1y', immutable: true }));
 app.use('/skins', (_request, response) => response.status(404).end());
