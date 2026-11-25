@@ -1,0 +1,32 @@
+name: Android bundle
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android.yml']
+permissions:
+  contents: read
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Build Android release files
+        run: gradle -p android --no-daemon bundleRelease assembleRelease lintRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: poop-pr-android-unsigned
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/apk/release/app-release-unsigned.apk
+            android/app/build/reports/lint-results-release.html
+          if-no-files-found: error
+          retention-days: 30
