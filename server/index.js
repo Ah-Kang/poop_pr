@@ -1,3 +1,7 @@
+import { transactGrowth, getGrowthRanking } from './growth.js';
+import { GrowthError } from '../shared/growth.js';
+import { normalizeTelemetry, analyticsFilters, csvCell } from '../shared/analytics.js';
+import { recordTelemetry, getDashboardAnalytics, getAnalyticsUsers, getAnalyticsUserDetail } from './analytics.js';
 import { normalizeCosmetics } from '../shared/cosmetics.js';
 import { availableCosmetics, getWardrobeRewards } from '../shared/wardrobe.js';
 import crypto from 'node:crypto';
@@ -12,12 +16,9 @@ import {
   getLocalUserByLoginId,
   getDatabaseMode,
   getGameSave,
-  getAdminAnalytics,
-  getRanking,
   initializeDatabase,
   recordActivity,
   saveGame,
-  saveScore,
   saveUser,
   updateUserProfile,
   transactEconomy,
@@ -32,6 +33,8 @@ const sessionSecret = process.env.SESSION_SECRET;
 const isProduction = process.env.NODE_ENV === 'production';
 const sessionMaxAge = 7 * 24 * 60 * 60 * 1000;
 const adminToken = process.env.ADMIN_TOKEN;
+// Dashboard login is independent of the existing API token. Keep legacy deployments working.
+const adminPassword = process.env.ADMIN_PASSWORD || adminToken;
 const passwordKeyLength = 64;
 
 app.set('trust proxy', 1);
@@ -300,7 +303,7 @@ const requireUser = (request, response, next) => {
 };
 
 const economyCapabilities = { demo: developmentEconomyEnabled(process.env.NODE_ENV, process.env.ENABLE_ECONOMY_DEMO), ads: false, purchases: false, minigame: true };
-const sendEconomy = (response, state) => response.json({ state, day: koreaDay(), capabilities: economyCapabilities });
+const sendEconomy = (response, state) => response.json({ state, day: koreaDay(), serverNow: Date.now(), capabilities: economyCapabilities });
 app.get('/api/economy', requireUser, async (request, response) => {
   response.set('Cache-Control', 'no-store');
   try { return sendEconomy(response, await transactEconomy(request.authUser.id)); }
@@ -346,13 +349,48 @@ app.patch('/api/me', requireUser, async (request, response) => {
   }
 });
 
+const adminCookieOptions = { httpOnly:true, sameSite:'strict', secure:isProduction, signed:true, maxAge:4*60*60*1000, path:'/api/admin' };
+const tokenDigest = value => crypto.createHash('sha256').update(String(value)).digest();
+const validAdminToken = value => Boolean(adminToken && typeof value === 'string' && crypto.timingSafeEqual(tokenDigest(value),tokenDigest(adminToken)));
+const validAdminPassword = value => Boolean(adminPassword && typeof value === 'string' && crypto.timingSafeEqual(tokenDigest(value),tokenDigest(adminPassword)));
+const adminAuthenticated = request => {
+  if (validAdminToken(request.get('x-admin-token'))) return true;
+  try {
+    const session = JSON.parse(request.signedCookies.admin_session || 'null');
+    return Boolean(adminPassword && session && session.digest === tokenDigest(adminPassword).toString('hex')
+      && Date.now()-session.createdAt >= 0 && Date.now()-session.createdAt < adminCookieOptions.maxAge);
+  } catch { return false; }
+};
 const requireAdmin = (request, response, next) => {
-  const providedToken = request.get('x-admin-token') || request.query.token;
-  if (!adminToken || providedToken !== adminToken) {
-    return response.status(403).json({ error: 'admin_forbidden' });
-  }
+  response.set('Cache-Control','no-store');
+  if (!adminAuthenticated(request)) return response.status(403).json({error:'admin_forbidden'});
   return next();
 };
+const adminAttempts = new Map();
+app.get('/api/admin/session', (request,response) => {
+  response.set('Cache-Control','no-store');
+  response.json({authenticated:adminAuthenticated(request),configured:Boolean(adminPassword)});
+});
+app.post('/api/admin/session', (request,response) => {
+  response.set('Cache-Control','no-store');
+  if (!adminPassword) return response.status(503).json({error:'admin_not_configured'});
+  const now = Date.now(), key = request.ip;
+  for (const [ip, value] of adminAttempts) if (value.until <= now) adminAttempts.delete(ip);
+  const attempts = adminAttempts.get(key) || {count:0,until:now+10*60*1000};
+  if (attempts.count >= 5) return response.status(429).json({error:'admin_rate_limited'});
+  if (!validAdminPassword(request.body?.password)) {
+    if (adminAttempts.size >= 1000) adminAttempts.delete(adminAttempts.keys().next().value);
+    adminAttempts.set(key,{...attempts,count:attempts.count+1});
+    return response.status(403).json({error:'admin_forbidden'});
+  }
+  adminAttempts.delete(key);
+  response.cookie('admin_session',JSON.stringify({createdAt:now,digest:tokenDigest(adminPassword).toString('hex')}),adminCookieOptions);
+  return response.json({authenticated:true});
+});
+app.post('/api/admin/logout', (_request,response) => {
+  response.clearCookie('admin_session',{...adminCookieOptions,maxAge:undefined});
+  response.status(204).end();
+});
 
 const normalizeScoreNumber = (value, max) => {
   const number = Number(value);
@@ -360,36 +398,25 @@ const normalizeScoreNumber = (value, max) => {
   return Math.min(max, Math.max(0, Math.floor(number)));
 };
 
-app.post('/api/score', requireUser, async (request, response) => {
-  const score = {
-    gold: normalizeScoreNumber(request.body.gold, Number.MAX_SAFE_INTEGER),
-    dps: normalizeScoreNumber(request.body.dps, Number.MAX_SAFE_INTEGER),
-    toiletLevel: normalizeScoreNumber(request.body.toiletLevel, 100),
-    toiletSchemaVersion: normalizeScoreNumber(request.body.toiletSchemaVersion ?? 1, 10),
-    poopLevel: normalizeScoreNumber(request.body.poopLevel, 100000),
-  };
-  if (Object.values(score).some((value) => value === null)) {
-    return response.status(400).json({ error: 'invalid_score' });
-  }
+app.post('/api/growth', requireUser, async (request, response) => {
+  if(request.body.owner && request.body.owner !== request.authUser.id) return response.status(409).json({error:'account_changed'});
+  response.set('Cache-Control','no-store');
   try {
-    const economy = await transactEconomy(request.authUser.id);
-    score.toiletLevel = economy.toiletLevel;
-    score.toiletSchemaVersion = 2;
-    await saveScore(request.authUser.id, score);
-    return response.status(204).end();
+    const result = await transactGrowth(request.authUser.id, request.body, { allowDemo: !isProduction && process.env.ENABLE_ECONOMY_DEMO === 'true' });
+    return response.json(result);
   } catch (error) {
-    console.error(error);
-    return response.status(500).json({ error: 'score_save_failed' });
+    if (error instanceof GrowthError) return response.status(409).json({error:error.message});
+    console.error(error); return response.status(500).json({error:'growth_unavailable'});
   }
 });
-
+app.post('/api/score', requireUser, async (request, response) => {
+  try { await transactGrowth(request.authUser.id); return response.status(204).end(); }
+  catch (error) { console.error(error); return response.status(500).json({error:'score_save_failed'}); }
+});
 app.get('/api/ranking', async (_request, response) => {
-  try {
-    return response.json({ ranking: await getRanking(50) });
-  } catch (error) {
-    console.error(error);
-    return response.status(500).json({ error: 'ranking_load_failed' });
-  }
+  response.set('Cache-Control','no-store');
+  try { return response.json({ranking:await getGrowthRanking(50)}); }
+  catch (error) { console.error(error); return response.status(500).json({error:'ranking_load_failed'}); }
 });
 
 app.post('/api/activity', requireUser, async (request, response) => {
@@ -408,12 +435,47 @@ app.post('/api/activity', requireUser, async (request, response) => {
   }
 });
 
-app.get('/api/admin/analytics', requireAdmin, async (_request, response) => {
+app.post('/api/telemetry', requireUser, async (request,response) => {
+  let packet;
+  try { packet=normalizeTelemetry(request.body); }
+  catch { return response.status(400).json({error:'invalid_telemetry'}); }
+  try { await recordTelemetry(request.authUser.id,packet); return response.status(204).end(); }
+  catch (error) { console.error('Telemetry save failed:',error.code || error.message); return response.status(error.message==='invalid_telemetry'?400:503).json({error:'telemetry_save_failed'}); }
+});
+const readAnalyticsFilters = (request,response) => {
+  try { return analyticsFilters(request.query); }
+  catch (error) { response.status(400).json({error:error.message}); return null; }
+};
+app.get('/api/admin/analytics', requireAdmin, async (request,response) => {
+  const filters=readAnalyticsFilters(request,response); if (!filters) return;
+  try { return response.json(await getDashboardAnalytics(filters)); }
+  catch (error) { console.error(error); return response.status(503).json({error:'admin_analytics_failed'}); }
+});
+app.get('/api/admin/users/:id', requireAdmin, async (request,response) => {
+  const filters=readAnalyticsFilters(request,response); if (!filters) return;
   try {
-    return response.json(await getAdminAnalytics());
+    const detail=await getAnalyticsUserDetail(filters,request.params.id);
+    return detail ? response.json(detail) : response.status(404).json({error:'user_not_found'});
+  } catch (error) { console.error(error); return response.status(503).json({error:'admin_analytics_failed'}); }
+});
+app.get('/api/admin/export.csv', requireAdmin, async (request,response) => {
+  const filters=readAnalyticsFilters(request,response); if (!filters) return;
+  const fields=[['id','사용자 ID'],['nickname','게임 닉네임'],['provider','로그인 방식'],['createdAt','가입 시각'],['lastSeen','최근 기록 시각'],['activeDays','기간 내 활동 일수'],['playSeconds','플레이 시간(초)'],['mainSeconds','메인 시간(초)'],['puzzleSeconds','퍼즐 시간(초)'],['legacySeconds','기존 기록 시간(초)'],['sessions','접속 세션'],['clicks','캐릭터 클릭'],['poopUpgrades','똥 강화'],['evolutions','진화'],['itemUpgrades','장비 강화'],['wardrobeOpens','옷장 열기'],['skinEquips','스킨 착용'],['puzzleEntries','퍼즐 입장'],['puzzleMoves','유효 퍼즐 이동'],['partsEarned','획득 부품'],['toiletCrafts','화장실 제작'],['tokensSpent','사용 토큰'],['tokensReceived','획득 토큰'],['discovered','발견한 똥'],['toiletLevel','화장실 단계(0부터)'],['gold','보유 영양분'],['tokens','보유 토큰'],['parts','보유 부품']];
+  try {
+    const first=await getAnalyticsUsers(filters,{page:1,pageSize:500});
+    response.set({'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="poop-analytics-${filters.from}-${filters.to}.csv"`});
+    response.write('\uFEFF'+fields.map(([,label])=>csvCell(label)).join(',')+'\r\n');
+    let page=1, users=first;
+    while (users.length && !response.destroyed) {
+      for (const user of users) response.write(fields.map(([key])=>csvCell(user[key])).join(',')+'\r\n');
+      if (users.length<500) break;
+      users=await getAnalyticsUsers(filters,{page:++page,pageSize:500});
+    }
+    response.end();
   } catch (error) {
     console.error(error);
-    return response.status(500).json({ error: 'admin_analytics_failed' });
+    if (response.headersSent) response.destroy();
+    else response.status(503).json({error:'admin_export_failed'});
   }
 });
 
@@ -425,7 +487,9 @@ const normalizeLevelArray = (value, maxLength) => {
 
 app.get('/api/game-save', requireUser, async (request, response) => {
   try {
-    const save = await getGameSave(request.authUser.id);
+    const growth = await transactGrowth(request.authUser.id);
+    const saved = await getGameSave(request.authUser.id);
+    const save = saved ? { ...saved, gold: growth.state.gold, cumulativeLevel: growth.state.level, totalAssets: growth.state.totalAssets } : null;
     const economy = await transactEconomy(request.authUser.id);
     return response.json({ save: save ? { ...save, cosmetics: availableCosmetics(save.cosmetics, getWardrobeRewards(economy)), toiletLevel: economy.toiletLevel, toiletSchemaVersion: 2 } : null });
   } catch (error) {
@@ -448,7 +512,9 @@ app.post('/api/game-save', requireUser, async (request, response) => {
     return response.status(400).json({ error: 'invalid_game_save' });
   }
   try {
-    const economy = await transactEconomy(request.authUser.id, null, { poopLevels: save.poopLevels });
+    const {state:growth} = await transactGrowth(request.authUser.id);
+    Object.assign(save,{gold:Math.min(Number.MAX_SAFE_INTEGER,growth.gold),poopLevels:growth.poopLevels,itemLevels:growth.itemLevels,selectedPoopId:growth.selectedPoopId});
+    const economy = await transactEconomy(request.authUser.id);
     save.cosmetics = availableCosmetics(save.cosmetics, getWardrobeRewards(economy));
     save.toiletLevel = economy.toiletLevel;
     save.toiletSchemaVersion = 2;

@@ -1,4 +1,4 @@
-import { applyEconomyAction, createEconomy, koreaDay, migrateToiletLevel, validateEconomy } from '../../shared/economy.js';
+import { applyEconomyAction, createEconomy, koreaDay, migrateToiletLevel, migratePuzzleTimer, validateEconomy } from '../../shared/economy.js';
 import { updateWardrobe } from '../../shared/wardrobe.js';
 
 export const GUEST_ECONOMY_KEY = 'poop-pr-guest-economy-v1';
@@ -36,12 +36,12 @@ export function createEconomyClient({ userId = null, legacyToiletLevel = 0 } = {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'economy_unavailable');
-      return result;
+      return { ...result, receivedAt: performance.now() };
     }
     return guestLock(() => {
       let state = readGuest(legacyToiletLevel);
       const save = JSON.parse(localStorage.getItem('poop-pr-save') || 'null');
-      const updated = updateWardrobe(state, { poopLevels: save?.poopLevels });
+      const updated = migratePuzzleTimer(updateWardrobe(state, { poopLevels: save?.poopLevels }));
       if (updated !== state) localStorage.setItem(GUEST_ECONOMY_KEY, JSON.stringify(updated));
       state = updated;
       if (action) {
@@ -50,7 +50,7 @@ export function createEconomyClient({ userId = null, legacyToiletLevel = 0 } = {
         // Persist first: a failed write must not present a successful spend/reward.
         localStorage.setItem(GUEST_ECONOMY_KEY, JSON.stringify(state));
       }
-      return { state, day: koreaDay(), capabilities };
+      return { state, day: koreaDay(), serverNow: Date.now(), receivedAt: performance.now(), capabilities };
     });
   };
   return {

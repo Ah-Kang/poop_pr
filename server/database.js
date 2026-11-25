@@ -1,9 +1,11 @@
+import { initializeGrowth, getGrowthRanking } from './growth.js';
 import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import pg from 'pg';
-import { applyEconomyAction, createEconomy, EconomyError, migrateToiletLevel } from '../shared/economy.js';
+import { applyEconomyAction, createEconomy, EconomyError, migrateToiletLevel, migratePuzzleTimer } from '../shared/economy.js';
 import { updateWardrobe } from '../shared/wardrobe.js';
+import { initializeAnalytics, recordEconomyAnalyticsPg, recordEconomyAnalyticsSqlite } from './analytics.js';
 
 const { Pool, types } = pg;
 types.setTypeParser(types.builtins.INT8, (value) => Number(value));
@@ -235,27 +237,6 @@ const initializeSqlite = async () => {
         poop_level = excluded.poop_level,
         updated_at = CURRENT_TIMESTAMP
     `),
-    ranking: sqliteDatabase.prepare(`
-      SELECT
-        users.kakao_id AS id,
-        COALESCE(users.display_nickname, users.nickname) AS nickname,
-        users.profile_image AS profileImage,
-        scores.gold,
-        scores.dps,
-        scores.toilet_level AS toiletLevel,
-        scores.toilet_schema_version AS toiletSchemaVersion,
-        scores.poop_level AS poopLevel,
-        game_saves.selected_poop_id AS selectedPoopId,
-        game_saves.poop_levels AS poopLevels,
-        game_saves.item_levels AS itemLevels,
-        game_saves.cosmetics AS cosmetics,
-        scores.updated_at AS updatedAt
-      FROM scores
-      JOIN users ON users.kakao_id = scores.kakao_id
-      LEFT JOIN game_saves ON game_saves.kakao_id = scores.kakao_id
-      ORDER BY scores.gold DESC, scores.dps DESC, scores.updated_at ASC
-      LIMIT ?
-    `),
     getGameSave: sqliteDatabase.prepare(`
       SELECT
         gold,
@@ -299,49 +280,7 @@ const initializeSqlite = async () => {
       ON CONFLICT(kakao_id, activity_date) DO UPDATE SET
         play_seconds = play_seconds + excluded.play_seconds
     `),
-    adminSummary: sqliteDatabase.prepare(`
-      SELECT
-        (SELECT COUNT(*) FROM users) AS totalUsers,
-        (SELECT COUNT(*) FROM users WHERE date(created_at) = date('now')) AS newUsersToday,
-        (SELECT COUNT(*) FROM user_activity WHERE datetime(last_seen_at) >= datetime('now', '-7 days')) AS activeUsers7d,
-        (SELECT COALESCE(SUM(total_play_seconds), 0) FROM user_activity) AS totalPlaySeconds,
-        (SELECT COALESCE(AVG(total_play_seconds), 0) FROM user_activity) AS averagePlaySeconds,
-        (SELECT COALESCE(MAX(gold), 0) FROM scores) AS topGold,
-        (SELECT COALESCE(MAX(dps), 0) FROM scores) AS topDps
-    `),
-    adminUsers: sqliteDatabase.prepare(`
-      SELECT
-        users.kakao_id AS id,
-        users.nickname AS kakaoNickname,
-        COALESCE(users.display_nickname, users.nickname) AS displayNickname,
-        users.auth_provider AS authProvider,
-        users.login_id AS loginId,
-        users.profile_image AS profileImage,
-        users.created_at AS createdAt,
-        users.updated_at AS updatedAt,
-        COALESCE(user_activity.total_play_seconds, 0) AS totalPlaySeconds,
-        COALESCE(user_activity.session_count, 0) AS sessionCount,
-        user_activity.last_seen_at AS lastSeenAt,
-        COALESCE(scores.gold, 0) AS gold,
-        COALESCE(scores.dps, 0) AS dps,
-        COALESCE(scores.toilet_level, 0) AS toiletLevel,
-        COALESCE(scores.poop_level, 1) AS poopLevel
-      FROM users
-      LEFT JOIN user_activity ON user_activity.kakao_id = users.kakao_id
-      LEFT JOIN scores ON scores.kakao_id = users.kakao_id
-      ORDER BY user_activity.last_seen_at DESC NULLS LAST, users.created_at DESC
-      LIMIT ?
-    `),
-    adminDailyActivity: sqliteDatabase.prepare(`
-      SELECT
-        activity_date AS date,
-        COUNT(*) AS activeUsers,
-        COALESCE(SUM(play_seconds), 0) AS playSeconds
-      FROM daily_activity
-      WHERE date(activity_date) >= date('now', '-13 days')
-      GROUP BY activity_date
-      ORDER BY activity_date ASC
-    `),
+
   };
   databaseMode = 'sqlite';
 };
@@ -385,6 +324,8 @@ export const initializeDatabase = async () => {
     }
 
     await initializeSqlite();
+    await initializeAnalytics(null, sqliteDatabase);
+    await initializeGrowth(null, sqliteDatabase);
     return { mode: databaseMode };
   }
 
@@ -399,6 +340,8 @@ export const initializeDatabase = async () => {
     console.error('Idle database connection failed:', error.code || 'unknown');
   });
   await postgresPool.query(postgresSchema);
+  await initializeAnalytics(postgresPool, null);
+  await initializeGrowth(postgresPool, null);
   databaseMode = 'postgres';
   return { mode: databaseMode };
 };
@@ -435,12 +378,13 @@ export const transactEconomy = async (kakaoId, action = null, options = {}) => {
         [kakaoId, JSON.stringify(seed(saves[0]))]);
       const { rows } = await client.query('SELECT state FROM public.player_economy WHERE kakao_id = $1 FOR UPDATE', [kakaoId]);
       const duplicate = action && (await client.query('SELECT 1 FROM public.economy_actions WHERE kakao_id = $1 AND action_id = $2', [kakaoId, action.id])).rowCount > 0;
-      const previous = updateWardrobe(rows[0].state, { ...options, poopLevels: options.poopLevels ?? parseJsonArray(saves[0]?.poop_levels) });
+      const previous = migratePuzzleTimer(updateWardrobe(rows[0].state, { ...options, poopLevels: options.poopLevels ?? parseJsonArray(saves[0]?.poop_levels) }), options.now);
       const state = action && !duplicate ? applyEconomyAction(previous, action, options) : previous;
       if (state !== rows[0].state) {
         await client.query('UPDATE public.player_economy SET state = $2::jsonb, updated_at = now() WHERE kakao_id = $1', [kakaoId, JSON.stringify(state)]);
       }
       if (action && !duplicate) {
+        await recordEconomyAnalyticsPg(client, kakaoId, previous, state, action);
         await client.query('INSERT INTO public.economy_actions (kakao_id, action_id) VALUES ($1, $2)', [kakaoId, action.id]);
       }
       await client.query('COMMIT');
@@ -460,12 +404,13 @@ export const transactEconomy = async (kakaoId, action = null, options = {}) => {
     }
     const duplicate = action && sqliteDatabase.prepare('SELECT 1 FROM economy_actions WHERE kakao_id = ? AND action_id = ?').get(kakaoId, action.id ?? null);
     const original = JSON.parse(row.state);
-    const previous = updateWardrobe(original, { ...options, poopLevels: options.poopLevels ?? parseJsonArray(saved?.poop_levels) });
+    const previous = migratePuzzleTimer(updateWardrobe(original, { ...options, poopLevels: options.poopLevels ?? parseJsonArray(saved?.poop_levels) }), options.now);
     const state = action && !duplicate ? applyEconomyAction(previous, action, options) : previous;
     if (state !== original) {
       sqliteDatabase.prepare('UPDATE player_economy SET state = ?, updated_at = CURRENT_TIMESTAMP WHERE kakao_id = ?').run(JSON.stringify(state), kakaoId);
     }
     if (action && !duplicate) {
+      recordEconomyAnalyticsSqlite(sqliteDatabase, kakaoId, previous, state, action);
       sqliteDatabase.prepare('INSERT INTO economy_actions (kakao_id, action_id) VALUES (?, ?)').run(kakaoId, action.id);
     }
     sqliteDatabase.exec('COMMIT');
@@ -613,40 +558,7 @@ export const saveScore = async (kakaoId, score) => {
   );
 };
 
-export const getRanking = async (limit = 50) => {
-  if (postgresPool) {
-    const { rows } = await postgresPool.query(`
-      SELECT
-        users.kakao_id AS id,
-        COALESCE(users.display_nickname, users.nickname) AS nickname,
-        users.profile_image AS "profileImage",
-        scores.gold,
-        scores.dps,
-        scores.toilet_level AS "toiletLevel",
-        scores.toilet_schema_version AS "toiletSchemaVersion",
-        scores.poop_level AS "poopLevel",
-        game_saves.selected_poop_id AS "selectedPoopId",
-        game_saves.poop_levels AS "poopLevels",
-        game_saves.item_levels AS "itemLevels",
-        game_saves.cosmetics AS cosmetics,
-        scores.updated_at AS "updatedAt"
-      FROM public.scores
-      JOIN public.users ON users.kakao_id = scores.kakao_id
-      LEFT JOIN public.game_saves ON game_saves.kakao_id = scores.kakao_id
-      ORDER BY scores.gold DESC, scores.dps DESC, scores.updated_at ASC
-      LIMIT $1
-    `, [limit]);
-    return rows.map(normalizePostgresRow);
-  }
-
-  return sqliteStatements.ranking.all(limit).map((row) => ({
-    ...row,
-    selectedPoopId: row.selectedPoopId ?? 0,
-    poopLevels: parseJsonArray(row.poopLevels),
-    itemLevels: parseJsonArray(row.itemLevels),
-    cosmetics: parseJsonObject(row.cosmetics),
-  }));
-};
+export const getRanking = async (limit = 50) => getGrowthRanking(limit);
 
 export const getGameSave = async (kakaoId) => {
   if (postgresPool) {
@@ -747,64 +659,4 @@ export const recordActivity = async (kakaoId, activity) => {
 
   sqliteStatements.recordActivity.run(kakaoId, seconds, sessionStart);
   if (seconds > 0) sqliteStatements.recordDailyActivity.run(kakaoId, seconds);
-};
-
-export const getAdminAnalytics = async () => {
-  if (postgresPool) {
-    const [summaryResult, usersResult, dailyResult] = await Promise.all([
-      postgresPool.query(`
-        SELECT
-          (SELECT COUNT(*) FROM public.users) AS "totalUsers",
-          (SELECT COUNT(*) FROM public.users WHERE created_at >= date_trunc('day', now())) AS "newUsersToday",
-          (SELECT COUNT(*) FROM public.user_activity WHERE last_seen_at >= now() - interval '7 days') AS "activeUsers7d",
-          (SELECT COALESCE(SUM(total_play_seconds), 0) FROM public.user_activity) AS "totalPlaySeconds",
-          (SELECT COALESCE(AVG(total_play_seconds), 0) FROM public.user_activity) AS "averagePlaySeconds",
-          (SELECT COALESCE(MAX(gold), 0) FROM public.scores) AS "topGold",
-          (SELECT COALESCE(MAX(dps), 0) FROM public.scores) AS "topDps"
-      `),
-      postgresPool.query(`
-        SELECT
-          users.kakao_id AS id,
-          users.nickname AS "kakaoNickname",
-          COALESCE(users.display_nickname, users.nickname) AS "displayNickname",
-          users.profile_image AS "profileImage",
-          users.created_at AS "createdAt",
-          users.updated_at AS "updatedAt",
-          COALESCE(user_activity.total_play_seconds, 0) AS "totalPlaySeconds",
-          COALESCE(user_activity.session_count, 0) AS "sessionCount",
-          user_activity.last_seen_at AS "lastSeenAt",
-          COALESCE(scores.gold, 0) AS gold,
-          COALESCE(scores.dps, 0) AS dps,
-          COALESCE(scores.toilet_level, 0) AS "toiletLevel",
-          COALESCE(scores.poop_level, 1) AS "poopLevel"
-        FROM public.users
-        LEFT JOIN public.user_activity ON user_activity.kakao_id = users.kakao_id
-        LEFT JOIN public.scores ON scores.kakao_id = users.kakao_id
-        ORDER BY user_activity.last_seen_at DESC NULLS LAST, users.created_at DESC
-        LIMIT 100
-      `),
-      postgresPool.query(`
-        SELECT
-          activity_date AS date,
-          COUNT(*) AS "activeUsers",
-          COALESCE(SUM(play_seconds), 0) AS "playSeconds"
-        FROM public.daily_activity
-        WHERE activity_date >= current_date - interval '13 days'
-        GROUP BY activity_date
-        ORDER BY activity_date ASC
-      `),
-    ]);
-
-    return {
-      summary: summaryResult.rows[0],
-      users: usersResult.rows,
-      daily: dailyResult.rows,
-    };
-  }
-
-  return {
-    summary: sqliteStatements.adminSummary.get(),
-    users: sqliteStatements.adminUsers.all(100),
-    daily: sqliteStatements.adminDailyActivity.all(),
-  };
 };

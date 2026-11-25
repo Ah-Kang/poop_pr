@@ -1,3 +1,6 @@
+import { CLEANER_REQUIRED_HELPS, CLEANER_COOLDOWN_MS, CLEANER_MIN_GOLD } from '../shared/growth.js';
+import { useGrowth } from './growth/useGrowth.js';
+import { useTelemetry } from './analytics/useTelemetry.js';
 import { defaultCosmetics, normalizeCosmetics } from '../shared/cosmetics.js';
 import { availableCosmetics, getWardrobeRewards } from '../shared/wardrobe.js';
 import { getSkin } from './cosmetics/skins.js';
@@ -5,7 +8,7 @@ import SkinPicker from './cosmetics/SkinPicker.jsx';
 import VisibleSkin from './cosmetics/VisibleSkin.jsx';
 import EvolutionCelebration from './scene/EvolutionCelebration.jsx';
 import PoopPortrait from './scene/PoopPortrait.jsx';
-import { poopProgression, getPoopStats, getPoopUpgradePrice } from '../shared/poop-progression.js';
+import { poopProgression, getPoopStats, getPoopUpgradePrice, equipment, getEquipmentPrice, stageForLevel } from '../shared/poop-progression.js';
 import { toilets } from './data/toilets.js';
 import React, { useState, useEffect, useRef } from 'react';
 import cleanerBrushSwingImage from './assets/cleaner-brush-swing.png';
@@ -38,7 +41,6 @@ import cleaningRobotIcon from './assets/cleaning-items/cleaning-robot.png';
 import packageJson from '../package.json';
 import EconomyPanel from './economy/EconomyPanel.jsx';
 import { useEconomy } from './economy/useEconomy.js';
-import { renovationMultiplier } from '../shared/economy.js';
 import SeatedPoop from './scene/SeatedPoop.jsx';
 
 const toiletSchemaVersion = 2;
@@ -60,24 +62,22 @@ const normalizeToiletLevel = (level, schemaVersion = 1) => {
 // 화장실 외형과 생산량. 제작 비용은 shared/economy.js에서 관리합니다.
 
 
-// 반복 구매형 생산 장비: 이전 장비 5레벨 달성 시 다음 장비 해금
+// Artwork and placements; shared progression owns prices, unlocks and production.
 const cleaningItems = [
-  { id: 0, name: '두루마리 휴지', icon: toiletPaperIcon, basePrice: 25, dps: 1, description: '기본 중의 기본. 꾸준히 생산해요.', placement: { left: '1%', top: '16%' } },
-  { id: 1, name: '뚫어뽕', icon: plungerIcon, basePrice: 180, dps: 5, description: '막힘을 뚫고 생산 흐름을 높여요.', placement: { right: '1%', top: '16%' } },
-  { id: 2, name: '화장실 솔', icon: toiletBrushIcon, basePrice: 950, dps: 20, description: '변기를 반짝이게 닦아 생산성을 올려요.', placement: { left: '0%', top: '48%' } },
-  { id: 3, name: '강력 세정제', icon: cleanerSprayIcon, basePrice: 5200, dps: 75, description: '묵은 때까지 녹이는 강력한 장비예요.', placement: { right: '0%', top: '48%' } },
-  { id: 4, name: '자동 비데', icon: bidetIcon, basePrice: 28000, dps: 300, description: '자동화의 시작. 생산량이 크게 뛰어요.', placement: { left: '9%', bottom: '7%' } },
-  { id: 5, name: '청소 로봇', icon: cleaningRobotIcon, basePrice: 150000, dps: 1200, description: '24시간 쉬지 않는 최종 청소 장비예요.', placement: { right: '9%', bottom: '7%' } },
+  { id: 0, name: '두루마리 휴지', icon: toiletPaperIcon, description: '기본 중의 기본. 꾸준히 생산해요.', placement: { left: '1%', top: '16%' } },
+  { id: 1, name: '뚫어뽕', icon: plungerIcon, description: '막힘을 뚫고 생산 흐름을 높여요.', placement: { right: '1%', top: '16%' } },
+  { id: 2, name: '화장실 솔', icon: toiletBrushIcon, description: '변기를 반짝이게 닦아 생산성을 올려요.', placement: { left: '0%', top: '48%' } },
+  { id: 3, name: '강력 세정제', icon: cleanerSprayIcon, description: '묵은 때까지 녹이는 강력한 장비예요.', placement: { right: '0%', top: '48%' } },
+  { id: 4, name: '자동 비데', icon: bidetIcon, description: '자동화의 시작. 생산량이 크게 뛰어요.', placement: { left: '9%', bottom: '7%' } },
+  { id: 5, name: '청소 로봇', icon: cleaningRobotIcon, description: '24시간 쉬지 않는 최종 청소 장비예요.', placement: { right: '9%', bottom: '7%' } },
 ];
 
 const initialItemLevels = cleaningItems.map(() => 0);
-const getItemPrice = (item, level) => Math.ceil(item.basePrice * Math.pow(1.24, level));
-const cleanerEventDuration = 9;
-const cleanerRequiredBlocks = 6;
-const cleanerEventMinDelay = 45000;
+const getItemPrice = (item, level) => getEquipmentPrice(item.id, level);
+const cleanerRequiredHelps = CLEANER_REQUIRED_HELPS;
+const cleanerEventMinDelay = CLEANER_COOLDOWN_MS;
 const cleanerEventMaxDelay = 90000;
-const cleanerEventMinGold = 5000;
-const itemUnlockRequiredLevel = 15;
+const cleanerEventMinGold = CLEANER_MIN_GOLD;
 const developerGoldAmount = 999999999999;
 const developerModeTapWindow = 1000;
 const activeClickDpsBonusRate = 0.05;
@@ -87,7 +87,7 @@ const getRandomCleanerDelay = () =>
     cleanerEventMinDelay + Math.random() * (cleanerEventMaxDelay - cleanerEventMinDelay)
   );
 
-// 똥 캐릭터 진화 단계: 각 똥은 자기 레벨 1부터 성장하고, 진화 레벨에 도달하면 다음 똥이 해금
+// Character artwork follows cumulative evolution milestones.
 const poopCharacters = [
   { id: 0, name: '플랑크똥', badge: '✦', image: plankPoopImage, legacyRequiredLevel: 1, gradient: 'from-stone-200 to-amber-500', description: '눈에 보일 듯 말 듯한 우주 먼지급 똥' },
   { id: 1, name: '새우똥', badge: '🦐', image: shrimpPoopImage, legacyRequiredLevel: 1, gradient: 'from-orange-200 to-rose-400', description: '새우만큼 작고 살짝 굽은 하찮은 똥' },
@@ -157,17 +157,6 @@ const normalizePoopLevels = (levels) => {
 
   return normalizedLevels.some((level) => level > 0) ? normalizedLevels : initialPoopLevels;
 };
-const normalizeSelectedPoopId = (selectedPoopId, levels, sourceLevels) => {
-  const selectedId = Math.floor(Number(selectedPoopId));
-  const migratedSelectedId = Array.isArray(sourceLevels) && sourceLevels.length === legacyPoopNames.length
-    ? getPoopIdByName(legacyPoopNames[selectedId])
-    : selectedId;
-  const highestUnlockedId = getHighestUnlockedPoopId(levels);
-
-  return poopCharacters.some((poop) => poop.id === migratedSelectedId && (levels[poop.id] ?? 0) > 0)
-    ? migratedSelectedId
-    : highestUnlockedId;
-};
 const normalizePoopProgress = (source = {}) => {
   const sourceLevels = source.poopLevels;
   const levels = normalizePoopLevels(sourceLevels);
@@ -175,7 +164,7 @@ const normalizePoopProgress = (source = {}) => {
   if (levels) {
     return {
       poopLevels: levels,
-      selectedPoopId: normalizeSelectedPoopId(source.selectedPoopId, levels, sourceLevels),
+      selectedPoopId: getHighestUnlockedPoopId(levels),
     };
   }
 
@@ -206,236 +195,7 @@ const getPoopVisual = (poop, className = '') => {
     </span>
   );
 };
-const formatDuration = (seconds) => {
-  const totalSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const remainingSeconds = totalSeconds % 60;
-
-  if (hours > 0) return `${hours}시간 ${minutes}분`;
-  if (minutes > 0) return `${minutes}분 ${remainingSeconds}초`;
-  return `${remainingSeconds}초`;
-};
-
-const formatDateTime = (value) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString('ko-KR', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
-const AdminDashboard = () => {
-  const [token, setToken] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('token') || localStorage.getItem('poop-pr-admin-token') || '';
-  });
-  const [draftToken, setDraftToken] = useState(token);
-  const [analytics, setAnalytics] = useState(null);
-  const [status, setStatus] = useState('idle');
-
-  const loadAnalytics = async (activeToken = token) => {
-    if (!activeToken) {
-      setStatus('missing-token');
-      return;
-    }
-
-    setStatus('loading');
-    try {
-      const response = await fetch('/api/admin/analytics', {
-        headers: { 'x-admin-token': activeToken },
-      });
-      if (!response.ok) throw new Error('analytics_load_failed');
-      const data = await response.json();
-      setAnalytics(data);
-      setStatus('ready');
-      localStorage.setItem('poop-pr-admin-token', activeToken);
-    } catch {
-      setAnalytics(null);
-      setStatus('error');
-    }
-  };
-
-  useEffect(() => {
-    loadAnalytics(token);
-  }, []);
-
-  const summary = analytics?.summary ?? {};
-  const users = analytics?.users ?? [];
-  const daily = analytics?.daily ?? [];
-  const maxDailySeconds = Math.max(1, ...daily.map((day) => Number(day.playSeconds) || 0));
-
-  return (
-    <main className="min-h-screen bg-[#f4efe7] px-4 py-6 text-slate-900">
-      <div className="mx-auto max-w-6xl">
-        <section className="flex flex-col gap-4 border-b border-slate-300 pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-wide text-teal-700">Poop PR 운영자</p>
-            <h1 className="mt-1 text-3xl font-black">게임 분석 대시보드</h1>
-            <p className="mt-2 text-sm font-semibold text-slate-600">
-              가입자, 활성 유저, 누적 사용시간, 유저별 성장 데이터를 확인합니다.
-            </p>
-          </div>
-          <a
-            href="/"
-            className="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-4 text-sm font-black text-white"
-          >
-            게임으로 이동
-          </a>
-        </section>
-
-        <section className="mt-5 flex flex-col gap-2 rounded-lg border border-slate-300 bg-white p-4 sm:flex-row">
-          <input
-            type="password"
-            value={draftToken}
-            onChange={(event) => setDraftToken(event.target.value)}
-            placeholder="ADMIN_TOKEN 입력"
-            className="min-h-11 flex-1 rounded-md border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-teal-600"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              setToken(draftToken);
-              loadAnalytics(draftToken);
-            }}
-            className="min-h-11 rounded-md bg-teal-600 px-5 text-sm font-black text-white"
-          >
-            조회
-          </button>
-          <button
-            type="button"
-            onClick={() => loadAnalytics(token)}
-            className="min-h-11 rounded-md border border-slate-300 px-5 text-sm font-black text-slate-800"
-          >
-            새로고침
-          </button>
-        </section>
-
-        {status === 'missing-token' && (
-          <p className="mt-4 rounded-lg bg-amber-100 px-4 py-3 text-sm font-bold text-amber-900">
-            Render 환경변수에 넣은 ADMIN_TOKEN을 입력하면 운영자 데이터를 볼 수 있어요.
-          </p>
-        )}
-        {status === 'error' && (
-          <p className="mt-4 rounded-lg bg-red-100 px-4 py-3 text-sm font-bold text-red-800">
-            조회에 실패했어요. 토큰이 맞는지, Render 환경변수에 ADMIN_TOKEN이 들어갔는지 확인해주세요.
-          </p>
-        )}
-
-        <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ['전체 가입자', `${summary.totalUsers ?? 0}명`],
-            ['오늘 가입자', `${summary.newUsersToday ?? 0}명`],
-            ['7일 활성 유저', `${summary.activeUsers7d ?? 0}명`],
-            ['누적 사용시간', formatDuration(summary.totalPlaySeconds)],
-            ['평균 사용시간', formatDuration(summary.averagePlaySeconds)],
-            ['최고 영양분', Number(summary.topGold ?? 0).toLocaleString('ko-KR')],
-            ['최고 초당 생산량', `+${Number(summary.topDps ?? 0).toLocaleString('ko-KR')}/초`],
-            ['최근 집계 일수', `${daily.length}일`],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-lg border border-slate-300 bg-white p-4">
-              <p className="text-xs font-black text-slate-500">{label}</p>
-              <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
-            </div>
-          ))}
-        </section>
-
-        <section className="mt-5 rounded-lg border border-slate-300 bg-white p-4">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-black">최근 14일 사용시간</h2>
-            <p className="text-xs font-bold text-slate-500">일별 합산</p>
-          </div>
-          <div className="mt-4 grid min-h-44 grid-cols-7 items-end gap-2 sm:grid-cols-14">
-            {daily.length === 0 ? (
-              <p className="col-span-full py-10 text-center text-sm font-bold text-slate-500">아직 사용시간 데이터가 없어요.</p>
-            ) : daily.map((day) => {
-              const seconds = Number(day.playSeconds) || 0;
-              const height = Math.max(8, Math.round((seconds / maxDailySeconds) * 140));
-              return (
-                <div key={day.date} className="flex min-w-0 flex-col items-center gap-2">
-                  <div
-                    className="w-full rounded-t-md bg-teal-500"
-                    style={{ height }}
-                    title={`${day.date}: ${formatDuration(seconds)}`}
-                  />
-                  <p className="w-full truncate text-center text-[10px] font-bold text-slate-500">
-                    {String(day.date).slice(5)}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="mt-5 overflow-hidden rounded-lg border border-slate-300 bg-white">
-          <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-            <h2 className="text-lg font-black">가입자별 데이터</h2>
-            <p className="text-xs font-bold text-slate-500">최근 접속순 최대 100명</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[840px] text-left text-sm">
-              <thead className="bg-slate-100 text-xs font-black text-slate-600">
-                <tr>
-                  <th className="px-4 py-3">유저</th>
-                  <th className="px-4 py-3">게임 닉네임</th>
-                  <th className="px-4 py-3">가입일</th>
-                  <th className="px-4 py-3">마지막 접속</th>
-                  <th className="px-4 py-3">사용시간</th>
-                  <th className="px-4 py-3">세션</th>
-                  <th className="px-4 py-3">영양분</th>
-                  <th className="px-4 py-3">DPS</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {users.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="px-4 py-10 text-center font-bold text-slate-500">
-                      아직 가입자 데이터가 없어요.
-                    </td>
-                  </tr>
-                ) : users.map((user) => (
-                  <tr key={user.id} className="hover:bg-teal-50/60">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        {user.profileImage ? (
-                          <img src={user.profileImage} alt="" className="h-8 w-8 rounded-full object-cover" />
-                        ) : (
-                          <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-200 text-xs">유저</span>
-                        )}
-                        <div className="min-w-0">
-                          <p className="truncate font-black">{user.kakaoNickname ?? user.nickname}</p>
-                          <p className="truncate text-[10px] font-bold text-slate-400">가입 이름</p>
-                          <p className="truncate text-xs text-slate-500">{user.id}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-black text-amber-700">{user.displayNickname ?? user.nickname}</td>
-                    <td className="px-4 py-3 font-semibold">{formatDateTime(user.createdAt)}</td>
-                    <td className="px-4 py-3 font-semibold">{formatDateTime(user.lastSeenAt)}</td>
-                    <td className="px-4 py-3 font-black text-teal-700">{formatDuration(user.totalPlaySeconds)}</td>
-                    <td className="px-4 py-3 font-semibold">{user.sessionCount ?? 0}</td>
-                    <td className="px-4 py-3 font-semibold">{Number(user.gold ?? 0).toLocaleString('ko-KR')}</td>
-                    <td className="px-4 py-3 font-semibold">+{Number(user.dps ?? 0).toLocaleString('ko-KR')}/초</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-    </main>
-  );
-};
-
 const App = () => {
-  if (window.location.pathname === '/admin') {
-    return <AdminDashboard />;
-  }
-
   const [authUser, setAuthUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isLoginOpen, setIsLoginOpen] = useState(() => {
@@ -461,19 +221,17 @@ const App = () => {
   const cloudSaveOwnerRef = useRef(null);
   // ==================== 게임 상태(State) 관리 ====================
   // 현재 보유한 영양분 코인 수량
-  const [gold, setGold] = useState(0);
+  const [legacyGold, setGold] = useState(0);
   
   // 기존 저장의 화장실 단계. 공방 로드 후에는 공통 경제 상태를 사용합니다.
   const [legacyToiletLevel, setCurrentToiletLevel] = useState(0);
 
   // 똥 캐릭터별 강화 레벨 (0 = 잠김, 1 이상 = 해금)
-  const [poopLevels, setPoopLevels] = useState(initialPoopLevels);
+  const [legacyPoopLevels, setPoopLevels] = useState(initialPoopLevels);
 
-  // 현재 사용 중인 똥 단계. 해금된 이전 단계도 선택 가능
-  const [selectedPoopId, setSelectedPoopId] = useState(0);
 
   // 청소 장비별 보유 레벨
-  const [itemLevels, setItemLevels] = useState(initialItemLevels);
+  const [legacyItemLevels, setItemLevels] = useState(initialItemLevels);
 
   // 똥 꾸미기 장착 상태
   const [cosmetics, setCosmetics] = useState(defaultCosmetics);
@@ -507,15 +265,26 @@ const App = () => {
   // 저장 데이터를 읽기 전에 초기값이 덮어쓰는 것을 방지
   const [isSaveLoaded, setIsSaveLoaded] = useState(false);
 
-  // 청소 직원 습격 이벤트 상태
+  // 청소 도움 이벤트 상태
   const [cleanerEvent, setCleanerEvent] = useState(null);
   const [cleanerMessage, setCleanerMessage] = useState('');
   const [cleanerSpawnAttempt, setCleanerSpawnAttempt] = useState(0);
-  const goldRef = useRef(gold);
+  const cleanerStarting = useRef(false);
+  const cleanerHelping = useRef(false);
+  const cleanerReceipt = useRef(null);
+  const goldRef = useRef(0);
 
   const localStorageKey = 'poop-pr-save';
   const economy = useEconomy({ authUser, isAuthLoading, isSaveLoaded });
   const currentToiletLevel = economy.state?.toiletLevel ?? legacyToiletLevel;
+  const growth = useGrowth({authUser,isAuthLoading,ready:isSaveLoaded && Boolean(economy.state)});
+  const gold = growth.state ? growth.gold : legacyGold;
+  const poopLevels = growth.state?.poopLevels ?? legacyPoopLevels;
+  const itemLevels = growth.state?.itemLevels ?? legacyItemLevels;
+  const [upgradeCount,setUpgradeCount] = useState(1);
+
+  const track = useTelemetry(isSaveLoaded ? authUser?.id : null, 'main');
+  useEffect(()=>{if(growth.state)growth.refresh();},[currentToiletLevel,economy.state?.renovationLevel]);
 
   useEffect(() => {
     let isMounted = true;
@@ -657,20 +426,12 @@ const App = () => {
     }
   };
 
-  const itemDps = cleaningItems.reduce(
-    (total, item, index) => total + item.dps * (itemLevels[index] ?? 0),
-    0
-  );
-  const activeCleaningItems = cleaningItems.filter(
-    (_, index) => (itemLevels[index] ?? 0) > 0
-  );
-  const toiletDps = Math.floor((toilets[currentToiletLevel]?.dpsBonus ?? 0)
-    * renovationMultiplier(economy.state?.renovationLevel ?? 0));
-  const currentCleanerPenaltyRate = toilets[currentToiletLevel]?.cleanerPenaltyRate ?? 0.1;
+  const itemDps = growth.state?.itemDps ?? 0;
+  const activeCleaningItems = cleaningItems.filter(item => (itemLevels[item.id]??0)>0);
+  const toiletDps = growth.state?.toiletDps ?? 0;
   const currentPoopLevel = getHighestUnlockedPoopId(poopLevels);
   const unlockedPoop = poopCharacters[currentPoopLevel] ?? poopCharacters[0];
-  const selectedPoop = poopCharacters.find((poop) => poop.id === selectedPoopId && (poopLevels[poop.id] ?? 0) > 0) ?? unlockedPoop;
-  const currentPoop = selectedPoop;
+  const currentPoop = unlockedPoop;
   const wardrobeReady = Boolean(isSaveLoaded && economy.state && (!authUser || ['saved', 'saving'].includes(cloudSaveStatus)));
   const wardrobeRewards = getWardrobeRewards(economy.state, wardrobeReady ? poopLevels : undefined);
   const equippedCosmetics = wardrobeReady ? availableCosmetics(cosmetics, wardrobeRewards) : cosmetics;
@@ -678,16 +439,19 @@ const App = () => {
   useEffect(() => {
     if (wardrobeReady && JSON.stringify(equippedCosmetics) !== JSON.stringify(cosmetics)) setCosmetics(equippedCosmetics);
   }, [wardrobeReady, JSON.stringify(equippedCosmetics), cosmetics]);
-  const poopLevel = poopLevels[currentPoop.id] ?? 1;
-  const nextPoop = poopCharacters[currentPoop.id + 1] ?? null;
-  const canEvolvePoop = Boolean(nextPoop && (poopLevels[nextPoop.id] ?? 0) === 0 && poopLevel >= currentPoop.evolutionLevel);
+  const poopLevel = growth.state?.level ?? 1;
+  const nextPoop = poopCharacters[unlockedPoop.id + 1] ?? null;
+  const canEvolvePoop = false; // Evolution happens when the cumulative level crosses a milestone.
   const poopUpgradePrice = getPoopUpgradePrice(currentPoop, poopLevel);
   const { clickPower: baseClickPower, dps: characterDps } = getPoopStats(currentPoop, poopLevel, poopLevels);
-  const nextPoopStats = nextPoop ? getPoopStats(nextPoop, 1, poopLevels) : null;
-  const dps = toiletDps + characterDps + itemDps;
+  const nextPoopStats = nextPoop ? getPoopStats(nextPoop, nextPoop.unlockLevel) : null;
+  const dps = growth.state?.dps ?? 0;
   const activeClickBonus = Math.floor(dps * activeClickDpsBonusRate);
   const clickPower = baseClickPower + activeClickBonus;
   const totalItemLevels = itemLevels.reduce((total, level) => total + (level ?? 0), 0);
+  const recommendedEquipment = cleaningItems.filter(item => poopLevel >= equipment[item.id].unlockLevel && itemLevels[item.id] < 5)
+    .sort((a,b) => getItemPrice(a,itemLevels[a.id])/equipment[a.id].bonus - getItemPrice(b,itemLevels[b.id])/equipment[b.id].bonus)[0];
+
   const cosmeticOptions = {
     hat: [
       { id: 'none', name: '없음', icon: '', requirement: '기본', unlocked: true },
@@ -698,7 +462,7 @@ const App = () => {
       { id: 'wizard', name: '마법사 모자', icon: '🧙', requirement: '건강똥 Lv.70', unlocked: getPoopLevelByName(poopLevels, '건강똥') >= 70 },
       { id: 'ribbon', name: '리본', icon: '🎀', requirement: '물똥 Lv.20', unlocked: getPoopLevelByName(poopLevels, '물똥') >= 20 },
       { id: 'toiletLid', name: '변기뚜껑 모자', icon: '🚽', requirement: '화장실 2단계', unlocked: currentToiletLevel >= 1 },
-      { id: 'halo', name: '천사 링', icon: '😇', requirement: '장비 총 Lv.60', unlocked: totalItemLevels >= 60 },
+      { id: 'halo', name: '천사 링', icon: '😇', requirement: '장비 총 Lv.30', unlocked: totalItemLevels >= 30 },
       { id: 'devilHorns', name: '악마 뿔', icon: '😈', requirement: '불꽃똥 Lv.40', unlocked: getPoopLevelByName(poopLevels, '불꽃똥') >= 40 },
       { id: 'spaceHelmet', name: '우주 헬멧', icon: '🪐', requirement: '우주 화장실 해금', unlocked: currentToiletLevel >= 4 },
     ],
@@ -713,7 +477,7 @@ const App = () => {
       { id: 'rainbow', name: '무지개 링', icon: '🌈', requirement: '건강똥 Lv.100', unlocked: getPoopLevelByName(poopLevels, '건강똥') >= 100 },
       { id: 'constellation', name: '별자리', icon: '🌙', requirement: '우주 화장실 해금', unlocked: currentToiletLevel >= 4 },
       { id: 'goldCoin', name: '골드 코인', icon: '🪙', requirement: '100만 영양분', unlocked: gold >= 1000000 },
-      { id: 'cleanFoam', name: '소독 거품', icon: '🧼', requirement: '장비 총 Lv.45', unlocked: totalItemLevels >= 45 },
+      { id: 'cleanFoam', name: '소독 거품', icon: '🧼', requirement: '장비 총 Lv.25', unlocked: totalItemLevels >= 25 },
     ],
   };
   const getCosmeticOption = (slot, id) =>
@@ -934,7 +698,6 @@ const App = () => {
           setGold(save.gold);
           setCurrentToiletLevel(Math.min(toilets.length - 1, normalizeToiletLevel(save.toiletLevel, save.toiletSchemaVersion)));
           setPoopLevels(savedPoopProgress.poopLevels);
-          setSelectedPoopId(savedPoopProgress.selectedPoopId);
           setItemLevels(savedItemLevels);
           setCosmetics(normalizeCosmetics(save.cosmetics));
         } else {
@@ -973,66 +736,6 @@ const App = () => {
     const interval = setInterval(syncGameSave, 10000);
     return () => clearInterval(interval);
   }, [authUser, cloudSaveStatus]);
-
-  useEffect(() => {
-    if (!authUser || !isSaveLoaded) return;
-
-    const syncScore = () => {
-      fetch('/api/score', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(scoreRef.current),
-      }).catch(() => {});
-    };
-
-    syncScore();
-    const interval = setInterval(syncScore, 10000);
-    return () => clearInterval(interval);
-  }, [authUser, isSaveLoaded]);
-
-  useEffect(() => {
-    if (!authUser || !isSaveLoaded) return;
-
-    let lastActiveAt = Date.now();
-    let hasSentSessionStart = false;
-
-    const sendActivity = (seconds) => {
-      const roundedSeconds = Math.max(0, Math.min(300, Math.round(seconds)));
-      fetch('/api/activity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          seconds: roundedSeconds,
-          sessionStart: !hasSentSessionStart,
-        }),
-        keepalive: true,
-      }).catch(() => {});
-      hasSentSessionStart = true;
-    };
-
-    sendActivity(0);
-
-    const interval = setInterval(() => {
-      const now = Date.now();
-      if (document.visibilityState === 'hidden') {
-        lastActiveAt = now;
-        return;
-      }
-
-      sendActivity((now - lastActiveAt) / 1000);
-      lastActiveAt = now;
-    }, 30000);
-
-    const handleVisibilityChange = () => {
-      lastActiveAt = Date.now();
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [authUser, isSaveLoaded]);
 
   const handleRankingOpen = async () => {
     setIsRankingOpen(true);
@@ -1075,16 +778,7 @@ const App = () => {
       setCurrentToiletLevel(savedToiletLevel);
       const savedPoopProgress = normalizePoopProgress(parsed);
       const savedPoopLevels = savedPoopProgress.poopLevels;
-      const savedUnlockedPoopId = getHighestUnlockedPoopId(savedPoopLevels);
-      const savedUnlockedPoop = poopCharacters[savedUnlockedPoopId] ?? poopCharacters[0];
-      const savedSelectedPoopId = savedPoopProgress.selectedPoopId;
-
       setPoopLevels(savedPoopLevels);
-      setSelectedPoopId(
-        poopCharacters.some((poop) => poop.id === savedSelectedPoopId && (savedPoopLevels[poop.id] ?? 0) > 0)
-          ? savedSelectedPoopId
-          : savedUnlockedPoop.id
-      );
       setItemLevels(
         Array.isArray(parsed.itemLevels)
           ? cleaningItems.map((_, index) => parsed.itemLevels[index] ?? 0)
@@ -1099,11 +793,12 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    if (!isSaveLoaded) return;
+    if (!isSaveLoaded || !growth.state || authUser) return;
 
     try {
       const saveData = {
-        gold,
+        growth: growth.state,
+        gold: growth.state.gold,
         currentToiletLevel,
         toiletSchemaVersion,
         currentPoopLevel,
@@ -1117,7 +812,7 @@ const App = () => {
     } catch (error) {
       console.warn('게임 데이터를 저장하는 중 오류가 발생했습니다.', error);
     }
-  }, [gold, currentToiletLevel, currentPoopLevel, poopLevel, poopLevels, currentPoop.id, itemLevels, cosmetics, isSaveLoaded]);
+  }, [gold, currentToiletLevel, currentPoopLevel, poopLevel, poopLevels, currentPoop.id, itemLevels, cosmetics, isSaveLoaded, growth.state, authUser]);
 
   // Refresh after the local save has recorded newly discovered characters.
   useEffect(() => {
@@ -1125,86 +820,63 @@ const App = () => {
   }, [poopLevels, isSaveLoaded, authUser, economy.refresh]);
 
   useEffect(() => {
-    if ((poopLevels[selectedPoopId] ?? 0) === 0) {
-      setSelectedPoopId(unlockedPoop.id);
-    }
-  }, [selectedPoopId, poopLevels, unlockedPoop.id]);
-
-  // ==================== useEffect: 자동 수집 시스템 ====================
-  // 1초마다 dps만큼 gold를 자동으로 증가시키는 타이머 로직
+    const visibility = () => { if(document.visibilityState !== 'visible')setCleanerEvent(null); else setCleanerSpawnAttempt(n=>n+1); };
+    document.addEventListener('visibilitychange',visibility);
+    return()=>document.removeEventListener('visibilitychange',visibility);
+  },[]);
+  // The shared wallet issues the event and pays once, including across tabs/retries.
+  const savedCleaner = growth.state?.cleaner;
   useEffect(() => {
-    // dps가 0이면 타이머를 실행할 필요 없음
-    if (dps === 0) return;
-
-    // 1000ms(1초)마다 실행되는 인터벌 설정
-    const interval = setInterval(() => {
-      setGold(prevGold => prevGold + dps);
-    }, 1000);
-
-    // 컴포넌트 언마운트 또는 dps 변경 시 인터벌 정리 (메모리 누수 방지)
-    return () => clearInterval(interval);
-  }, [dps]); // dps가 변경될 때마다 useEffect 재실행
-
-  // ==================== 청소 직원 습격 이벤트 ====================
-  useEffect(() => {
-    if (!isSaveLoaded || cleanerEvent) return;
-
-    const timeout = setTimeout(() => {
-      if (goldRef.current < cleanerEventMinGold) {
-        setCleanerSpawnAttempt(prevAttempt => prevAttempt + 1);
-        return;
+    if (!savedCleaner) { setCleanerEvent(null); return; }
+    if (savedCleaner.completed) {
+      setCleanerEvent(null);
+      if (cleanerReceipt.current === savedCleaner.id) {
+        setCleanerMessage(`청소 완료! 고마워요 💚 영양분 +${formatNumber(savedCleaner.reward)}`);
+        cleanerReceipt.current = null;
       }
+      return;
+    }
+    const remaining = savedCleaner.endsAt - growth.state.lastAt;
+    if (remaining <= 0 || document.visibilityState !== 'visible') return;
+    cleanerReceipt.current = savedCleaner.id;
+    setCleanerMessage('');
+    setCleanerEvent({id:savedCleaner.id, helps:savedCleaner.helps, deadline:Date.now()+remaining, timeLeft:Math.ceil(remaining/1000)});
+  }, [savedCleaner?.id, savedCleaner?.helps, savedCleaner?.completed]);
 
-      setCleanerEvent(prevEvent => {
-        if (prevEvent) return prevEvent;
-
-        setCleanerMessage('');
-        return {
-          timeLeft: cleanerEventDuration,
-          blocks: 0,
-        };
-      });
+  useEffect(() => {
+    if (!growth.state || cleanerEvent || document.visibilityState !== 'visible') return;
+    const timeout = setTimeout(async () => {
+      if (document.visibilityState !== 'visible' || cleanerStarting.current) return;
+      if (goldRef.current < cleanerEventMinGold) { setCleanerSpawnAttempt(n=>n+1); return; }
+      cleanerStarting.current = true;
+      try { await growth.act({type:'cleaner_start'}); }
+      finally { cleanerStarting.current = false; setCleanerSpawnAttempt(n=>n+1); }
     }, getRandomCleanerDelay());
-
     return () => clearTimeout(timeout);
-  }, [isSaveLoaded, cleanerEvent, cleanerSpawnAttempt]);
+  }, [Boolean(growth.state), cleanerEvent?.id, cleanerSpawnAttempt]);
 
   useEffect(() => {
     if (!cleanerEvent) return;
-
-    const timeout = setTimeout(() => {
-      setCleanerEvent(prevEvent => {
-        if (!prevEvent) return prevEvent;
-
-        const nextTimeLeft = prevEvent.timeLeft - 1;
-
-        if (nextTimeLeft > 0) {
-          return {
-            ...prevEvent,
-            timeLeft: nextTimeLeft,
-          };
-        }
-
-        const penalty = Math.min(
-          goldRef.current,
-          Math.max(5, Math.ceil(goldRef.current * currentCleanerPenaltyRate))
-        );
-
-        setGold(prevGold => Math.max(0, prevGold - penalty));
-        setCleanerMessage(`청소 직원에게 들켰어요. 영양분 -${formatNumber(penalty)}`);
-        setTimeout(() => setCleanerMessage(''), 2200);
-        return null;
-      });
-    }, 1000);
-
-    return () => clearTimeout(timeout);
-  }, [cleanerEvent, currentCleanerPenaltyRate]);
+    const timer=setInterval(()=>{
+      const timeLeft=Math.max(0,Math.ceil((cleanerEvent.deadline-Date.now())/1000));
+      if (!timeLeft) {
+        setCleanerEvent(null);
+        setCleanerMessage('다음에 또 도와주세요! 영양분은 그대로예요.');
+      } else setCleanerEvent(event=>event?.id===cleanerEvent.id?{...event,timeLeft}:event);
+    },100);
+    return()=>clearInterval(timer);
+  },[cleanerEvent?.id,cleanerEvent?.deadline]);
+  useEffect(()=>{
+    if(!cleanerMessage)return;
+    const timeout=setTimeout(()=>setCleanerMessage(''),3500);
+    return()=>clearTimeout(timeout);
+  },[cleanerMessage]);
 
   // ==================== 클릭 핸들러 함수 ====================
   // 똥 캐릭터 버튼 클릭 시 gold 증가 및 애니메이션 실행
   const handlePoopClick = () => {
-    // gold에 clickPower만큼 추가
-    setGold(prevGold => prevGold + clickPower);
+    if (!growth.click()) return;
+    track('clicks');
     
     // 팝핑 애니메이션 트리거
     setIsClicking(true);
@@ -1213,73 +885,36 @@ const App = () => {
     setTimeout(() => setIsClicking(false), 300);
   };
 
-  const handleCleanerBlock = () => {
-    setCleanerEvent(prevEvent => {
-      if (!prevEvent) return prevEvent;
-
-      const nextBlocks = prevEvent.blocks + 1;
-
-      if (nextBlocks >= cleanerRequiredBlocks) {
-        setCleanerMessage('방해 성공! 청소 직원이 그냥 지나갔어요.');
-        setTimeout(() => setCleanerMessage(''), 1800);
-        return null;
-      }
-
-      return {
-        ...prevEvent,
-        blocks: nextBlocks,
-      };
-    });
+  const handleCleanerHelp = async () => {
+    if(!cleanerEvent || cleanerHelping.current || growth.pending)return;
+    cleanerHelping.current=true;
+    try { await growth.act({type:'cleaner_help',eventId:cleanerEvent.id}); }
+    finally { cleanerHelping.current=false; }
   };
 
   // ==================== 청소 장비 구매 핸들러 ====================
-  const handleItemPurchase = (itemId) => {
-    const item = cleaningItems[itemId];
-    const currentLevel = itemLevels[itemId] ?? 0;
-    const price = getItemPrice(item, currentLevel);
-    const isUnlocked = itemId === 0 || (itemLevels[itemId - 1] ?? 0) >= itemUnlockRequiredLevel;
-
-    if (!isUnlocked || gold < price) return;
-
-    setGold(prevGold => prevGold - price);
-    setItemLevels(prevLevels =>
-      prevLevels.map((level, index) => index === itemId ? level + 1 : level)
-    );
+  const handleItemPurchase = async itemId => {
+    const result = await growth.act({type:'equipment',itemId});
+    if(result)track('itemUpgrades');
   };
-
-  // ==================== 똥 레벨 강화 핸들러 ====================
-  const handlePoopLevelUp = () => {
-    if (gold < poopUpgradePrice) return;
-
-    setGold(prevGold => prevGold - poopUpgradePrice);
-    setPoopLevels(prevLevels =>
-      prevLevels.map((level, index) => index === currentPoop.id ? level + 1 : level)
-    );
+  const handlePoopLevelUp = async () => {
+    const before = getPoopStats(null,poopLevel);
+    const result = await growth.act({type:'upgrade',count:upgradeCount});
+    if(!result)return;
+    for(let i=0;i<result.upgrades;i++)track('poopUpgrades');
+    if(result.evolutions){
+      for(let i=0;i<result.evolutions;i++)track('evolutions');
+      setEvolution({from:unlockedPoop,to:poopCharacters[stageForLevel(result.state.level)],level:result.state.level,before,after:getPoopStats(null,result.state.level)});
+      economy.refresh();
+    }
   };
-
-  const handlePoopEvolve = () => {
-    if (!canEvolvePoop || !nextPoop || evolutionLock.current) return;
-    evolutionLock.current = true;
-    setEvolution({ from: currentPoop, to: nextPoop,
-      before: { clickPower: baseClickPower, dps: characterDps }, after: nextPoopStats });
-
-    setPoopLevels(prevLevels =>
-      prevLevels.map((level, index) => index === nextPoop.id ? 1 : level)
-    );
-    setSelectedPoopId(nextPoop.id);
-  };
-
-  const handlePoopSelect = (poopId) => {
-    const poop = poopCharacters[poopId];
-    if (!poop || (poopLevels[poopId] ?? 0) === 0) return;
-
-    setSelectedPoopId(poopId);
-  };
+  const handlePoopEvolve = handlePoopLevelUp;
 
   // ==================== 게임 초기화 리셋 핸들러 ====================
   const handleResetGame = async () => {
     const resetEconomy = await economy.act({ type: 'reset_progress' });
     if (!resetEconomy) return;
+    if (!await growth.act({type:'reset'})) return;
     if (resetTimerRef.current) {
       clearTimeout(resetTimerRef.current);
       resetTimerRef.current = null;
@@ -1288,7 +923,6 @@ const App = () => {
     setGold(0);
     setCurrentToiletLevel(0);
     setPoopLevels(initialPoopLevels);
-    setSelectedPoopId(0);
     setItemLevels(initialItemLevels);
     setCosmetics(defaultCosmetics);
     setIsShopOpen(false);
@@ -1368,7 +1002,7 @@ const App = () => {
       resetTimerRef.current = null;
     }
 
-    if (resetClickCountRef.current >= 3) {
+    if (import.meta.env.DEV && resetClickCountRef.current >= 3) {
       resetClickCountRef.current = 0;
       setIsDeveloperModeOpen(true);
       return;
@@ -1381,7 +1015,7 @@ const App = () => {
   };
 
   const handleDeveloperGoldCharge = () => {
-    setGold(prevGold => prevGold + developerGoldAmount);
+    growth.act({type:'demo_gold'});
   };
 
   // ==================== 숫자 포맷팅 함수 ====================
@@ -1411,8 +1045,8 @@ const App = () => {
   const currentToilet = toilets[currentToiletLevel];
   const currentBgGradient = currentToilet.bgGradient;
   const currentBgImage = currentToilet.image;
-  const evolutionProgress = currentPoop.evolutionLevel
-    ? Math.min(100, (poopLevel / currentPoop.evolutionLevel) * 100)
+  const evolutionProgress = unlockedPoop.evolutionLevel
+    ? Math.min(100, ((poopLevel-unlockedPoop.unlockLevel) / (unlockedPoop.evolutionLevel-unlockedPoop.unlockLevel)) * 100)
     : 100;
 
   useEffect(() => {
@@ -1559,6 +1193,7 @@ const App = () => {
           </p>
           <p className="shrink-0 text-[9px] font-bold">
             변기 +{formatNumber(toiletDps)} · 캐릭터 +{formatNumber(characterDps)} · 장비 {activeCleaningItems.length}종 +{formatNumber(itemDps)}/초
+            <span className="block mt-1">총자산 {formatNumber(growth.state?.totalAssets ?? gold)} · 투자 {formatNumber(growth.state?.invested ?? 0)}</span>
           </p>
         </div>
       </div>
@@ -1598,45 +1233,46 @@ const App = () => {
         </div>
 
         {(cleanerEvent || cleanerMessage) && (
-          <div className="pointer-events-auto absolute left-1/2 top-2 z-40 w-[min(100%,360px)] -translate-x-1/2 rounded-lg border border-red-200/80 bg-red-950/85 p-3 text-white shadow-2xl backdrop-blur-md">
+          <div className="pointer-events-auto absolute left-1/2 top-2 z-40 w-[min(100%,360px)] -translate-x-1/2 rounded-lg border border-emerald-200/80 bg-emerald-950/90 p-3 text-white shadow-2xl backdrop-blur-md">
             {cleanerEvent ? (
               <>
                 <div className="flex items-center justify-between gap-3">
                   <img
                     src={cleanerBrushSwingImage}
-                    alt="솔을 휘두르는 청소 직원"
+                    alt="함께 청소하는 청소 아주머니"
                     className="h-20 w-20 shrink-0 object-contain drop-shadow-2xl"
                     style={{ animation: 'cleanerSwing 0.78s ease-in-out infinite' }}
                   />
                   <div className="min-w-0">
-                    <p className="text-sm font-black">🧽 청소 직원 등장!</p>
-                    <p className="mt-0.5 text-[11px] font-semibold text-red-100">
-                      {cleanerEvent.timeLeft}초 안에 {cleanerRequiredBlocks - cleanerEvent.blocks}번 더 방해하세요
+                    <p className="text-sm font-black">🧽 청소를 도와주세요!</p>
+                    <p className="mt-0.5 text-[11px] font-semibold text-emerald-100">
+                      {cleanerEvent.timeLeft}초 안에 {cleanerRequiredHelps - cleanerEvent.helps}번 더 도와주세요
                     </p>
-                    <p className="mt-0.5 text-[10px] font-bold text-red-200">
-                      실패 시 영양분 {Math.round(currentCleanerPenaltyRate * 100)}% 차감
+                    <p className="mt-0.5 text-[10px] font-bold text-emerald-200">
+                      완료 시 보유 영양분의 10% 선물!
                     </p>
                   </div>
-                  <div className="shrink-0 rounded-full bg-white px-2.5 py-1 text-sm font-black text-red-700">
+                  <div className="shrink-0 rounded-full bg-white px-2.5 py-1 text-sm font-black text-emerald-700">
                     {cleanerEvent.timeLeft}s
                   </div>
                 </div>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/20">
                   <div
-                    className="h-full rounded-full bg-red-300 transition-all duration-200"
+                    className="h-full rounded-full bg-emerald-300 transition-all duration-200"
                     style={{
-                      width: `${(cleanerEvent.blocks / cleanerRequiredBlocks) * 100}%`,
+                      width: `${(cleanerEvent.helps / cleanerRequiredHelps) * 100}%`,
                     }}
                   />
                 </div>
                 <button
                   onClick={(event) => {
                     event.stopPropagation();
-                    handleCleanerBlock();
+                    handleCleanerHelp();
                   }}
-                  className="mt-3 w-full rounded-xl bg-red-500 px-4 py-2.5 text-sm font-black text-white shadow-lg transition-all hover:bg-red-400 active:scale-95"
+                  disabled={growth.pending}
+                  className="mt-3 w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-black text-white shadow-lg transition-all hover:bg-emerald-400 active:scale-95 disabled:opacity-60"
                 >
-                  🚧 방해하기
+                  🧽 청소 도와주기
                 </button>
               </>
             ) : (
@@ -1735,7 +1371,7 @@ const App = () => {
               로그인 안 하고 게임하기
             </button>
             <p className="mt-3 text-xs font-bold text-slate-500">
-              로그인 없이 플레이한 기록은 이 브라우저에 저장돼요.
+              로그인 없이 플레이한 기록은 이 브라우저에 저장돼요. 로그인 플레이의 이용 시간·클릭·진행 기록은 게임 개선을 위해 수집합니다.
             </p>
 
             {localAuthMode !== 'hidden' && (
@@ -1914,6 +1550,15 @@ const App = () => {
         </div>
       )}
 
+      {growth.error && <div role="alert" className="fixed bottom-24 left-1/2 z-[90] w-[90%] max-w-sm -translate-x-1/2 rounded-xl bg-red-950 p-3 text-sm text-white">{growth.error}<button onClick={growth.refresh} className="ml-2 underline">다시 연결</button></div>}
+      {growth.offlineReward && <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-5">
+        <section role="dialog" aria-modal="true" aria-label="오프라인 수익" className="w-full max-w-sm rounded-3xl border-4 border-amber-950 bg-amber-50 p-6 text-center shadow-xl">
+          <p className="text-4xl">💤💰</p><h2 className="mt-3 text-xl font-black text-amber-950">돌아오셨네요!</h2>
+          <p className="mt-2 text-sm text-amber-900">자리를 비운 동안 똥이 코인을 모았어요.</p>
+          <p className="my-4 text-3xl font-black text-amber-700">+{formatNumber(growth.offlineReward.gold)}</p>
+          <p className="text-xs text-amber-900">이미 잔액에 더했어요. 첫 8시간 50%, 이후 16시간 25% 생산 · 최대 24시간</p>
+          <button onClick={growth.dismissOffline} className="mt-5 w-full rounded-xl bg-amber-400 py-3 font-black text-amber-950">확인하고 키우기</button>
+        </section></div>}
       {isRankingOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => {
           setIsRankingOpen(false);
@@ -1923,7 +1568,7 @@ const App = () => {
             <div className="flex items-center justify-between border-b-[3px] border-amber-950 bg-gradient-to-b from-yellow-300 to-amber-400 px-4 py-3">
               <div>
                 <h2 className="text-lg font-black text-amber-950">🏆 전체 랭킹</h2>
-                <p className="text-[10px] font-bold text-amber-900">카드를 누르면 화장실을 구경할 수 있어요</p>
+                <p className="text-[10px] font-bold text-amber-900">누적 레벨순 · 같은 레벨은 총자산순</p>
               </div>
               <button type="button" onClick={() => {
                 setIsRankingOpen(false);
@@ -1938,7 +1583,7 @@ const App = () => {
               ) : rankings.map((entry, index) => {
                 const rankingPoopProgress = normalizePoopProgress(entry);
                 const rankingPoop = poopCharacters[rankingPoopProgress.selectedPoopId] ?? poopCharacters[0];
-                const rankingPoopLevel = rankingPoopProgress.poopLevels[rankingPoop.id] ?? entry.poopLevel ?? 1;
+                const rankingPoopLevel = entry.cumulativeLevel ?? entry.poopLevel ?? 1;
                 const rankingToilet = toilets[normalizeToiletLevel(entry.toiletLevel, entry.toiletSchemaVersion)] ?? toilets[0];
                 const ownedItems = cleaningItems.filter((item) => (entry.itemLevels?.[item.id] ?? 0) > 0);
                 const rankingCosmetics = normalizeCosmetics(entry.cosmetics);
@@ -1959,10 +1604,10 @@ const App = () => {
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-black text-slate-800">{entry.nickname}{entry.id === authUser?.id ? ' (나)' : ''}</p>
                         <p className="truncate text-[9px] font-bold text-slate-500">
-                          {rankingTitleText ? `🏷️ ${rankingTitleText} · ` : ''}초당 +{formatNumber(entry.dps)}
+                          {rankingTitleText ? `🏷️ ${rankingTitleText} · ` : ''}총자산 {formatNumber(entry.totalAssets)} 💰
                         </p>
                       </div>
-                      <p className="shrink-0 text-sm font-black text-amber-700">{formatNumber(entry.gold)} 💰</p>
+                      <p className="shrink-0 text-sm font-black text-amber-700">Lv.{rankingPoopLevel}</p>
                     </div>
                     <div className="mt-2 grid grid-cols-2 gap-1.5 border-t border-amber-900/15 pt-2 text-[9px] font-bold text-slate-700">
                       <div className="flex min-w-0 items-center gap-1.5 rounded-lg bg-amber-100/80 px-2 py-1">
@@ -1999,7 +1644,7 @@ const App = () => {
           {selectedRankingUser && (() => {
             const profilePoopProgress = normalizePoopProgress(selectedRankingUser);
             const profilePoop = poopCharacters[profilePoopProgress.selectedPoopId] ?? poopCharacters[0];
-            const profilePoopLevel = profilePoopProgress.poopLevels[profilePoop.id] ?? selectedRankingUser.poopLevel ?? 1;
+            const profilePoopLevel = selectedRankingUser.cumulativeLevel ?? selectedRankingUser.poopLevel ?? 1;
             const profileToilet = toilets[normalizeToiletLevel(selectedRankingUser.toiletLevel, selectedRankingUser.toiletSchemaVersion)] ?? toilets[0];
             const profileItems = cleaningItems.filter((item) => (selectedRankingUser.itemLevels?.[item.id] ?? 0) > 0);
             const profileCosmetics = normalizeCosmetics(selectedRankingUser.cosmetics);
@@ -2079,7 +1724,7 @@ const App = () => {
                     <div className="mt-3 rounded-2xl border-2 border-orange-200 bg-orange-50 p-3">
                       <p className="text-[10px] font-black text-orange-800">화장실</p>
                       <p className="mt-1 text-sm font-black">{profileToilet.name}</p>
-                      <p className="mt-0.5 text-xs font-bold text-orange-700">변기 보너스 +{formatNumber(profileToilet.dpsBonus)}/초</p>
+                      <p className="mt-0.5 text-xs font-bold text-orange-700">화장실 생산 보너스 +{profileToilet.id * 5}%</p>
                     </div>
 
                     <div className="mt-3 rounded-2xl border-2 border-teal-200 bg-teal-50 p-3">
@@ -2125,7 +1770,7 @@ const App = () => {
             <p className="mt-2 text-sm font-semibold text-gray-600">
               영양분, 똥 레벨, 장비, 부품과 화장실을 처음으로 되돌릴까요? 똥 토큰과 무료 보상 수령 기록은 유지돼요.
             </p>
-            {economy.error && <p className="mt-2 text-xs font-bold text-red-700" role="alert">{economy.error}</p>}
+            {economy.error && <p className="mt-2 text-xs font-bold text-emerald-700" role="alert">{economy.error}</p>}
             {isDeveloperModeOpen && (
               <div className="mt-4 rounded-xl border-2 border-yellow-300 bg-yellow-50 p-3">
                 <p className="text-sm font-black text-yellow-900">개발자 모드</p>
@@ -2171,7 +1816,7 @@ const App = () => {
             <div className="flex shrink-0 items-center justify-between border-b-[3px] border-cyan-950 bg-gradient-to-b from-cyan-400 to-cyan-600 px-4 py-3 text-white">
               <div>
                 <h2 className="text-xl font-black">{poopShopTab === 'cosmetics' ? '🎀 똥 꾸미기' : '💩 똥 강화'}</h2>
-                <p className="mt-1 text-xs font-semibold text-cyan-950">{poopShopTab === 'cosmetics' ? '키우고, 놀고, 나만의 스타일을 모아요' : '각 똥은 Lv.1부터 성장하고 조건 달성 시 진화해요'}</p>
+                <p className="mt-1 text-xs font-semibold text-cyan-950">{poopShopTab === 'cosmetics' ? '키우고, 놀고, 나만의 스타일을 모아요' : '레벨은 계속 이어지고, 진화하면 더 강해져요'}</p>
               </div>
               <button
                 onClick={() => setIsPoopShopOpen(false)}
@@ -2197,7 +1842,7 @@ const App = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPoopShopTab('cosmetics')}
+                  onClick={() => { if (poopShopTab !== 'cosmetics') track('wardrobeOpens'); setPoopShopTab('cosmetics'); }}
                   className={`rounded-xl px-3 py-2 text-xs font-black transition-all ${
                     poopShopTab === 'cosmetics'
                       ? 'bg-teal-500 text-white shadow-[0_3px_0_#115e59]'
@@ -2219,8 +1864,8 @@ const App = () => {
                   {nextPoop
                     ? canEvolvePoop
                     ? `${nextPoop.name} 진화 가능`
-                    : `${nextPoop.name}까지 ${currentPoop.evolutionLevel - poopLevel}레벨`
-                    : '최종 진화 완료'}
+                    : `${nextPoop.name}까지 ${unlockedPoop.evolutionLevel - poopLevel}레벨`
+                    : '황금똥 · 레벨 제한 없이 계속 성장'}
                 </span>
               </div></>}
             </div>
@@ -2248,6 +1893,7 @@ const App = () => {
                       }
                     }
                     setCosmetics(next);
+                    track('skinEquips');
                     return true;
                   }}
                   onGoal={destination => {
@@ -2285,11 +1931,15 @@ const App = () => {
 
                 {nextPoopStats && (poopLevels[nextPoop.id] ?? 0) === 0 && (
                   <div className="mt-3 rounded-xl bg-amber-100 p-3 text-xs font-bold text-amber-950">
-                    <p>Lv.{currentPoop.evolutionLevel} 달성 시 {nextPoop.name}으로 무료 진화</p>
-                    <p className="mt-1">똥 자체 능력 최소 30% 상승 · 이전 성장 이어받기</p>
+                    <p>Lv.{unlockedPoop.evolutionLevel} 달성 시 {nextPoop.name}으로 자동 진화</p>
+                    <p className="mt-1">진화 보너스 +25% · 누적 레벨과 투자 자산 유지</p>
                     <p className="mt-1">기본 클릭 {formatNumber(baseClickPower)} → {formatNumber(nextPoopStats.clickPower)} · 자동 {formatNumber(characterDps)} → {formatNumber(nextPoopStats.dps)}/초</p>
                   </div>
                 )}
+                <div className="mt-3 flex gap-2" aria-label="한 번에 강화할 레벨 수">
+                  {[1,10,100].map(count=><button key={count} onClick={()=>setUpgradeCount(count)} aria-pressed={upgradeCount===count} className={`flex-1 rounded-xl py-2 text-sm font-black ${upgradeCount===count?'bg-amber-500 text-amber-950':'bg-amber-100 text-amber-800'}`}>×{count}</button>)}
+                </div>
+                <p className="mt-2 text-xs text-slate-600">보유 코인 안에서 강화해요. 사용한 코인은 투자 자산으로 남아요.</p>
                 {canEvolvePoop ? (
                   <button
                     onClick={handlePoopEvolve}
@@ -2300,14 +1950,14 @@ const App = () => {
                 ) : (
                   <button
                     onClick={handlePoopLevelUp}
-                    disabled={gold < poopUpgradePrice}
+                    disabled={!growth.state || growth.pending || gold < poopUpgradePrice}
                     className={`mt-4 w-full rounded-2xl border-[3px] py-2.5 font-black transition-all ${
                       gold >= poopUpgradePrice
                         ? 'border-orange-800 bg-gradient-to-b from-orange-300 to-red-400 text-red-950 shadow-[0_5px_0_#9a3412] active:translate-y-1 active:shadow-[0_1px_0_#9a3412]'
                         : 'cursor-not-allowed border-slate-300 bg-gray-200 text-gray-500'
                     }`}
                   >
-                    Lv.{poopLevel + 1} 강화하기 · {formatNumber(poopUpgradePrice)} 💰
+                    {upgradeCount === 1 ? `Lv.${poopLevel + 1} 강화` : `최대 ${upgradeCount}레벨 강화`} · {formatNumber(poopUpgradePrice)} 💰부터
                   </button>
                 )}
               </div>
@@ -2316,7 +1966,7 @@ const App = () => {
                 const ownedLevel = poopLevels[poop.id] ?? 0;
                 const isOwned = ownedLevel > 0;
                 const isSelected = currentPoop.id === poop.id;
-                const stageStats = getPoopStats(poop, Math.max(1, ownedLevel), poopLevels);
+                const stageStats = getPoopStats(poop, isOwned ? poopLevel : poop.unlockLevel);
 
                 return (
                   <div
@@ -2347,13 +1997,13 @@ const App = () => {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <h3 className="font-black text-gray-900">{poop.name}</h3>
-                          {isSelected && <span className="rounded-full bg-amber-500 px-2 py-1 text-[10px] font-bold text-white">사용 중</span>}
-                          {!isSelected && isOwned && <span className="text-xs font-bold text-emerald-600">✓ Lv.{ownedLevel}</span>}
+                          {isSelected && <span className="rounded-full bg-amber-500 px-2 py-1 text-[10px] font-bold text-white">현재 진화</span>}
+                          {!isSelected && isOwned && <span className="text-xs font-bold text-emerald-600">✓ 발견 완료</span>}
                         </div>
                         <p className="mt-1 text-xs text-gray-500">{poop.description}</p>
                         <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-bold">
                           <span className="rounded bg-amber-50 px-2 py-1 text-amber-700">
-                            {poop.evolutionLevel ? `Lv.${poop.evolutionLevel} 진화` : '최종 단계'}
+                            {`누적 Lv.${poop.unlockLevel} 해금`}
                           </span>
                           <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">
                             {isOwned ? `클릭 +${formatNumber(stageStats.clickPower)}` : `기본 클릭 +${formatNumber(stageStats.clickPower)}`}
@@ -2362,18 +2012,9 @@ const App = () => {
                       </div>
                     </div>
 
-                    {isOwned && !isSelected && (
-                      <button
-                        onClick={() => handlePoopSelect(poop.id)}
-	                        className="mt-3 w-full rounded-2xl border-[3px] border-teal-800 bg-gradient-to-b from-teal-300 to-teal-500 py-2 text-sm font-black text-teal-950 shadow-[0_4px_0_#115e59] transition-all active:translate-y-1 active:shadow-[0_1px_0_#115e59]"
-                      >
-                        이 똥 사용하기 · 자동 +{formatNumber(stageStats.dps)}/초
-                      </button>
-                    )}
-
                     {!isOwned && (
                       <div className="mt-3 rounded-lg bg-gray-200 py-2 text-center text-xs font-bold text-gray-500">
-                        🔒 이전 똥 진화 필요
+                        🔒 누적 Lv.{poop.unlockLevel}에 해금
                       </div>
                     )}
                   </div>
@@ -2393,7 +2034,7 @@ const App = () => {
             <div className="flex items-center justify-between border-b-[3px] border-cyan-950 bg-gradient-to-b from-cyan-400 to-cyan-600 px-4 py-3 text-white">
               <div>
                 <h2 className="text-xl font-black">🧰 청소 장비</h2>
-                <p className="mt-1 text-xs font-semibold text-cyan-950">장비를 강화해 초당 생산량을 늘리세요</p>
+                <p className="mt-1 text-xs font-semibold text-cyan-950">캐릭터가 성장하면 장비 효과도 함께 커져요</p>
               </div>
               <button
                 onClick={() => setIsItemShopOpen(false)}
@@ -2405,15 +2046,20 @@ const App = () => {
             </div>
 
             <div className="border-b border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900">
-              장비 생산량 +{formatNumber(itemDps)} / sec
+              장비 보너스 +{Math.round((growth.state?.equipmentBonus ?? 0)*100)}% · +{formatNumber(itemDps)}/초
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
+              {recommendedEquipment && <div className="rounded-2xl border-2 border-teal-700 bg-teal-50 p-3 text-sm text-teal-950">
+                <p className="font-black">추천 투자 · {recommendedEquipment.name}</p>
+                <p className="mt-1 text-xs">구매 비용 대비 생산 증가가 가장 큰 장비예요. 투자액은 총자산에 남아요.</p>
+                <button className="mt-2 w-full rounded-xl bg-teal-700 p-2 font-bold text-white disabled:opacity-40" disabled={growth.pending || gold < getItemPrice(recommendedEquipment,itemLevels[recommendedEquipment.id])} onClick={()=>handleItemPurchase(recommendedEquipment.id)}>추천 장비 강화 · {formatNumber(getItemPrice(recommendedEquipment,itemLevels[recommendedEquipment.id]))} 💰</button>
+              </div>}
               {cleaningItems.map((item, index) => {
                 const level = itemLevels[index] ?? 0;
                 const price = getItemPrice(item, level);
-                const isUnlocked = index === 0 || (itemLevels[index - 1] ?? 0) >= itemUnlockRequiredLevel;
-                const canPurchase = isUnlocked && gold >= price;
+                const isUnlocked = poopLevel >= equipment[index].unlockLevel;
+                const canPurchase = isUnlocked && level < 5 && gold >= price && !growth.pending;
 
                 return (
                   <div
@@ -2442,15 +2088,15 @@ const App = () => {
                         </div>
                         <p className="mt-1 text-xs text-gray-500">{item.description}</p>
                         <div className="mt-2 flex justify-between text-sm font-semibold">
-                          <span className="text-blue-600">레벨당 +{formatNumber(item.dps)}/초</span>
-                          <span className="text-emerald-700">총 +{formatNumber(item.dps * level)}/초</span>
+                          <span className="text-blue-600">단계당 +{Math.round(equipment[index].bonus*100)}%</span>
+                          <span className="text-emerald-700">총 +{Math.round(equipment[index].bonus*level*100)}%</span>
                         </div>
                       </div>
                     </div>
 
                     {!isUnlocked ? (
                       <div className="mt-3 rounded-lg bg-gray-200 py-2 text-center text-sm font-bold text-gray-600">
-                        🔒 {cleaningItems[index - 1].name} Lv.{itemUnlockRequiredLevel} 필요
+                        🔒 누적 Lv.{equipment[index].unlockLevel} 필요
                       </div>
                     ) : (
                       <button
@@ -2462,7 +2108,7 @@ const App = () => {
                             : 'cursor-not-allowed border-slate-300 bg-gray-200 text-gray-500'
                         }`}
                       >
-                        {formatNumber(price)} 💰 · 구매하기
+                        {level >= 5 ? '최대 5단계 달성' : `${formatNumber(price)} 💰 · 강화하기`}
                       </button>
                     )}
                   </div>

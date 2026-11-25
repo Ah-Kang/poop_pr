@@ -47,7 +47,7 @@ export default function EconomyPanel({ economy, toilets, onClose, onLogin }) {
             <div className="economy-scene"><img src={next.image} alt={next.name} /><span>다음 화장실 · {next.id + 1}/{toilets.length}</span></div>
             <div className="economy-blueprint-body">
               <p className="economy-eyebrow">다음 업그레이드</p><h3>{next.name}</h3>
-              <p className="economy-production">초당 생산량 <s>+{count(current.dpsBonus)}</s> <strong>+{count(next.dpsBonus)}</strong></p>
+              <p className="economy-production">생산 보너스 <s>+{current.id * 5}%</s> <strong>+{next.id * 5}%</strong></p>
               <div className="economy-progress-label"><span>🔩 공사 부품</span><b>{count(state.parts)} <em>/ {count(requiredParts)}</em></b></div>
               <progress value={Math.min(state.parts, requiredParts)} max={requiredParts} aria-label="화장실 제작 부품 수집" />
               <button className="economy-primary" disabled={pending || state.parts < requiredParts} onClick={craft}>
@@ -55,7 +55,7 @@ export default function EconomyPanel({ economy, toilets, onClose, onLogin }) {
               </button>
             </div>
           </article> : <article className="economy-finale">
-            <span>👑</span><h3>완성 다음은, 나만의 개조</h3><p>개조할 때마다 화장실 기본 생산량 +5%</p>
+            <span>👑</span><h3>완성 다음은, 나만의 개조</h3><p>개조할 때마다 전체 자동 생산 보너스 +5%p</p>
             <b>개조 Lv.{count(state.renovationLevel)} · 생산량 +{count(state.renovationLevel * 5)}%</b>
             <button className="economy-primary" disabled={pending || state.parts < renovationCost(state.renovationLevel)} onClick={async () => {
               if (await act({ type: 'renovate' })) setNotice('화장실 개조 완료! 생산량이 늘었어요.');
@@ -64,7 +64,7 @@ export default function EconomyPanel({ economy, toilets, onClose, onLogin }) {
           <div className="economy-actions">
             <button className="economy-play" disabled={pending || !capabilities.minigame} onClick={() => window.location.assign('/minigame')}>
               <span className="economy-play-art"><img src={poop} alt="" /><img src={plunger} alt="" /></span>
-              <strong>{state.activeRun?.puzzle ? '미니게임 이어하기' : '미니게임 시작'}</strong><span>부품 모으러 가기 →</span><small>{state.activeRun?.puzzle ? '추가 토큰 없이 이어하기' : `입장 ${ENTRY_COST}토큰 · 이동 무제한`}</small>
+              <strong>{state.activeRun?.puzzle ? '미니게임 이어하기' : '미니게임 시작'}</strong><span>부품 모으러 가기 →</span><small>{state.activeRun?.puzzle ? '남은 시간 이어하기 · 시간은 계속 흘러요' : `입장 ${ENTRY_COST}토큰 · 제한시간 90초`}</small>
             </button>
             <button className="economy-daily" disabled={pending || claimedDaily} onClick={daily}>
               <span className="economy-gift">🎁</span><strong>{claimedDaily ? '받기 완료' : '무료 토큰 받기'}</strong><b>{claimedDaily ? '✓' : `+${DAILY_TOKENS}`}</b><small>{claimedDaily ? '한국 시간 자정에 다시' : '매일 한 번 무료'}</small>

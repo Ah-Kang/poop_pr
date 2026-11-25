@@ -25,8 +25,8 @@ export default function EvolutionCelebration({ evolution, onClose }) {
       </div>
       <div className="evolution-result">
         <p className="evolution-path">{from.name} →</p>
-        <h3>{to.name} <span>Lv.1</span></h3>
-        <p className="evolution-badge">똥 자체 능력 30% 이상 UP!</p>
+        <h3>{to.name} <span>Lv.{evolution.level ?? to.unlockLevel}</span></h3>
+        <p className="evolution-badge">진화 보너스 +25% · 누적 레벨 유지!</p>
         <div className="evolution-stats">
           <div><span>기본 클릭</span><p>{number(before.clickPower)} → <strong>{number(after.clickPower)}</strong></p><small>+{number(after.clickPower - before.clickPower)}</small></div>
           <div><span>자동 생산 /초</span><p>{number(before.dps)} → <strong>{number(after.dps)}</strong></p><small>+{number(after.dps - before.dps)}</small></div>

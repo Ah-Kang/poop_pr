@@ -13,7 +13,7 @@
     "dev:server:watch": "node --watch server/index.js",
     "start": "node server/index.js",
     "check:server": "node --check server/index.js && node --check server/database.js",
-    "test:progression": "node --test tests/poop-progression.test.js",
+    "test:progression": "node --test tests/poop-progression.test.js tests/growth-database.test.js tests/growth-client.test.js",
     "test:puzzle": "node --test src/minigames/match3.test.js",
     "test:economy": "npm run build && node --test tests/economy.test.js tests/economy-api.test.js",
     "db:check": "node server/check-database.js",
@@ -21,7 +21,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:cosmetics": "node --test tests/cosmetics.test.js",
-    "skins:build": "python3 scripts/build-skin-assets.py"
+    "skins:build": "python3 scripts/build-skin-assets.py",
+    "test:analytics": "node --test tests/analytics.test.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",

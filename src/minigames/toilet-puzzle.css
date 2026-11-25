@@ -16,7 +16,11 @@
 .tp-wallet img { width:25px; height:25px; object-fit:contain; flex-shrink:0; }
 .tp-wallet strong { font-size:15px; font-weight:900; margin-left:3px; color:#4c4433; }
 .tp-wallet button>b { font-size:10px; color:#89703f; }
-.tp-infinite { flex-shrink:0; background:#d8eedc; color:#527865; border-radius:20px; padding:4px 7px; font-size:9px; font-weight:800; }
+.tp-timer { flex-shrink:0; background:#d8eedc; color:#326548; border-radius:20px; padding:5px 8px; font-size:13px; font-weight:900; font-variant-numeric:tabular-nums; }
+.tp-timer-warning { background:#ffdfad; color:#914e12; }
+.tp-timer-urgent { background:#ffd8cf; color:#a83122; animation:tp-timer-pulse 1s ease-in-out infinite; }
+@keyframes tp-timer-pulse { 50% { transform:scale(1.08); } }
+@media (prefers-reduced-motion:reduce) { .tp-timer-urgent { animation:none; } }
 .tp-combo-meter { border-top:1px solid #daccb1; margin-top:5px; padding-top:5px; }
 .tp-combo-meter>div:first-child { display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:10px; }
 .tp-combo-meter strong { font-weight:700; }

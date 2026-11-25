@@ -7,6 +7,7 @@ export const STARTER_TOKENS = 30;
 export const DEV_TOKEN_GRANT = 1000;
 export const developmentEconomyEnabled = (mode, flag) => mode === 'development' && flag === 'true';
 export const ENTRY_COST = 8;
+export const PUZZLE_DURATION_MS = 90_000;
 export const DAILY_TOKENS = 24;
 export const AD_TOKENS = 24;
 export const DAILY_AD_LIMIT = 3;
@@ -20,6 +21,18 @@ export class EconomyError extends Error {
   constructor(code) { super(code); this.code = code; }
 }
 const fail = (code) => { throw new EconomyError(code); };
+// Give already-paid, untimed saves one timed round; persist this deadline on load.
+export function migratePuzzleTimer(state, now = Date.now()) {
+  if (!state.activeRun?.puzzle || Number.isFinite(state.activeRun.endsAt)) return state;
+  return { ...state, activeRun: { ...state.activeRun, endsAt: now + PUZZLE_DURATION_MS } };
+}
+function finishPuzzle(state, now) {
+  const run = state.activeRun, round = asComboPuzzle(run.puzzle);
+  state.totalRuns++;
+  state.lastResult = { runId: run.id, parts: round.partsEarned,
+    outcome: now >= run.endsAt ? 'timed_out' : 'ended', score: round.score, bestChain: round.bestChain };
+  state.activeRun = null;
+}
 export const koreaDay = (now = Date.now()) => new Date(now + 9 * 3600000).toISOString().slice(0, 10);
 export const renovationCost = (level) => 200 + level * 100;
 export const renovationMultiplier = (level) => 1 + level * 0.05;
@@ -58,7 +71,7 @@ export function applyEconomyAction(previous, action, { now = Date.now(), allowDe
   validateEconomy(previous);
   if (!action || typeof action.id !== 'string' || !/^[\w-]{8,80}$/.test(action.id)) fail('invalid_action_id');
   if (previous.recentActions.includes(action.id)) return previous;
-  const next = structuredClone(updateWardrobe(previous, { now }));
+  const next = structuredClone(migratePuzzleTimer(updateWardrobe(previous, { now }), now));
   const day = koreaDay(now);
   switch (action.type) {
     case 'demo_tokens':
@@ -71,13 +84,17 @@ export function applyEconomyAction(previous, action, { now = Date.now(), allowDe
       if (!tier || next.toiletLevel < tier.requiredToilet) fail('difficulty_locked');
       if (next.tokens < ENTRY_COST) fail('not_enough_tokens');
       next.tokens -= ENTRY_COST;
-      next.activeRun = { id: action.id, difficulty: tier.id, startedAt: now,
+      next.activeRun = { id: action.id, difficulty: tier.id, startedAt: now, endsAt: now + PUZZLE_DURATION_MS,
         puzzle: createComboPuzzle(tier.id) };
       break;
     }
     case 'puzzle_move': {
       const run = next.activeRun;
+      if (!run && next.lastResult?.runId === action.runId && next.lastResult.outcome === 'timed_out') break;
       if (!run?.puzzle || run.id !== action.runId) fail('run_not_found');
+      // A late request closes the round without awarding a new move. Moves accepted
+      // before the deadline resolve their entire cascade atomically.
+      if (now >= run.endsAt) { finishPuzzle(next, now); break; }
       if (action.turn !== run.puzzle.turn) fail('stale_turn');
       const resolved = resolvePuzzleMove(asComboPuzzle(run.puzzle), action.a, action.b);
       if (!resolved) fail('invalid_move');
@@ -92,11 +109,9 @@ export function applyEconomyAction(previous, action, { now = Date.now(), allowDe
     }
     case 'puzzle_exit': {
       const run = next.activeRun;
+      if (!run && next.lastResult?.runId === action.runId) break;
       if (!run?.puzzle || run.id !== action.runId) fail('run_not_found');
-      const round = asComboPuzzle(run.puzzle);
-      next.totalRuns++;
-      next.lastResult = { runId: run.id, parts: round.partsEarned, outcome: 'ended', score: round.score };
-      next.activeRun = null;
+      finishPuzzle(next, now);
       break;
     }
     case 'claim_daily':
