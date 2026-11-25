@@ -4,15 +4,15 @@
 앱 정보
 - 앱 이름: 똥 키우기
 - 패키지 이름: com.ahkang.pooppr (최초 Play 등록 후 변경 불가)
-- Android 버전 이름: 1.0.0 / 버전 코드: 1
-- 최소 Android: 6.0(API 23), 대상 Android: 16(API 36)
+- Android 버전 이름: 1.0.1 / 버전 코드: 2
+- 최소 Android: 7.0(API 24), 대상 Android: 16(API 36)
 - 게임 주소: https://poop-pr.onrender.com/
 - 형태: Chrome Trusted Web Activity(TWA). 배포된 웹 게임을 앱 창에서 실행한다.
   카카오 로그인과 계정 저장은 기존 웹 서버를 사용한다. 인터넷 연결이 필요하다.
   첫 서버 접근 때 Render 무료 서비스의 기동 대기가 발생할 수 있다.
 
 제출할 파일
-- releases/android/1.0.0/poop-pr-1.0.0-play.aab
+- releases/android/1.0.1/poop-pr-1.0.1-play.aab
 - .aab는 Play Console 업로드 파일이며 휴대전화에 직접 설치하는 .apk와 다르다.
 - GitHub Actions의 unsigned 산출물은 서명 전 파일이다. 그대로 제출하지 않는다.
 - 서명키, 비밀번호, 빌드 산출물은 .gitignore로 제외했다.
@@ -54,7 +54,7 @@ Play Console에서 할 일
 사용해야 한다. 키가 이미 있으면 create-signing-key.py는 새 키로 덮어쓰지 않는다.
 
 다음 버전 만들기
-1. android/app/build.gradle의 versionCode를 2, 3 ... 으로 증가시키고
+1. android/app/build.gradle의 versionCode를 3, 4 ... 으로 증가시키고
    versionName도 갱신. 첫 등록 후 패키지 이름은 유지한다.
 2. Android 변경사항을 GitHub main에 푸시하면 Android bundle 작업이 실행된다.
    Android 코드 변경이 없을 때는 Actions에서 수동 실행할 수 있다.
@@ -71,3 +71,6 @@ https://support.google.com/googleplay/android-developer/answer/11926878
 https://support.google.com/googleplay/android-developer/answer/10144311
 https://support.google.com/googleplay/android-developer/answer/13327111
 https://support.google.com/googleplay/android-developer/answer/14151465
+
+1.0.1 변경: Play automatic protection 요구사항에 맞춰 minSdk를 24로 올렸다.
+1.0.0 파일 대신 1.0.1 파일을 업로드한다. 패키지 이름과 업로드 서명키는 동일하다.
