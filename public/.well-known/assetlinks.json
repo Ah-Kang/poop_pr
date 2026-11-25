@@ -7,7 +7,8 @@
       "namespace": "android_app",
       "package_name": "com.ahkang.pooppr",
       "sha256_cert_fingerprints": [
-        "EB:B7:D6:5E:AC:3F:3E:AA:51:59:03:09:89:B1:FC:B1:A0:30:23:76:7E:1A:78:D8:0A:78:E9:3A:61:64:15:D7"
+        "EB:B7:D6:5E:AC:3F:3E:AA:51:59:03:09:89:B1:FC:B1:A0:30:23:76:7E:1A:78:D8:0A:78:E9:3A:61:64:15:D7",
+        "DB:85:A5:D2:83:BB:7E:45:C1:FE:D3:22:A5:5F:17:2E:DA:BE:5F:5E:8F:81:50:6B:9D:01:A7:79:F6:03:70:E8"
       ]
     }
   }

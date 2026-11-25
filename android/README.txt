@@ -24,8 +24,9 @@ Play Console에서 할 일
 4. Play 앱 서명 인증서의 SHA-256 지문을 확인.
    public/.well-known/assetlinks.json의 sha256_cert_fingerprints 배열에
    Google Play의 '앱 서명 키 인증서' SHA-256을 추가하고 웹 서버에 배포해야 한다.
-   현재 파일에는 로컬 업로드키 인증서의 지문만 있다. 업로드키와 Play 앱 서명키는
-   서로 다를 수 있으므로 반드시 Play에 표시된 앱 서명 인증서를 사용한다.
+   2026-11-25 Play Console의 Digital Asset Links JSON에 안내된 Play 인증서
+   (DB:85:A5:…:70:E8)를 로컬 업로드키 인증서와 함께 등록했다.
+   앱 서명키를 변경하면 Play에 표시된 연결용 인증서를 다시 확인하여 추가한다.
    이 연결 전에도 앱은 브라우저 도구막대가 있는 창으로 열릴 수 있다.
 5. 내부 테스트 링크로 실제 Android 휴대전화에 설치하여 로그인, 저장 복원,
    뒤로가기, 퍼즐 종료, 네트워크 끊김과 재접속을 확인한다.
