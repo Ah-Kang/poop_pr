@@ -44,7 +44,7 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key.startsWith('poop-pr-') && key !== CACHE_NAME && key !== SKIN_CACHE).map((key) => caches.delete(key)))
+        Promise.all(keys.filter((key) => (key.startsWith('poop-pr-') || key === 'poop-game-v34') && key !== CACHE_NAME && key !== SKIN_CACHE).map((key) => caches.delete(key)))
       )
   );
   self.clients.claim();

@@ -4,7 +4,12 @@ import { clientMetrics, metricKeys, metricColumn, counterDelta, economyMetrics, 
 let pool, sqlite;
 const columns = metricKeys.map(metricColumn);
 const pgSql = sql => { let i = 0; return sql.replace(/\?/g, () => `$${++i}`); };
-const rows = async (sql, params = []) => pool ? (await pool.query(pgSql(sql), params)).rows : sqlite.prepare(sql).all(...params);
+const numericKeys = new Set([...metricKeys, 'totalUsers', 'newUsers', 'activeUsers', 'returningUsers', 'puzzleUsers', 'playSeconds', 'legacySeconds', 'activeDays', 'gold', 'dps', 'legacyToiletLevel', 'toiletSchemaVersion', 'selectedPoopId', 'stage', 'users']);
+const rows = async (sql, params = []) => {
+  const result = pool ? (await pool.query(pgSql(sql), params)).rows : sqlite.prepare(sql).all(...params);
+  // PostgreSQL SUM(bigint) returns numeric strings; keep the API consistent with SQLite.
+  return result.map(row => Object.fromEntries(Object.entries(row).map(([key,value]) => [key, numericKeys.has(key) && value !== null ? Number(value) : value])));
+};
 const json = value => typeof value === 'string' ? JSON.parse(value) : value || {};
 
 export async function initializeAnalytics(postgresPool, sqliteDatabase) {
@@ -82,7 +87,7 @@ export async function recordTelemetry(userId, packet, now = Date.now()) {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      await client.query('SELECT kakao_id FROM users WHERE kakao_id=$1 FOR UPDATE', [userId]);
+      await client.query('SELECT kakao_id FROM users WHERE kakao_id=$1 FOR NO KEY UPDATE', [userId]);
       const old = (await client.query(pgSql(streamSelect), [userId, packet.streamId, packet.day])).rows[0];
       const session = await client.query(pgSql(sessionInsert) + ' RETURNING session_id', [userId, packet.sessionId, packet.day, stamp]);
       const q = preparePacket(userId, packet, old, session.rowCount > 0, now);

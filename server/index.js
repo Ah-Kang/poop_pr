@@ -353,11 +353,12 @@ const adminCookieOptions = { httpOnly:true, sameSite:'strict', secure:isProducti
 const tokenDigest = value => crypto.createHash('sha256').update(String(value)).digest();
 const validAdminToken = value => Boolean(adminToken && typeof value === 'string' && crypto.timingSafeEqual(tokenDigest(value),tokenDigest(adminToken)));
 const validAdminPassword = value => Boolean(adminPassword && typeof value === 'string' && crypto.timingSafeEqual(tokenDigest(value),tokenDigest(adminPassword)));
+const adminPasswordDigest = () => crypto.createHmac('sha256', sessionSecret).update(String(adminPassword)).digest('hex');
 const adminAuthenticated = request => {
   if (validAdminToken(request.get('x-admin-token'))) return true;
   try {
     const session = JSON.parse(request.signedCookies.admin_session || 'null');
-    return Boolean(adminPassword && session && session.digest === tokenDigest(adminPassword).toString('hex')
+    return Boolean(adminPassword && session && session.digest === adminPasswordDigest()
       && Date.now()-session.createdAt >= 0 && Date.now()-session.createdAt < adminCookieOptions.maxAge);
   } catch { return false; }
 };
@@ -384,7 +385,7 @@ app.post('/api/admin/session', (request,response) => {
     return response.status(403).json({error:'admin_forbidden'});
   }
   adminAttempts.delete(key);
-  response.cookie('admin_session',JSON.stringify({createdAt:now,digest:tokenDigest(adminPassword).toString('hex')}),adminCookieOptions);
+  response.cookie('admin_session',JSON.stringify({createdAt:now,digest:adminPasswordDigest()}),adminCookieOptions);
   return response.json({authenticated:true});
 });
 app.post('/api/admin/logout', (_request,response) => {
