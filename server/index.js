@@ -12,6 +12,9 @@ import 'dotenv/config';
 import express from 'express';
 import {
   checkDatabaseConnection,
+  ensureAccountVersion,
+  accountSessionExists,
+  deleteAccount,
   createLocalUser,
   getLocalUserByLoginId,
   getDatabaseMode,
@@ -95,13 +98,18 @@ const decodeSession = (value) => {
         profileImage: user.profileImage || null,
       },
       createdAt: session.createdAt,
+      version: session.version,
     };
   } catch {
     return null;
   }
 };
 
-const getSession = (request) => decodeSession(request.signedCookies.game_session);
+const getSession = async (request) => {
+  const session = decodeSession(request.signedCookies.game_session);
+  return session && await accountSessionExists(session.user.id, session.version) ? session : null;
+};
+const createSession = async (user) => encodeSession({user, createdAt:Date.now(), version:await ensureAccountVersion(user.id)});
 const sessionCookieOptions = {
   httpOnly: true,
   sameSite: 'lax',
@@ -217,7 +225,7 @@ app.get('/auth/kakao/callback', async (request, response) => {
     };
     const user = await saveUser(kakaoProfile);
 
-    response.cookie('game_session', encodeSession({ user, createdAt: Date.now() }), sessionCookieOptions);
+    response.cookie('game_session', await createSession(user), sessionCookieOptions);
     return response.redirect(`${frontendUrl}/?login=success`);
   } catch (loginError) {
     console.error(loginError);
@@ -225,8 +233,8 @@ app.get('/auth/kakao/callback', async (request, response) => {
   }
 });
 
-app.get('/api/me', (request, response) => {
-  const session = getSession(request);
+app.get('/api/me', async (request, response) => {
+  const session = await getSession(request);
   if (!session) return response.status(401).json({ user: null });
   return response.json({ user: session.user });
 });
@@ -249,7 +257,7 @@ app.post('/api/auth/local/register', async (request, response) => {
       passwordHash,
     });
 
-    response.cookie('game_session', encodeSession({ user, createdAt: Date.now() }), sessionCookieOptions);
+    response.cookie('game_session', await createSession(user), sessionCookieOptions);
     return response.status(201).json({ user });
   } catch (error) {
     if (error?.code === '23505' || String(error?.message ?? '').includes('UNIQUE')) {
@@ -277,7 +285,7 @@ app.post('/api/auth/local/login', async (request, response) => {
     }
 
     const { passwordHash, ...user } = userWithPassword;
-    response.cookie('game_session', encodeSession({ user, createdAt: Date.now() }), sessionCookieOptions);
+    response.cookie('game_session', await createSession(user), sessionCookieOptions);
     return response.json({ user });
   } catch (error) {
     console.error(error);
@@ -295,12 +303,30 @@ app.post('/api/logout', (request, response) => {
   response.status(204).end();
 });
 
-const requireUser = (request, response, next) => {
-  const session = getSession(request);
+const requireUser = async (request, response, next) => {
+  const session = await getSession(request);
   if (!session) return response.status(401).json({ error: 'login_required' });
   request.authUser = session.user;
+  request.authVersion = session.version;
   return next();
 };
+
+app.delete('/api/account', requireUser, async (request, response) => {
+  if (!request.is('application/json') || request.body?.confirmation !== 'DELETE') {
+    return response.status(400).json({error:'confirmation_required'});
+  }
+  const origin = request.get('origin');
+  const allowedOrigin = new URL(frontendUrl).origin;
+  if (origin && origin !== allowedOrigin) return response.status(403).json({error:'invalid_origin'});
+  try {
+    await deleteAccount(request.authUser.id, request.authVersion);
+    response.clearCookie('game_session', {httpOnly:true,sameSite:'lax',secure:isProduction,signed:true});
+    return response.status(204).end();
+  } catch (error) {
+    console.error('Account deletion failed:', error.code || 'unknown');
+    return response.status(503).json({error:'delete_failed'});
+  }
+});
 
 const economyCapabilities = { demo: developmentEconomyEnabled(process.env.NODE_ENV, process.env.ENABLE_ECONOMY_DEMO), ads: false, purchases: false, minigame: true };
 const sendEconomy = (response, state) => response.json({ state, day: koreaDay(), serverNow: Date.now(), capabilities: economyCapabilities });

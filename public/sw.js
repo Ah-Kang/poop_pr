@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poop-pr-shell-v36';
+const CACHE_NAME = 'poop-pr-shell-v37';
 const SKIN_CACHE = 'poop-pr-skins-v1';
 const SKIN_CACHE_LIMIT = 180;
 const skinRequests = new Map();
@@ -56,6 +56,8 @@ self.addEventListener('fetch', (event) => {
 
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return;
+  // Account controls and privacy notices must show current server content.
+  if (['/account.html','/account.js','/privacy.html','/legal.css'].includes(url.pathname)) return;
 
   // Only requested skins are cached. Do not prefetch the collection or revalidate hits.
   if (/^\/skins\/[a-z0-9_.-]+\.[a-f0-9]{16}\.webp$/.test(url.pathname)) {

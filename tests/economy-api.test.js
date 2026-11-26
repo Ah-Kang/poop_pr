@@ -25,6 +25,38 @@ const request = async (route, body, expected = 200, session = cookie) => {
 };
 const act = (type, payload = {}, expected = 200) => request('/api/economy/actions', { id: randomUUID(), type, ...payload }, expected);
 
+test('account deletion clears dependent data, rejects CSRF and revokes old sessions after signup again', async () => {
+  await request('/api/auth/local/register', {loginId:'delete_target',password:'test-only-123',displayNickname:'삭제테스트'},201,'');
+  const targetCookie=cookie;
+  await request('/api/growth',{id:randomUUID(),type:'click',count:2});
+  await act('claim_daily');
+  const koreaToday=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
+  await request('/api/telemetry',{sessionId:randomUUID(),streamId:randomUUID(),day:koreaToday,counters:{clicks:2,mainSeconds:15}},204);
+  await request('/api/activity',{seconds:15,sessionStart:true},204);
+  await request('/api/auth/local/register',{loginId:'delete_survivor',password:'test-only-123',displayNickname:'보존테스트'},201,'');
+  const survivorCookie=cookie;
+  const remove=(body,session=targetCookie,origin)=>fetch(base+'/api/account',{method:'DELETE',headers:{'Content-Type':'application/json',Cookie:session,...(origin?{Origin:origin}:{})},body:JSON.stringify(body)});
+  assert.equal((await remove({confirmation:'DELETE'},'')).status,401);
+  assert.equal((await remove({confirmation:'wrong'})).status,400);
+  assert.equal((await remove({confirmation:'DELETE'},targetCookie,'https://untrusted.example')).status,403);
+  assert.equal((await request('/api/me',undefined,200,targetCookie)).user.id,'local:delete_target');
+  assert.equal((await remove({confirmation:'DELETE'})).status,204);
+  await request('/api/me',undefined,401,targetCookie);
+  await request('/api/economy',undefined,401,targetCookie);
+  assert.equal((await request('/api/me',undefined,200,survivorCookie)).user.id,'local:delete_survivor');
+  const {DatabaseSync}=await import('node:sqlite');
+  const inspection=new DatabaseSync(path.join(directory,'test.db'),{readOnly:true});
+  try {
+    const tables=['users','scores','game_saves','user_activity','daily_activity','player_economy','economy_actions','player_growth','growth_actions','analytics_sessions','analytics_streams','analytics_daily'];
+    for(const table of tables) assert.equal(inspection.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE kakao_id=?`).get('local:delete_target').n,0,table);
+  } finally {inspection.close();}
+  await request('/api/auth/local/register',{loginId:'delete_target',password:'new-test-only-123',displayNickname:'새계정'},201,'');
+  const newCookie=cookie;
+  await request('/api/me',undefined,401,targetCookie);
+  assert.equal((await remove({confirmation:'DELETE'},targetCookie)).status,401);
+  assert.equal((await request('/api/me',undefined,200,newCookie)).user.nickname,'새계정');
+});
+
 test('Android website verification serves the public certificate as JSON', async () => {
   const response = await fetch(base + '/.well-known/assetlinks.json');
   assert.equal(response.status, 200);

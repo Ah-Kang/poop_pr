@@ -3,6 +3,7 @@ import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import pg from 'pg';
+import { randomUUID } from 'node:crypto';
 import { applyEconomyAction, createEconomy, EconomyError, migrateToiletLevel, migratePuzzleTimer } from '../shared/economy.js';
 import { updateWardrobe } from '../shared/wardrobe.js';
 import { initializeAnalytics, recordEconomyAnalyticsPg, recordEconomyAnalyticsSqlite } from './analytics.js';
@@ -20,12 +21,14 @@ let databaseMode = 'sqlite';
 
 const sqliteSchema = `
   PRAGMA journal_mode = WAL;
+  PRAGMA foreign_keys = ON;
   CREATE TABLE IF NOT EXISTS users (
     kakao_id TEXT PRIMARY KEY,
     nickname TEXT NOT NULL,
     display_nickname TEXT,
     login_id TEXT UNIQUE,
     password_hash TEXT,
+    session_version TEXT NOT NULL DEFAULT '',
     auth_provider TEXT NOT NULL DEFAULT 'kakao',
     profile_image TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -83,6 +86,7 @@ const postgresSchema = `
     display_nickname text,
     login_id text UNIQUE,
     password_hash text,
+    session_version text NOT NULL DEFAULT '',
     auth_provider text NOT NULL DEFAULT 'kakao',
     profile_image text,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -97,6 +101,7 @@ const postgresSchema = `
     ADD COLUMN IF NOT EXISTS password_hash text;
   ALTER TABLE public.users
     ADD COLUMN IF NOT EXISTS auth_provider text NOT NULL DEFAULT 'kakao';
+  ALTER TABLE public.users ADD COLUMN IF NOT EXISTS session_version text NOT NULL DEFAULT '';
   CREATE UNIQUE INDEX IF NOT EXISTS users_login_id_unique
     ON public.users (login_id)
     WHERE login_id IS NOT NULL;
@@ -171,6 +176,9 @@ const initializeSqlite = async () => {
   sqliteDatabase = new DatabaseSync(databasePath);
   sqliteDatabase.exec(sqliteSchema);
   const userColumns = sqliteDatabase.prepare('PRAGMA table_info(users)').all();
+  if (!userColumns.some((column) => column.name === 'session_version')) {
+    sqliteDatabase.exec("ALTER TABLE users ADD COLUMN session_version TEXT NOT NULL DEFAULT ''");
+  }
   if (!userColumns.some((column) => column.name === 'display_nickname')) {
     sqliteDatabase.exec('ALTER TABLE users ADD COLUMN display_nickname TEXT');
   }
@@ -347,6 +355,29 @@ export const initializeDatabase = async () => {
 };
 
 export const getDatabaseMode = () => databaseMode;
+
+// Each account incarnation has a different version. A cookie from a deleted
+// account must never authenticate a later signup with the same login ID.
+export const ensureAccountVersion = async (id) => {
+  const version = randomUUID();
+  if (postgresPool) {
+    const { rows } = await postgresPool.query("UPDATE users SET session_version=COALESCE(NULLIF(session_version,''),$2) WHERE kakao_id=$1 RETURNING session_version", [id, version]);
+    return rows[0]?.session_version;
+  }
+  return sqliteDatabase.prepare("UPDATE users SET session_version=COALESCE(NULLIF(session_version,''),?) WHERE kakao_id=? RETURNING session_version").get(version,id)?.session_version;
+};
+
+export const accountSessionExists = async (id, version) => {
+  if (!version) return false;
+  if (postgresPool) return (await postgresPool.query('SELECT 1 FROM users WHERE kakao_id=$1 AND session_version=$2', [id,version])).rowCount > 0;
+  return Boolean(sqliteDatabase.prepare('SELECT 1 FROM users WHERE kakao_id=? AND session_version=?').get(id,version));
+};
+
+export const deleteAccount = async (id, version) => {
+  // All account-owned save, wallet, ranking and analytics tables cascade.
+  if (postgresPool) return (await postgresPool.query('DELETE FROM users WHERE kakao_id=$1 AND session_version=$2', [id,version])).rowCount > 0;
+  return sqliteDatabase.prepare('DELETE FROM users WHERE kakao_id=? AND session_version=?').run(id,version).changes > 0;
+};
 
 export const checkDatabaseConnection = async () => {
   if (postgresPool) {

@@ -1371,8 +1371,9 @@ const App = () => {
               로그인 안 하고 게임하기
             </button>
             <p className="mt-3 text-xs font-bold text-slate-500">
-              로그인 없이 플레이한 기록은 이 브라우저에 저장돼요. 로그인 플레이의 이용 시간·클릭·진행 기록은 게임 개선을 위해 수집합니다.
+              로그인 없이 플레이한 기록은 이 브라우저에 저장돼요. 로그인 플레이의 이용 시간·클릭·진행 기록은 게임 개선을 위해 수집합니다. 닉네임·프로필 사진·성장 정보는 랭킹에 공개됩니다.
             </p>
+            <p className="mt-2 text-xs text-amber-900"><a className="underline" href="/privacy.html">개인정보처리방침</a> · <a className="underline" href="/account.html">계정 및 데이터 삭제</a></p>
 
             {localAuthMode !== 'hidden' && (
               <div className="mt-4 rounded-2xl border-2 border-amber-200 bg-white/80 p-3 text-left">
@@ -1546,6 +1547,7 @@ const App = () => {
                 로그아웃
               </button>
             </div>
+            <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs text-amber-900"><a className="underline" href="/privacy.html">개인정보처리방침</a><a className="underline" href="/account.html">계정 및 데이터 삭제</a></div>
           </div>
         </div>
       )}
