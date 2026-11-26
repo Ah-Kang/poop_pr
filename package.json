@@ -13,7 +13,7 @@
     "dev:server:watch": "node --watch server/index.js",
     "start": "node server/index.js",
     "check:server": "node --check server/index.js && node --check server/database.js",
-    "test:progression": "node --test tests/poop-progression.test.js tests/growth-database.test.js tests/growth-client.test.js",
+    "test:progression": "node --test tests/poop-progression.test.js tests/growth-database.test.js tests/growth-client.test.js tests/growth-projection.test.js",
     "test:puzzle": "node --test src/minigames/match3.test.js",
     "test:economy": "npm run build && node --test tests/economy.test.js tests/economy-api.test.js",
     "db:check": "node server/check-database.js",

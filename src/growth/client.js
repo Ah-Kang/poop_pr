@@ -10,6 +10,7 @@ const lock=work=>{
 export function createGrowthClient(userId){
   const pendingKey=`poop-pr-growth-pending:${userId||'guest'}`;
   let queue=Promise.resolve();
+  const settledActionIds=new Set();
   async function request(action,keepalive=false){
     if(userId){
       const response=await fetch('/api/growth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...action,owner:userId}),keepalive,signal:AbortSignal.timeout(12000)});
@@ -32,14 +33,46 @@ export function createGrowthClient(userId){
     });
   }
   async function send(action,keepalive){
-    // A timed-out purchase is retried with its original receipt before any new action.
+    const rejectedActionIds=[];
+    // Keep recovered receipts until a successful snapshot includes their income.
+    // A later failed request must not erase income already credited by recovery.
     const pending=JSON.parse(localStorage.getItem(pendingKey)||'null');
-    if(pending){try{await request(pending,keepalive);localStorage.removeItem(pendingKey);}catch(error){if(error.definitive)localStorage.removeItem(pendingKey);else throw error;}}
+    if(pending){
+      try{
+        await request(pending,keepalive);
+        localStorage.removeItem(pendingKey);
+        settledActionIds.add(pending.id);
+      }catch(error){
+        if(!error.definitive){
+          error.unattemptedActionId=action.id;
+          throw error;
+        }
+        localStorage.removeItem(pendingKey);
+        settledActionIds.add(pending.id);
+        rejectedActionIds.push(pending.id);
+      }
+    }
     const mutation=mutationTypes.has(action.type);
     const packet=mutation?{...action,id:action.id||crypto.randomUUID()}:action;
     if(mutation)localStorage.setItem(pendingKey,JSON.stringify(packet));
-    try{const result=await request(packet,keepalive);if(mutation)localStorage.removeItem(pendingKey);return result;}
-    catch(error){if(mutation&&error.definitive)localStorage.removeItem(pendingKey);throw error;}
+    try{
+      const result=await request(packet,keepalive);
+      if(mutation){
+        localStorage.removeItem(pendingKey);
+        settledActionIds.add(packet.id);
+      }
+      const receipts=[...settledActionIds];
+      settledActionIds.clear();
+      return {...result,settledActionIds:receipts};
+    }catch(error){
+      if(mutation&&error.definitive){
+        localStorage.removeItem(pendingKey);
+        settledActionIds.add(packet.id);
+        rejectedActionIds.push(packet.id);
+      }
+      error.settledActionIds=rejectedActionIds;
+      throw error;
+    }
   }
   return {send(action,keepalive=false){const job=queue.then(()=>send(action,keepalive));queue=job.catch(()=>{});return job;}};
 }
