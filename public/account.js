@@ -30,7 +30,7 @@ byId('delete-form').addEventListener('submit', async event => {
     if (!response.ok) throw new Error();
     // Remove this game's local mirrors without touching unrelated site storage.
     for (const storage of [localStorage,sessionStorage]) {
-      try { for (const key of Object.keys(storage)) if (key.startsWith('poop-pr-')) storage.removeItem(key); } catch { /* Browser may block storage. */ }
+      try { for (const key of Object.keys(storage)) if (key.startsWith('poop-pr-') || key.startsWith('poop-analytics-')) storage.removeItem(key); } catch { /* Browser may block storage. */ }
     }
     account=null; byId('delete-section').hidden=true; byId('login').hidden=true;
     status('계정과 연결된 게임 기록·랭킹·이용 분석 데이터가 삭제되었습니다.');
