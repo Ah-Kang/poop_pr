@@ -195,6 +195,89 @@ const getPoopVisual = (poop, className = '') => {
     </span>
   );
 };
+
+// ==================== 숫자 포맷팅 함수 ====================
+// 큰 숫자를 읽기 쉬운 형식으로 표현 (예: 1,234,567)
+const formatNumber = (num) => {
+  const number = Math.max(0, Math.floor(Number(num) || 0));
+  const units = [
+    { value: 1_000_000_000_000, label: '조' },
+    { value: 100_000_000, label: '억' },
+    { value: 10_000, label: '만' },
+  ];
+  const unit = units.find(({ value }) => number >= value);
+
+  if (!unit) return number.toLocaleString('ko-KR');
+
+  const scaled = number / unit.value;
+  const formatted = scaled >= 100 || Number.isInteger(scaled)
+    ? Math.floor(scaled).toLocaleString('ko-KR')
+    : scaled >= 10
+    ? scaled.toFixed(1)
+    : scaled.toFixed(2);
+
+  return `${formatted.replace(/\.0+$/, '').replace(/(\.\d)0$/, '$1')}${unit.label}`;
+};
+
+const GrowthRoadmap = React.memo(function GrowthRoadmap({poopLevel, selectedId}) {
+  return poopCharacters.map((poop) => {
+    const isOwned = poopLevel >= poop.unlockLevel;
+    const isSelected = selectedId === poop.id;
+    const stageStats = getPoopStats(poop, isOwned ? poopLevel : poop.unlockLevel);
+
+    return (
+      <div
+        key={poop.id}
+        className={`rounded-2xl border-[3px] p-4 shadow-[0_4px_0_rgba(15,23,42,0.22)] ${
+          isSelected
+            ? 'border-amber-300 bg-amber-50'
+            : isOwned
+            ? 'border-emerald-200 bg-white'
+            : 'border-slate-200 bg-slate-100 opacity-70'
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center text-4xl">
+            {poop.image ? (
+              <VisibleSkin
+                src={getSkin(poop.id, defaultCosmetics)?.thumb ?? poop.image}
+                alt={poop.name}
+                className="growth-roadmap-thumb"
+              />
+            ) : (
+              <span className="grid h-14 w-14 place-items-center text-4xl" aria-hidden="true">
+                {poop.emoji ?? '💩'}
+              </span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-black text-gray-900">{poop.name}</h3>
+              {isSelected && <span className="rounded-full bg-amber-500 px-2 py-1 text-[10px] font-bold text-white">현재 진화</span>}
+              {!isSelected && isOwned && <span className="text-xs font-bold text-emerald-600">✓ 발견 완료</span>}
+            </div>
+            <p className="mt-1 text-xs text-gray-500">{poop.description}</p>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-bold">
+              <span className="rounded bg-amber-50 px-2 py-1 text-amber-700">
+                {`누적 Lv.${poop.unlockLevel} 해금`}
+              </span>
+              <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">
+                {isOwned ? `클릭 +${formatNumber(stageStats.clickPower)}` : `기본 클릭 +${formatNumber(stageStats.clickPower)}`}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {!isOwned && (
+          <div className="mt-3 rounded-lg bg-gray-200 py-2 text-center text-xs font-bold text-gray-500">
+            🔒 누적 Lv.{poop.unlockLevel}에 해금
+          </div>
+        )}
+      </div>
+    );
+  });
+});
+
 const App = () => {
   const [authUser, setAuthUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -812,12 +895,13 @@ const App = () => {
     } catch (error) {
       console.warn('게임 데이터를 저장하는 중 오류가 발생했습니다.', error);
     }
-  }, [gold, currentToiletLevel, currentPoopLevel, poopLevel, poopLevels, currentPoop.id, itemLevels, cosmetics, isSaveLoaded, growth.state, authUser]);
+  }, [currentToiletLevel, currentPoopLevel, poopLevel, poopLevels, currentPoop.id, itemLevels, cosmetics, isSaveLoaded, growth.state, authUser]);
 
-  // Refresh after the local save has recorded newly discovered characters.
+  // Refresh wardrobe only when an evolution discovers a character, not every
+  // click batch/heartbeat (each snapshot contains a new poopLevels array).
   useEffect(() => {
     if (isSaveLoaded && !authUser) economy.refresh();
-  }, [poopLevels, isSaveLoaded, authUser, economy.refresh]);
+  }, [currentPoopLevel, isSaveLoaded, authUser, economy.refresh]);
 
   useEffect(() => {
     const visibility = () => { if(document.visibilityState !== 'visible')setCleanerEvent(null); else setCleanerSpawnAttempt(n=>n+1); };
@@ -897,10 +981,17 @@ const App = () => {
     const result = await growth.act({type:'equipment',itemId});
     if(result)track('itemUpgrades');
   };
+  const [upgradeFeedback, setUpgradeFeedback] = useState(null);
+  useEffect(() => {
+    if (!upgradeFeedback) return;
+    const timer = setTimeout(() => setUpgradeFeedback(null), 1100);
+    return () => clearTimeout(timer);
+  }, [upgradeFeedback]);
   const handlePoopLevelUp = async () => {
     const before = getPoopStats(null,poopLevel);
     const result = await growth.act({type:'upgrade',count:upgradeCount});
     if(!result)return;
+    setUpgradeFeedback({level:result.state.level, count:result.upgrades});
     for(let i=0;i<result.upgrades;i++)track('poopUpgrades');
     if(result.evolutions){
       for(let i=0;i<result.evolutions;i++)track('evolutions');
@@ -1016,29 +1107,6 @@ const App = () => {
 
   const handleDeveloperGoldCharge = () => {
     growth.act({type:'demo_gold'});
-  };
-
-  // ==================== 숫자 포맷팅 함수 ====================
-  // 큰 숫자를 읽기 쉬운 형식으로 표현 (예: 1,234,567)
-  const formatNumber = (num) => {
-    const number = Math.max(0, Math.floor(Number(num) || 0));
-    const units = [
-      { value: 1_000_000_000_000, label: '조' },
-      { value: 100_000_000, label: '억' },
-      { value: 10_000, label: '만' },
-    ];
-    const unit = units.find(({ value }) => number >= value);
-
-    if (!unit) return number.toLocaleString('ko-KR');
-
-    const scaled = number / unit.value;
-    const formatted = scaled >= 100 || Number.isInteger(scaled)
-      ? Math.floor(scaled).toLocaleString('ko-KR')
-      : scaled >= 10
-      ? scaled.toFixed(1)
-      : scaled.toFixed(2);
-
-    return `${formatted.replace(/\.0+$/, '').replace(/(\.\d)0$/, '$1')}${unit.label}`;
   };
 
   // ==================== 현재 화장실 배경설정 가져오기 ====================
@@ -1952,6 +2020,7 @@ const App = () => {
                 ) : (
                   <button
                     onClick={handlePoopLevelUp}
+                    aria-busy={growth.pendingAction === 'upgrade'}
                     disabled={!growth.state || growth.pending || gold < poopUpgradePrice}
                     className={`mt-4 w-full rounded-2xl border-[3px] py-2.5 font-black transition-all ${
                       gold >= poopUpgradePrice
@@ -1959,69 +2028,15 @@ const App = () => {
                         : 'cursor-not-allowed border-slate-300 bg-gray-200 text-gray-500'
                     }`}
                   >
-                    {upgradeCount === 1 ? `Lv.${poopLevel + 1} 강화` : `최대 ${upgradeCount}레벨 강화`} · {formatNumber(poopUpgradePrice)} 💰부터
+                    {growth.pendingAction === 'upgrade' ? '강화 중…' : <>{upgradeCount === 1 ? `Lv.${poopLevel + 1} 강화` : `최대 ${upgradeCount}레벨 강화`} · {formatNumber(poopUpgradePrice)} 💰부터</>}
                   </button>
                 )}
               </div>
 
-              {poopCharacters.map((poop) => {
-                const ownedLevel = poopLevels[poop.id] ?? 0;
-                const isOwned = ownedLevel > 0;
-                const isSelected = currentPoop.id === poop.id;
-                const stageStats = getPoopStats(poop, isOwned ? poopLevel : poop.unlockLevel);
-
-                return (
-                  <div
-                    key={poop.id}
-	                    className={`rounded-2xl border-[3px] p-4 shadow-[0_4px_0_rgba(15,23,42,0.22)] ${
-	                      isSelected
-	                        ? 'border-amber-300 bg-amber-50'
-	                        : isOwned
-	                        ? 'border-emerald-200 bg-white'
-	                        : 'border-slate-200 bg-slate-100 opacity-70'
-	                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center text-4xl">
-                        {poop.image ? (
-                          <img
-                            src={poop.image}
-                            alt={poop.name}
-                            className="h-14 w-14 object-contain"
-                            draggable="false"
-                          />
-                        ) : (
-                          <span className="grid h-14 w-14 place-items-center text-4xl" aria-hidden="true">
-                            {poop.emoji ?? '💩'}
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <h3 className="font-black text-gray-900">{poop.name}</h3>
-                          {isSelected && <span className="rounded-full bg-amber-500 px-2 py-1 text-[10px] font-bold text-white">현재 진화</span>}
-                          {!isSelected && isOwned && <span className="text-xs font-bold text-emerald-600">✓ 발견 완료</span>}
-                        </div>
-                        <p className="mt-1 text-xs text-gray-500">{poop.description}</p>
-                        <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-bold">
-                          <span className="rounded bg-amber-50 px-2 py-1 text-amber-700">
-                            {`누적 Lv.${poop.unlockLevel} 해금`}
-                          </span>
-                          <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">
-                            {isOwned ? `클릭 +${formatNumber(stageStats.clickPower)}` : `기본 클릭 +${formatNumber(stageStats.clickPower)}`}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {!isOwned && (
-                      <div className="mt-3 rounded-lg bg-gray-200 py-2 text-center text-xs font-bold text-gray-500">
-                        🔒 누적 Lv.{poop.unlockLevel}에 해금
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              <div className="h-5 text-center text-sm font-black text-emerald-700" role="status" aria-live="polite">
+                {upgradeFeedback && <span key={upgradeFeedback.level} className="upgrade-feedback">강화 성공! +{upgradeFeedback.count}레벨 · Lv.{upgradeFeedback.level}</span>}
+              </div>
+              <GrowthRoadmap poopLevel={poopLevel} selectedId={currentPoop.id} />
               </>
               )}
             </div>

@@ -46,3 +46,10 @@ html.is-standalone .game-shell {
   padding-top: calc(env(safe-area-inset-top) + 0.75rem);
   padding-bottom: calc(env(safe-area-inset-bottom) + 0.625rem);
 }
+
+/* Only visible roadmap thumbnails are decoded on small devices. */
+.growth-roadmap-thumb { display: block; width: 56px; height: 56px; }
+.growth-roadmap-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.upgrade-feedback { display: inline-block; animation: upgrade-feedback .18s ease-out; }
+@keyframes upgrade-feedback { from { opacity: .5; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .upgrade-feedback { animation: none; } }

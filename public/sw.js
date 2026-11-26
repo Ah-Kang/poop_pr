@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poop-pr-shell-v37';
+const CACHE_NAME = 'poop-pr-shell-v38';
 const SKIN_CACHE = 'poop-pr-skins-v1';
 const SKIN_CACHE_LIMIT = 180;
 const skinRequests = new Map();

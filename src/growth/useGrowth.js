@@ -6,7 +6,7 @@ export function useGrowth({authUser,isAuthLoading,ready=true}){
   const client=useMemo(()=>createGrowthClient(authUser?.id),[authUser?.id]);
   const session=useRef(crypto.randomUUID());
   const ownerRef=useRef(owner);ownerRef.current=owner;
-  const [record,setRecord]=useState(null),[error,setError]=useState(''),[pending,setPending]=useState(false),[offlineReward,setOfflineReward]=useState(null),[tick,setTick]=useState(0);
+  const [record,setRecord]=useState(null),[error,setError]=useState(''),[pendingAction,setPendingAction]=useState(null),[offlineReward,setOfflineReward]=useState(null),[tick,setTick]=useState(0);
   const clicks=useRef(0),inflight=useRef(0),receivedAt=useRef(performance.now()),busy=useRef(false),lastClick=useRef(0);
   const apply=useCallback(result=>{if(ownerRef.current!==owner)return;receivedAt.current=performance.now();setRecord({owner,state:result.state});inflight.current=0;if(result.offlineReward)setOfflineReward(result.offlineReward);setError('');},[owner]);
   const send=useCallback(async(action,keepalive=false)=>{const result=await client.send(action,keepalive);apply(result);return result;},[client,apply]);
@@ -18,10 +18,10 @@ export function useGrowth({authUser,isAuthLoading,ready=true}){
   },[send]);
   const act=useCallback(async action=>{
     if(!owner||!ready||busy.current||record?.owner!==owner)return null;
-    busy.current=true;setPending(true);
+    busy.current=true;setPendingAction(action.type);
     try{await flush();return await send(action);}
     catch(failure){if(action.type.startsWith('cleaner_') && ['cleaner_expired','cleaner_cooldown','cleaner_finished','cleaner_in_progress','cleaner_not_found'].includes(failure.message)){setError('');return null;}setError(messages[failure.message]||'저장 연결을 확인해주세요. 다시 연결하면 이어서 처리합니다.');return null;}
-    finally{busy.current=false;setPending(false);}
+    finally{busy.current=false;setPendingAction(null);}
   },[owner,ready,record?.owner,flush,send]);
   useEffect(()=>{
     clicks.current=0;inflight.current=0;setOfflineReward(null);
@@ -41,11 +41,11 @@ export function useGrowth({authUser,isAuthLoading,ready=true}){
   },[owner,ready,client,apply,flush]);
   const state=record?.owner===owner?record.state:null;
   const click=()=>{
-    if(!state||pending||error||clicks.current>=100||document.visibilityState!=='visible'||performance.now()-lastClick.current<100)return false;
+    if(!state||busy.current||error||clicks.current>=100||document.visibilityState!=='visible'||performance.now()-lastClick.current<100)return false;
     lastClick.current=performance.now();clicks.current++;setTick(n=>n+1);return true;
   };
   // Display-only prediction. Purchases, ranking and saved balances use the server result.
   const seconds=state&&document.visibilityState==='visible'?Math.min(10,(performance.now()-receivedAt.current)/1000):0;
   const gold=state?state.gold+Math.floor(state.dps*seconds)+(clicks.current+inflight.current)*state.clickPower:0;
-  return {state,gold,act,click,pending,error,offlineReward,dismissOffline:()=>setOfflineReward(null),refresh:async()=>{if(!owner||!ready)return;try{await flush();return await send({type:'presence',session:session.current,active:document.visibilityState==='visible'});}catch(failure){setError(messages[failure.message]||'저장 연결을 확인해주세요.');return null;}}};
+  return {state,gold,act,click,pending:Boolean(pendingAction),pendingAction,error,offlineReward,dismissOffline:()=>setOfflineReward(null),refresh:async()=>{if(!owner||!ready)return;try{await flush();return await send({type:'presence',session:session.current,active:document.visibilityState==='visible'});}catch(failure){setError(messages[failure.message]||'저장 연결을 확인해주세요.');return null;}}};
 }
