@@ -50,10 +50,25 @@ export function analyticsFilters(query = {}, now = Date.now()) {
   if (!validDay(from) || !validDay(to) || from > to || (Date.parse(to)-Date.parse(from))/86400000 > 89 || to > koreaDay(now)) throw new Error('invalid_range');
   const provider = query.provider || 'all';
   const sort = query.sort || 'lastSeen';
-  if (!['all','kakao','local'].includes(provider) || !['lastSeen','clicks','playSeconds'].includes(sort)) throw new Error('invalid_filter');
+  if (!['all','kakao','local','guest'].includes(provider) || !['lastSeen','clicks','playSeconds'].includes(sort)) throw new Error('invalid_filter');
   const page = Number(query.page || 1);
   if (!Number.isSafeInteger(page) || page < 1 || page > 100000) throw new Error('invalid_filter');
   return { from, to, provider, sort, search: String(query.search || '').trim().slice(0,60), page };
+}
+
+export function normalizeGuestTelemetry(value,now=Date.now()) {
+  if(typeof value?.guestKey!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.guestKey))throw new Error('invalid_telemetry');
+  const packet=normalizeTelemetry(value,now);
+  if(value.progress!=null){
+    const p=value.progress;
+    if(!Number.isSafeInteger(value.capturedAt)||value.capturedAt>now+300000||value.capturedAt<now-7*86400000
+      ||!Number.isSafeInteger(p.level)||p.level<1||p.level>Number.MAX_SAFE_INTEGER
+      ||!Number.isInteger(p.toiletLevel)||p.toiletLevel<0||p.toiletLevel>19
+      ||![p.gold,p.dps].every(n=>Number.isFinite(n)&&n>=0&&n<=1e300))throw new Error('invalid_telemetry');
+    packet.progress={level:p.level,toiletLevel:p.toiletLevel,gold:p.gold,dps:p.dps};
+    packet.capturedAt=value.capturedAt;
+  }
+  return {guestKey:value.guestKey.toLowerCase(),packet};
 }
 
 // Prevent spreadsheet applications from interpreting user-controlled nicknames as formulas.

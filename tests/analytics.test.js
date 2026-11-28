@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeTelemetry, counterDelta, analyticsFilters, csvCell } from '../shared/analytics.js';
+import { normalizeTelemetry, normalizeGuestTelemetry, counterDelta, analyticsFilters, csvCell } from '../shared/analytics.js';
+import {guestAnalyticsKey} from '../src/analytics/guest.js';
+import {randomUUID} from 'node:crypto';
 import { createCollector } from '../src/analytics/collector.js';
 
 const now=Date.parse('2026-11-23T14:59:50Z');
@@ -48,4 +50,27 @@ test('an older in-flight collector does not erase a newer page pending snapshot'
   next.record('wardrobeOpens');await next.flush();finish(true);await work;
   const pending=JSON.parse(memory.get('poop-analytics-pending:same-user'));
   assert.ok(pending.some(packet=>packet.counters.wardrobeOpens===1));
+});
+
+test('guest identity persists without changing progress and guest packets have bounded progress',()=>{
+  const memory=new Map([['poop-pr-growth-v2','existing save']]);
+  const storage={getItem:key=>memory.get(key),setItem:(key,value)=>memory.set(key,value)};
+  const guestKey=guestAnalyticsKey(storage);
+  assert.equal(guestAnalyticsKey(storage),guestKey);assert.equal(memory.get('poop-pr-growth-v2'),'existing save');
+  memory.delete('poop-pr-analytics-guest-key');assert.notEqual(guestAnalyticsKey(storage),guestKey);
+  const value={...packet,guestKey,progress:{level:25,gold:500,dps:10,toiletLevel:2,userId:'forged'},capturedAt:now};
+  const result=normalizeGuestTelemetry(value,now);
+  assert.equal(result.packet.progress.level,25);assert.equal(result.packet.progress.userId,undefined);
+  for(const change of [{guestKey:'account-id'},{capturedAt:now+400000},{progress:{...value.progress,level:-1}},{progress:{...value.progress,gold:Infinity}},{progress:{...value.progress,toiletLevel:20}}])assert.throws(()=>normalizeGuestTelemetry({...value,...change},now));
+  assert.equal(analyticsFilters({provider:'guest'},now).provider,'guest');
+});
+
+test('guest progress changes without recounting clicks; a collector cannot sample the next account',async()=>{
+  const memory=new Map(),sent=[];let time=now,progress={level:1,gold:0,dps:0,toiletLevel:0};
+  const collector=createCollector({userId:'guest:'+randomUUID(),screen:'main',now:()=>time,storage:{getItem:key=>memory.get(key),setItem:(key,value)=>memory.set(key,value)},getProgress:()=>progress,send:async p=>{sent.push(p);return true;}});
+  collector.record('clicks');await collector.flush();
+  progress={level:2,gold:3,dps:2,toiletLevel:0};time+=1000;await collector.flush();
+  assert.equal(sent[1].progress.level,2);assert.equal(sent[1].counters.clicks,1);assert.equal(sent[1].capturedAt,time);
+  progress=null;time+=1000;await collector.flush();
+  assert.equal(sent[2].progress,undefined);
 });

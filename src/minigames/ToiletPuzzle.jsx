@@ -37,9 +37,9 @@ export default function ToiletPuzzle() {
     }).catch((error) => { if (error.name !== 'AbortError') setAuth({ loading: true, user: null, error: true }); });
     return () => controller.abort();
   }, []);
-  useTelemetry(auth.user?.id, 'puzzle');
   const economy = useEconomy({ authUser: auth.user, isAuthLoading: auth.loading, isSaveLoaded: true });
-  useGrowth({authUser:auth.user,isAuthLoading:auth.loading,ready:Boolean(economy.state)});
+  const growth=useGrowth({authUser:auth.user,isAuthLoading:auth.loading,ready:Boolean(economy.state)});
+  useTelemetry(auth.user?.id,'puzzle',{enabled:!auth.loading&&Boolean(growth.state),progress:growth.state});
   const { state, pending, error } = economy;
   const [difficulty, setDifficulty] = useState('normal');
   const [selected, setSelected] = useState(null);
@@ -191,6 +191,7 @@ export default function ToiletPuzzle() {
         <div className="tp-title"><h1>변기뚫기 대작전</h1></div>
         <button className="tp-icon-button" onClick={() => setSheet('help')} aria-label="게임 방법">?</button>
       </header>
+      {!auth.loading&&!auth.user&&!active&&<p className="rounded-lg bg-[#fff7df]/95 px-2 py-1 text-center text-[9px] font-bold text-amber-950">게스트도 익명 이용 시간·성장 기록을 수집해요. <a href="/privacy.html" target="_blank" rel="noreferrer" className="underline">자세히</a></p>}
       <section className="tp-compact-info" aria-label="재화와 누적 콤보">
         <div className="tp-wallet">
           <button disabled={!state} onClick={() => setSheet('tokens')} aria-label={`똥 토큰 ${state?.tokens ?? 0}개, 충전 안내`}><img src={poop} alt="" /><span>똥 토큰 <strong>{state ? count(state.tokens) : '—'}</strong></span><b>＋</b></button>

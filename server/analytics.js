@@ -1,5 +1,6 @@
 import { koreaDay, migrateToiletLevel } from '../shared/economy.js';
 import { clientMetrics, metricKeys, metricColumn, counterDelta, economyMetrics, zeroMetrics, shiftDay } from '../shared/analytics.js';
+import {levelsForLevel,stageForLevel} from '../shared/poop-progression.js';
 
 let pool, sqlite;
 const columns = metricKeys.map(metricColumn);
@@ -42,6 +43,22 @@ export async function initializeAnalytics(postgresPool, sqliteDatabase) {
     sqlite.exec(schema);
     sqlite.prepare("INSERT INTO analytics_metadata(key,value) VALUES ('startedAt',?) ON CONFLICT DO NOTHING").run(new Date().toISOString());
   }
+  const guestSchema=`CREATE TABLE IF NOT EXISTS guest_analytics_profiles (
+    kakao_id TEXT PRIMARY KEY,nickname TEXT NOT NULL,created_at TEXT NOT NULL,last_seen TEXT NOT NULL,
+    snapshot TEXT NOT NULL DEFAULT '{}',snapshot_at BIGINT NOT NULL DEFAULT 0
+  );`+schema.slice(0,schema.indexOf('CREATE TABLE IF NOT EXISTS analytics_metadata'))
+    .replaceAll('analytics_sessions','guest_analytics_sessions').replaceAll('analytics_streams','guest_analytics_streams')
+    .replaceAll('analytics_daily','guest_analytics_daily').replaceAll('REFERENCES users','REFERENCES guest_analytics_profiles');
+  if(pool){
+    await pool.query(guestSchema);
+    await pool.query('ALTER TABLE guest_analytics_profiles ENABLE ROW LEVEL SECURITY; ALTER TABLE guest_analytics_sessions ENABLE ROW LEVEL SECURITY; ALTER TABLE guest_analytics_streams ENABLE ROW LEVEL SECURITY; ALTER TABLE guest_analytics_daily ENABLE ROW LEVEL SECURITY;');
+  }else sqlite.exec(guestSchema);
+  await rows("INSERT INTO analytics_metadata(key,value) VALUES ('guestStartedAt',?) ON CONFLICT DO NOTHING RETURNING key",[new Date().toISOString()]);
+  await purgeGuestAnalytics();
+}
+
+export async function purgeGuestAnalytics(now=Date.now()) {
+  await rows('DELETE FROM guest_analytics_profiles WHERE last_seen < ? RETURNING kakao_id',[new Date(now-90*86400000).toISOString()]);
 }
 
 function dailyStatement(userId, day, delta, now = Date.now()) {
@@ -81,19 +98,29 @@ function preparePacket(userId, packet, old, newSession, now) {
     daily: dailyStatement(userId, packet.day, { ...delta, sessions: newSession ? 1 : 0 }, now) };
 }
 
-export async function recordTelemetry(userId, packet, now = Date.now()) {
+export async function recordTelemetry(userId, packet, now = Date.now(), guest = false) {
   const stamp = new Date(now).toISOString();
+  const table=sql=>guest?sql.replaceAll('analytics_','guest_analytics_'):sql;
+  const profileInsert='INSERT INTO guest_analytics_profiles(kakao_id,nickname,created_at,last_seen) VALUES (?,?,?,?) ON CONFLICT(kakao_id) DO NOTHING';
+  const profileArgs=[userId,`게스트 ${userId.slice(6,14).toUpperCase()}`,stamp,stamp];
+  const progressUpdate='UPDATE guest_analytics_profiles SET snapshot=?,snapshot_at=? WHERE kakao_id=? AND snapshot_at<=?';
+  const progressArgs=packet.progress?[JSON.stringify({...packet.progress,selectedPoopId:stageForLevel(packet.progress.level)}),packet.capturedAt,userId,packet.capturedAt]:null;
   if (pool) {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      await client.query('SELECT kakao_id FROM users WHERE kakao_id=$1 FOR NO KEY UPDATE', [userId]);
-      const old = (await client.query(pgSql(streamSelect), [userId, packet.streamId, packet.day])).rows[0];
-      const session = await client.query(pgSql(sessionInsert) + ' RETURNING session_id', [userId, packet.sessionId, packet.day, stamp]);
+      if(guest)await client.query(pgSql(profileInsert),profileArgs);
+      await client.query(`SELECT kakao_id FROM ${guest?'guest_analytics_profiles':'users'} WHERE kakao_id=$1 FOR NO KEY UPDATE`, [userId]);
+      const old = (await client.query(pgSql(table(streamSelect)), [userId, packet.streamId, packet.day])).rows[0];
+      const session = await client.query(pgSql(table(sessionInsert)) + ' RETURNING session_id', [userId, packet.sessionId, packet.day, stamp]);
       const q = preparePacket(userId, packet, old, session.rowCount > 0, now);
-      await client.query(pgSql(streamUpsert), q.stream);
-      await client.query(pgSql(q.daily.sql), q.daily.params);
-      await client.query('UPDATE analytics_sessions SET last_seen=$1 WHERE kakao_id=$2 AND session_id=$3', [stamp,userId,packet.sessionId]);
+      await client.query(pgSql(table(streamUpsert)), q.stream);
+      await client.query(pgSql(table(q.daily.sql)), q.daily.params);
+      await client.query(table('UPDATE analytics_sessions SET last_seen=$1 WHERE kakao_id=$2 AND session_id=$3'), [stamp,userId,packet.sessionId]);
+      if(guest){
+        await client.query('UPDATE guest_analytics_profiles SET last_seen=$1 WHERE kakao_id=$2',[stamp,userId]);
+        if(progressArgs)await client.query(pgSql(progressUpdate),progressArgs);
+      }
       await client.query('COMMIT');
     } catch (error) { await client.query('ROLLBACK'); throw error; }
     finally { client.release(); }
@@ -102,15 +129,29 @@ export async function recordTelemetry(userId, packet, now = Date.now()) {
   // No awaits inside this synchronous transaction: concurrent requests cannot interleave.
   sqlite.exec('BEGIN IMMEDIATE');
   try {
-    const old = sqlite.prepare(streamSelect).get(userId, packet.streamId, packet.day);
-    const session = sqlite.prepare(sessionInsert).run(userId, packet.sessionId, packet.day, stamp);
+    if(guest)sqlite.prepare(profileInsert).run(...profileArgs);
+    const old = sqlite.prepare(table(streamSelect)).get(userId, packet.streamId, packet.day);
+    const session = sqlite.prepare(table(sessionInsert)).run(userId, packet.sessionId, packet.day, stamp);
     const q = preparePacket(userId, packet, old, session.changes > 0, now);
-    sqlite.prepare(streamUpsert).run(...q.stream);
-    sqlite.prepare(q.daily.sql).run(...q.daily.params);
-    sqlite.prepare('UPDATE analytics_sessions SET last_seen=? WHERE kakao_id=? AND session_id=?').run(stamp,userId,packet.sessionId);
+    sqlite.prepare(table(streamUpsert)).run(...q.stream);
+    sqlite.prepare(table(q.daily.sql)).run(...q.daily.params);
+    sqlite.prepare(table('UPDATE analytics_sessions SET last_seen=? WHERE kakao_id=? AND session_id=?')).run(stamp,userId,packet.sessionId);
+    if(guest){
+      sqlite.prepare('UPDATE guest_analytics_profiles SET last_seen=? WHERE kakao_id=?').run(stamp,userId);
+      if(progressArgs)sqlite.prepare(progressUpdate).run(...progressArgs);
+    }
     sqlite.exec('COMMIT');
   } catch (error) { sqlite.exec('ROLLBACK'); throw error; }
 }
+
+// Guests exist only in analytics, never in login, cloud saves or public ranking.
+const analyticsPopulation=`people AS (
+  SELECT kakao_id,nickname,display_nickname,auth_provider,CAST(created_at AS TEXT) AS created_at,NULL AS guest_snapshot FROM users
+  UNION ALL SELECT kakao_id,nickname,NULL,'guest',created_at,snapshot FROM guest_analytics_profiles
+), combined_daily AS (
+  SELECT kakao_id,activity_day,last_seen,${columns.join(',')} FROM analytics_daily
+  UNION ALL SELECT kakao_id,activity_day,last_seen,${columns.join(',')} FROM guest_analytics_daily
+)`;
 
 function population(filters) {
   const conditions = [], params = [];
@@ -123,15 +164,16 @@ function population(filters) {
 }
 function baseQuery(filters) {
   const selected = population(filters);
-  const createdDay = pool ? "to_char(u.created_at AT TIME ZONE 'Asia/Seoul','YYYY-MM-DD')" : "strftime('%Y-%m-%d',u.created_at,'+9 hours')";
+  const guestField=key=>pool?`(CAST(u.guest_snapshot AS JSONB)->>'${key}')`:`json_extract(u.guest_snapshot,'$.${key}')`;
+  const createdDay = pool ? "to_char(CAST(u.created_at AS TIMESTAMPTZ) AT TIME ZONE 'Asia/Seoul','YYYY-MM-DD')" : "strftime('%Y-%m-%d',u.created_at,'+9 hours')";
   return {
-    sql: `WITH m AS (
+    sql: `WITH ${analyticsPopulation}, m AS (
       SELECT kakao_id, ${columns.map(col=>`SUM(${col}) AS ${col}`).join(',')},MAX(last_seen) AS last_seen
-      FROM analytics_daily WHERE activity_day BETWEEN ? AND ? GROUP BY kakao_id
+      FROM combined_daily WHERE activity_day BETWEEN ? AND ? GROUP BY kakao_id
     ), h AS (
       SELECT kakao_id,SUM(play_seconds) AS seconds FROM daily_activity WHERE CAST(activity_date AS TEXT) BETWEEN ? AND ? GROUP BY kakao_id
     ), days AS (
-      SELECT kakao_id,activity_day AS day FROM analytics_daily WHERE activity_day BETWEEN ? AND ?
+      SELECT kakao_id,activity_day AS day FROM combined_daily WHERE activity_day BETWEEN ? AND ?
       UNION SELECT kakao_id,CAST(activity_date AS TEXT) AS day FROM daily_activity WHERE CAST(activity_date AS TEXT) BETWEEN ? AND ?
     ), active AS (SELECT kakao_id,COUNT(*) AS active_days FROM days GROUP BY kakao_id),
     base AS (SELECT u.kakao_id AS id, COALESCE(u.display_nickname,u.nickname) AS nickname, u.auth_provider AS provider,
@@ -140,21 +182,29 @@ function baseQuery(filters) {
       COALESCE(active.active_days,0) AS "activeDays",COALESCE(h.seconds,0) AS "legacySeconds",
       COALESCE(h.seconds,0)+COALESCE(m.main_seconds,0)+COALESCE(m.puzzle_seconds,0) AS "playSeconds",
       ${metricKeys.map((key,i)=>`COALESCE(m.${columns[i]},0) AS "${key}"`).join(',')},
-      COALESCE(g.gold,s.gold,0) AS gold, COALESCE(s.dps,0) AS dps,
+      COALESCE(CAST(${guestField('gold')} AS DOUBLE PRECISION),g.gold,s.gold,0) AS gold, COALESCE(CAST(${guestField('dps')} AS DOUBLE PRECISION),s.dps,0) AS dps,
       COALESCE(g.toilet_level,s.toilet_level,0) AS "legacyToiletLevel",COALESCE(g.toilet_schema_version,s.toilet_schema_version,1) AS "toiletSchemaVersion",
-      g.poop_levels AS "poopLevels", g.selected_poop_id AS "selectedPoopId",g.cosmetics, e.state AS wallet
-      FROM users u LEFT JOIN m ON m.kakao_id=u.kakao_id LEFT JOIN h ON h.kakao_id=u.kakao_id
+      g.poop_levels AS "poopLevels", COALESCE(CAST(${guestField('selectedPoopId')} AS INTEGER),g.selected_poop_id) AS "selectedPoopId",g.cosmetics, e.state AS wallet,
+      u.guest_snapshot,pg.state AS growth
+      FROM people u LEFT JOIN m ON m.kakao_id=u.kakao_id LEFT JOIN h ON h.kakao_id=u.kakao_id
       LEFT JOIN active ON active.kakao_id=u.kakao_id LEFT JOIN user_activity ua ON ua.kakao_id=u.kakao_id
       LEFT JOIN game_saves g ON g.kakao_id=u.kakao_id LEFT JOIN scores s ON s.kakao_id=u.kakao_id
-      LEFT JOIN player_economy e ON e.kakao_id=u.kakao_id ${selected.sql})`,
+      LEFT JOIN player_economy e ON e.kakao_id=u.kakao_id LEFT JOIN player_growth pg ON pg.kakao_id=u.kakao_id ${selected.sql})`,
     params: [...Array(4).fill([filters.from, filters.to]).flat(), ...selected.params],
   };
 }
 function presentUser(row) {
+  if(row.provider==='guest'){
+    const progress=json(row.guest_snapshot),level=progress.level||1;
+    const {guest_snapshot,growth,wallet,cosmetics,poopLevels,...rest}=row;
+    return {...rest,level,gold:progress.gold||0,dps:progress.dps||0,toiletLevel:progress.toiletLevel||0,
+      poopLevels:levelsForLevel(level),selectedPoopId:stageForLevel(level),highestPoopId:stageForLevel(level),
+      discovered:stageForLevel(level)+1,cosmetics:{},tokens:null,parts:null,wardrobe:null};
+  }
   const wallet = json(row.wallet), levels = json(row.poopLevels);
   const list = Array.isArray(levels) ? levels : [];
-  const { wallet: _wallet, poopLevels: _levels, cosmetics, ...rest } = row;
-  return { ...rest, poopLevels: list, cosmetics: json(cosmetics),
+  const { wallet: _wallet, poopLevels: _levels, cosmetics,guest_snapshot,growth, ...rest } = row;
+  return { ...rest,level:json(growth).level||Math.max(1,...list), poopLevels: list, cosmetics: json(cosmetics),
     discovered: list.filter(n=>n>0).length || 1, selectedPoopId: row.selectedPoopId ?? 0,
     highestPoopId: Math.max(0,...list.flatMap((n,i)=>n>0?[i]:[])), toiletLevel: wallet.toiletLevel ?? migrateToiletLevel(row.legacyToiletLevel,row.toiletSchemaVersion),
     tokens: wallet.tokens ?? 0, parts: wallet.parts ?? 0, wardrobe: wallet.wardrobe || null };
@@ -171,13 +221,13 @@ export async function getAnalyticsDaily(filters, userId) {
   const conditions = selected.sql ? selected.sql.replace(/^WHERE /,'AND ') : '';
   const userCondition = userId ? 'AND u.kakao_id=?' : '';
   const common = [filters.from,filters.to,...selected.params,...(userId?[userId]:[])];
-  const result = await rows(`WITH events AS (
+  const result = await rows(`WITH ${analyticsPopulation},events AS (
     SELECT d.kakao_id,d.activity_day AS day,${columns.map(col=>`d.${col}`).join(',')},0 AS legacy_seconds
-    FROM analytics_daily d JOIN users u ON u.kakao_id=d.kakao_id
+    FROM combined_daily d JOIN people u ON u.kakao_id=d.kakao_id
     WHERE d.activity_day BETWEEN ? AND ? ${conditions} ${userCondition}
     UNION ALL
     SELECT d.kakao_id,CAST(d.activity_date AS TEXT) AS day,${columns.map(()=> '0').join(',')},d.play_seconds AS legacy_seconds
-    FROM daily_activity d JOIN users u ON u.kakao_id=d.kakao_id
+    FROM daily_activity d JOIN people u ON u.kakao_id=d.kakao_id
     WHERE CAST(d.activity_date AS TEXT) BETWEEN ? AND ? ${conditions} ${userCondition}
     ) SELECT day,COUNT(DISTINCT kakao_id) AS "activeUsers",SUM(legacy_seconds) AS "legacySeconds",
     ${metricKeys.map((key,i)=>`SUM(${columns[i]}) AS "${key}"`).join(',')}
@@ -197,16 +247,16 @@ export async function getDashboardAnalytics(filters) {
       COALESCE(SUM(CASE WHEN "createdDay" BETWEEN ? AND ? THEN 1 ELSE 0 END),0) AS "newUsers",
       COALESCE(SUM(CASE WHEN "activeDays">0 THEN 1 ELSE 0 END),0) AS "activeUsers",
       COALESCE(SUM(CASE WHEN "activeDays">1 THEN 1 ELSE 0 END),0) AS "returningUsers",
-      COALESCE(SUM(CASE WHEN "puzzleEntries">0 THEN 1 ELSE 0 END),0) AS "puzzleUsers",
+      COALESCE(SUM(CASE WHEN "puzzleEntries">0 OR "puzzleSeconds">0 THEN 1 ELSE 0 END),0) AS "puzzleUsers",
       COALESCE(SUM("playSeconds"),0) AS "playSeconds",COALESCE(SUM("legacySeconds"),0) AS "legacySeconds",
       ${metricKeys.map(key=>`COALESCE(SUM("${key}"),0) AS "${key}"`).join(',')}
       FROM base`,[...base.params,filters.from,filters.to]),
     getAnalyticsUsers(filters), getAnalyticsDaily(filters),
     rows(`${base.sql} SELECT "selectedPoopId" AS stage,COUNT(*) AS users FROM base WHERE "activeDays">0 GROUP BY "selectedPoopId" ORDER BY "selectedPoopId"`,base.params),
-    rows("SELECT value FROM analytics_metadata WHERE key='startedAt'"),
+    rows("SELECT key,value FROM analytics_metadata WHERE key IN ('startedAt','guestStartedAt')"),
   ]);
   return { filters, summary: summaries[0], users, daily, distribution, pageSize:20,
-    trackingStartedAt: metadata[0]?.value, generatedAt:new Date().toISOString(), timezone:'Asia/Seoul' };
+    trackingStartedAt: metadata.find(row=>row.key==='startedAt')?.value,guestTrackingStartedAt:metadata.find(row=>row.key==='guestStartedAt')?.value, generatedAt:new Date().toISOString(), timezone:'Asia/Seoul' };
 }
 export async function getAnalyticsUserDetail(filters,userId) {
   const users = await getAnalyticsUsers(filters,{userId,page:1,pageSize:1});

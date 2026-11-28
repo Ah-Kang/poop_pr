@@ -368,7 +368,7 @@ const App = () => {
   const itemLevels = growth.state?.itemLevels ?? legacyItemLevels;
   const [upgradeCount,setUpgradeCount] = useState(1);
 
-  const track = useTelemetry(isSaveLoaded ? authUser?.id : null, 'main');
+  const track = useTelemetry(authUser?.id, 'main', {enabled:!isAuthLoading&&isSaveLoaded&&Boolean(growth.state),progress:growth.state});
   useEffect(()=>{if(growth.state)growth.refresh();},[currentToiletLevel,economy.state?.renovationLevel]);
 
   useEffect(() => {
@@ -1211,6 +1211,8 @@ const App = () => {
           )}
         </div>
 
+        {!isAuthLoading&&!authUser&&<p className="rounded-lg bg-[#fff7df]/95 px-2 py-1 text-center text-[9px] font-bold text-amber-950">게스트도 익명 이용 시간·클릭·성장 기록을 수집해요. <a href="/privacy.html" target="_blank" rel="noreferrer" className="underline">자세히</a></p>}
+
         <div className="grid grid-cols-2 divide-x-[3px] divide-cyan-950/40 overflow-hidden rounded-[1.4rem] border-[3px] border-cyan-950/70 bg-gradient-to-b from-cyan-300 via-cyan-400 to-cyan-600 text-white shadow-[0_7px_0_rgba(8,51,68,0.9),0_12px_24px_rgba(0,0,0,0.3)]">
           <div
             className="relative cursor-pointer px-4 py-3 before:pointer-events-none before:absolute before:inset-x-2 before:top-1 before:h-1/3 before:rounded-full before:bg-white/20"
@@ -1444,7 +1446,7 @@ const App = () => {
               로그인 안 하고 게임하기
             </button>
             <p className="mt-3 text-xs font-bold text-slate-500">
-              로그인 없이 플레이한 기록은 이 브라우저에 저장돼요. 로그인 플레이의 이용 시간·클릭·진행 기록은 게임 개선을 위해 수집합니다. 닉네임·프로필 사진·성장 정보는 랭킹에 공개됩니다.
+              진행 기록은 이 브라우저에 저장돼요. 게스트도 익명 식별번호와 이용 시간·클릭·성장 기록을 게임 개선을 위해 수집합니다. 로그인한 경우 닉네임·프로필 사진·성장 정보가 랭킹에 공개됩니다.
             </p>
             <p className="mt-2 text-xs text-amber-900"><a className="underline" href="/privacy.html">개인정보처리방침</a> · <a className="underline" href="/account.html">계정 및 데이터 삭제</a></p>
 

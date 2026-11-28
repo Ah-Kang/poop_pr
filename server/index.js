@@ -2,8 +2,8 @@ import { transactGrowth, getGrowthRanking } from './growth.js';
 import { normalizeFeedback, feedbackFilters } from '../shared/feedback.js';
 import { findFeedback, saveFeedback, listFeedback, updateFeedback, purgeResolvedFeedback } from './feedback.js';
 import { GrowthError } from '../shared/growth.js';
-import { normalizeTelemetry, analyticsFilters, csvCell } from '../shared/analytics.js';
-import { recordTelemetry, getDashboardAnalytics, getAnalyticsUsers, getAnalyticsUserDetail } from './analytics.js';
+import { normalizeTelemetry, normalizeGuestTelemetry, analyticsFilters, csvCell } from '../shared/analytics.js';
+import { recordTelemetry, purgeGuestAnalytics, getDashboardAnalytics, getAnalyticsUsers, getAnalyticsUserDetail } from './analytics.js';
 import { normalizeCosmetics } from '../shared/cosmetics.js';
 import { availableCosmetics, getWardrobeRewards } from '../shared/wardrobe.js';
 import crypto from 'node:crypto';
@@ -515,11 +515,30 @@ app.post('/api/activity', requireUser, async (request, response) => {
 });
 
 app.post('/api/telemetry', requireUser, async (request,response) => {
+  if(request.body?.owner && request.body.owner!==request.authUser.id)return response.status(409).json({error:'account_changed'});
   let packet;
   try { packet=normalizeTelemetry(request.body); }
   catch { return response.status(400).json({error:'invalid_telemetry'}); }
   try { await recordTelemetry(request.authUser.id,packet); return response.status(204).end(); }
   catch (error) { console.error('Telemetry save failed:',error.code || error.message); return response.status(error.message==='invalid_telemetry'?400:503).json({error:'telemetry_save_failed'}); }
+});
+const guestTelemetryAttempts=new Map();
+app.post('/api/guest/telemetry',async(request,response)=>{
+  response.set('Cache-Control','no-store');
+  if(!feedbackOriginAllowed(request))return response.status(403).json({error:'telemetry_forbidden'});
+  let value;
+  try{value=normalizeGuestTelemetry(request.body);}catch{return response.status(400).json({error:'invalid_telemetry'});}
+  const now=Date.now();
+  for(const [key,entry] of guestTelemetryAttempts)if(entry.until<=now)guestTelemetryAttempts.delete(key);
+  const key=crypto.createHmac('sha256',feedbackRateSecret).update(String(request.ip)).digest('hex');
+  const entry=guestTelemetryAttempts.get(key)||{count:0,until:now+60000};
+  if(entry.count>=120||(!guestTelemetryAttempts.has(key)&&guestTelemetryAttempts.size>=5000))return response.status(429).json({error:'telemetry_rate_limited'});
+  guestTelemetryAttempts.set(key,{...entry,count:entry.count+1});
+  // Never store or expose the write credential in reports. A guest cannot
+  // supply an account ID, write a cloud save, or enter the public ranking.
+  const id='guest:'+crypto.createHash('sha256').update(value.guestKey).digest('hex');
+  try{await recordTelemetry(id,value.packet,now,true);return response.status(204).end();}
+  catch(error){console.error('Guest telemetry failed:',error.code||error.message);return response.status(error.message==='invalid_telemetry'?400:503).json({error:'telemetry_save_failed'});}
 });
 const readAnalyticsFilters = (request,response) => {
   try { return analyticsFilters(request.query); }
@@ -539,7 +558,7 @@ app.get('/api/admin/users/:id', requireAdmin, async (request,response) => {
 });
 app.get('/api/admin/export.csv', requireAdmin, async (request,response) => {
   const filters=readAnalyticsFilters(request,response); if (!filters) return;
-  const fields=[['id','사용자 ID'],['nickname','게임 닉네임'],['provider','로그인 방식'],['createdAt','가입 시각'],['lastSeen','최근 기록 시각'],['activeDays','기간 내 활동 일수'],['playSeconds','플레이 시간(초)'],['mainSeconds','메인 시간(초)'],['puzzleSeconds','퍼즐 시간(초)'],['legacySeconds','기존 기록 시간(초)'],['sessions','접속 세션'],['clicks','캐릭터 클릭'],['poopUpgrades','똥 강화'],['evolutions','진화'],['itemUpgrades','장비 강화'],['wardrobeOpens','옷장 열기'],['skinEquips','스킨 착용'],['puzzleEntries','퍼즐 입장'],['puzzleMoves','유효 퍼즐 이동'],['partsEarned','획득 부품'],['toiletCrafts','화장실 제작'],['tokensSpent','사용 토큰'],['tokensReceived','획득 토큰'],['discovered','발견한 똥'],['toiletLevel','화장실 단계(0부터)'],['gold','보유 영양분'],['tokens','보유 토큰'],['parts','보유 부품']];
+  const fields=[['id','사용자 ID'],['nickname','게임 닉네임'],['provider','플레이어 유형'],['createdAt','첫 기록 또는 가입 시각'],['level','누적 레벨'],['lastSeen','최근 기록 시각'],['activeDays','기간 내 활동 일수'],['playSeconds','플레이 시간(초)'],['mainSeconds','메인 시간(초)'],['puzzleSeconds','퍼즐 시간(초)'],['legacySeconds','기존 기록 시간(초)'],['sessions','접속 세션'],['clicks','캐릭터 클릭'],['poopUpgrades','똥 강화'],['evolutions','진화'],['itemUpgrades','장비 강화'],['wardrobeOpens','옷장 열기'],['skinEquips','스킨 착용'],['puzzleEntries','퍼즐 입장'],['puzzleMoves','유효 퍼즐 이동'],['partsEarned','획득 부품'],['toiletCrafts','화장실 제작'],['tokensSpent','사용 토큰'],['tokensReceived','획득 토큰'],['discovered','발견한 똥'],['toiletLevel','화장실 단계(0부터)'],['gold','보유 영양분'],['tokens','보유 토큰'],['parts','보유 부품']];
   try {
     const first=await getAnalyticsUsers(filters,{page:1,pageSize:500});
     response.set({'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="poop-analytics-${filters.from}-${filters.to}.csv"`});
@@ -621,6 +640,7 @@ app.use((_request, response) => response.sendFile(path.join(distPath, 'index.htm
 try {
   const { mode } = await initializeDatabase();
   setInterval(()=>purgeResolvedFeedback().catch(()=>console.error('Feedback retention cleanup failed')),60*60*1000).unref();
+  setInterval(()=>purgeGuestAnalytics().catch(()=>console.error('Guest analytics retention cleanup failed')),60*60*1000).unref();
   app.listen(port, process.env.HOST || '0.0.0.0', () => {
     console.log(`Game server running at http://localhost:${port}`);
     console.log(`Database mode: ${mode}`);

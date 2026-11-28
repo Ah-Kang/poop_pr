@@ -398,3 +398,49 @@ test('feedback supports guests and accounts, stays admin-only, deduplicates retr
   await request('/api/feedback',{id:randomUUID(),message:'과도한 전송'},429,'');
   await request('/api/feedback',guest,200,'');
 });
+
+test('anonymous guests appear in admin analytics with private identity, cumulative counters and isolated progress',async()=>{
+  const {koreaDay}=await import('../shared/economy.js');
+  const guestKey=randomUUID(),otherKey=randomUUID(),now=Date.now();
+  const packet={guestKey,sessionId:randomUUID(),streamId:randomUUID(),day:koreaDay(),counters:{clicks:12,mainSeconds:30},progress:{level:25,gold:500,dps:20,toiletLevel:2},capturedAt:now};
+  const admin=async(route='/api/admin/analytics?provider=guest')=>{
+    const response=await fetch(base+route,{headers:{'x-admin-token':adminTestToken}});
+    assert.equal(response.status,200,await response.clone().text());return response.json();
+  };
+  await request('/api/guest/telemetry',{...packet,guestKey:'local:fake'},400,'');
+  await request('/api/guest/telemetry',{...packet,progress:{...packet.progress,level:-1}},400,'');
+  const crossSite=await fetch(base+'/api/guest/telemetry',{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://untrusted.example'},body:JSON.stringify(packet)});
+  assert.equal(crossSite.status,403);
+  await Promise.all(Array.from({length:4},()=>request('/api/guest/telemetry',packet,204,'')));
+  let report=await admin();
+  assert.equal(report.summary.totalUsers,1);assert.equal(report.summary.clicks,12);assert.equal(report.summary.playSeconds,30);
+  assert.equal(report.summary.sessions,1);assert.equal(report.users[0].level,25);assert.equal(report.users[0].toiletLevel,2);
+  assert.equal(report.users[0].selectedPoopId,3);assert.equal(report.distribution[0].stage,3);
+  assert.equal(report.users[0].provider,'guest');assert.match(report.users[0].nickname,/^게스트 /);
+  assert.ok(!JSON.stringify(report).includes(guestKey));assert.ok(report.guestTrackingStartedAt);
+  const id=report.users[0].id;
+  await request('/api/guest/telemetry',{...packet,counters:{clicks:20,mainSeconds:60},progress:{...packet.progress,level:35},capturedAt:now+1000},204,'');
+  await request('/api/guest/telemetry',packet,204,'');
+  report=await admin();assert.equal(report.summary.clicks,20);assert.equal(report.users[0].level,35);
+  await request('/api/guest/telemetry',{...packet,streamId:randomUUID(),counters:{puzzleSeconds:15},capturedAt:now+2000,progress:{...packet.progress,level:35}},204,'');
+  report=await admin();assert.equal(report.summary.playSeconds,75);assert.equal(report.summary.puzzleUsers,1);
+  const detail=await admin(`/api/admin/users/${encodeURIComponent(id)}?provider=guest`);
+  assert.equal(detail.user.level,35);assert.equal(detail.user.clicks,20);assert.equal(detail.daily.at(-1).playSeconds,75);
+  await request('/api/guest/telemetry',{...packet,guestKey:otherKey},204,'');
+  report=await admin();assert.equal(report.summary.totalUsers,2);
+  await request('/api/growth',{guestKey,type:'sync'},401,'');
+  const ranking=await request('/api/ranking',undefined,200,'');assert.ok(ranking.ranking.every(row=>!row.id.startsWith('guest:')));
+  await request('/api/auth/local/register',{loginId:'guest_transition',password:'test-only-123',displayNickname:'게스트전환테스트'},201,'');
+  const memberCookie=cookie;
+  await request('/api/telemetry',{...packet,owner:'some-other-account'},409,memberCookie);
+  await request('/api/telemetry',{sessionId:randomUUID(),streamId:randomUUID(),day:koreaDay(),counters:{clicks:3}},204,memberCookie);
+  await request('/api/guest/telemetry',packet,204,memberCookie); // An old guest flush stays guest even after login.
+  assert.equal((await admin()).users.find(user=>user.id===id).clicks,20);
+  assert.equal((await admin('/api/admin/analytics?provider=local&search='+encodeURIComponent('게스트전환테스트'))).summary.clicks,3);
+  const csv=await fetch(base+'/api/admin/export.csv?provider=guest',{headers:{'x-admin-token':adminTestToken}});
+  const csvText=await csv.text();assert.match(csvText,/누적 레벨/);assert.match(csvText,/guest:/);assert.ok(!csvText.includes(guestKey));
+  const {DatabaseSync}=await import('node:sqlite');
+  const inspection=new DatabaseSync(path.join(directory,'test.db'),{readOnly:true});
+  try{assert.equal(inspection.prepare("SELECT COUNT(*) AS n FROM users WHERE kakao_id LIKE 'guest:%'").get().n,0);}
+  finally{inspection.close();}
+});

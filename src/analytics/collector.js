@@ -3,7 +3,7 @@ import { koreaDay } from '../../shared/economy.js';
 
 // Cumulative snapshots make retries and out-of-order delivery idempotent.
 // Only counters are collected: no pointer coordinates, typed text or external trackers.
-export function createCollector({ userId, screen, now = Date.now, uuid = () => crypto.randomUUID(), storage, send, focused = () => true }) {
+export function createCollector({ userId, screen, now = Date.now, uuid = () => crypto.randomUUID(), storage, send, focused = () => true, getProgress }) {
   const key = `poop-analytics-pending:${userId}`, sessionKey = `poop-analytics-session:${userId}`;
   const read = (key, fallback) => { try { return JSON.parse(storage.getItem(key)) || fallback; } catch { return fallback; } };
   const write = (key,value) => { try { storage.setItem(key,JSON.stringify(value)); } catch { /* Private/full storage: continue in memory. */ } };
@@ -48,6 +48,8 @@ export function createCollector({ userId, screen, now = Date.now, uuid = () => c
     pending=merge(pending,readPending());
     for(const [day,counters] of days) {
       const packet={sessionId,streamId,day,counters:Object.fromEntries(clientMetrics.map(metric=>[metric,Math.floor(counters[metric])]))};
+      const progress=getProgress?.();
+      if(progress){packet.progress=progress;packet.capturedAt=now();}
       pending=pending.filter(item=>!(item.streamId===streamId&&item.day===day));
       pending.push(packet);
     }
