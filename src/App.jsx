@@ -1,3 +1,4 @@
+import FeedbackModal from './feedback/FeedbackModal.jsx';
 import { CLEANER_REQUIRED_HELPS, CLEANER_COOLDOWN_MS, CLEANER_MIN_GOLD } from '../shared/growth.js';
 import { useGrowth } from './growth/useGrowth.js';
 import { useTelemetry } from './analytics/useTelemetry.js';
@@ -279,6 +280,7 @@ const GrowthRoadmap = React.memo(function GrowthRoadmap({poopLevel, selectedId})
 });
 
 const App = () => {
+  const [isFeedbackOpen,setIsFeedbackOpen]=useState(false);
   const [authUser, setAuthUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isLoginOpen, setIsLoginOpen] = useState(() => {
@@ -1157,6 +1159,7 @@ const App = () => {
     >
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-cyan-950/10 via-transparent to-slate-950/30" />
 
+      <FeedbackModal open={isFeedbackOpen} onClose={()=>setIsFeedbackOpen(false)} user={authUser} />
       {/* ==================== 상단: 고정형 게임 HUD ==================== */}
       <div className="relative z-30 w-full shrink-0 space-y-2">
         <div className="flex min-h-10 items-center justify-between gap-2 rounded-2xl border-[3px] border-amber-950/70 bg-[#fff7df] px-2.5 py-1.5 shadow-[0_4px_0_#78350f,0_7px_14px_rgba(0,0,0,0.18)]">
@@ -1188,6 +1191,7 @@ const App = () => {
                 </div>
               </button>
               <div className="flex shrink-0 gap-1.5">
+                <button type="button" onClick={()=>setIsFeedbackOpen(true)} className="rounded-xl border-2 border-cyan-900 bg-cyan-100 px-2 py-1.5 text-[10px] font-black text-cyan-950 shadow-[0_2px_0_#164e63] active:translate-y-0.5 active:shadow-none">문의</button>
                 <button type="button" onClick={handleRankingOpen} className="rounded-xl bg-amber-400 px-2.5 py-1.5 text-[10px] font-black text-amber-950 shadow-[0_2px_0_#92400e] active:translate-y-0.5 active:shadow-none">
                   🏆 랭킹
                 </button>
@@ -1197,6 +1201,7 @@ const App = () => {
             <>
               <p className="text-[10px] font-black text-slate-700">로그인하면 랭킹에 참여할 수 있어요</p>
               <div className="flex shrink-0 gap-1.5">
+                <button type="button" onClick={()=>setIsFeedbackOpen(true)} className="rounded-xl border-2 border-cyan-900 bg-cyan-100 px-2 py-1.5 text-[10px] font-black text-cyan-950 shadow-[0_2px_0_#164e63] active:translate-y-0.5 active:shadow-none">문의</button>
                 <button type="button" onClick={handleRankingOpen} className="rounded-xl bg-amber-400 px-2.5 py-1.5 text-[10px] font-black text-amber-950 shadow-[0_2px_0_#92400e] active:translate-y-0.5 active:shadow-none">🏆</button>
                 <button type="button" onClick={() => setIsLoginOpen(true)} disabled={isAuthLoading} className="rounded-xl border-2 border-[#3c1e1e] bg-[#FEE500] px-3 py-1.5 text-[10px] font-black text-[#191919] shadow-[0_2px_0_#3c1e1e] active:translate-y-0.5 active:shadow-none disabled:opacity-50">
                   로그인

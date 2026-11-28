@@ -361,3 +361,40 @@ test('growth actions are authoritative, idempotent, persistent and rank by level
   saved=(await request('/api/game-save',undefined,200,aCookie)).save;
   assert.equal(saved.cumulativeLevel,2);
 });
+
+test('feedback supports guests and accounts, stays admin-only, deduplicates retries and limits spam',async()=>{
+  const guest={id:randomUUID(),message:'게스트 피드백\n<script>그대로 표시</script>',userId:'forged-user'};
+  await request('/api/feedback',{id:randomUUID(),message:'  '},400,'');
+  const crossSite=await fetch(base+'/api/feedback',{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://untrusted.example'},body:JSON.stringify(guest)});
+  assert.equal(crossSite.status,403);
+  assert.equal((await request('/api/feedback',guest,201,'')).id,guest.id);
+  for(let i=0;i<6;i++)assert.equal((await request('/api/feedback',guest,200,'')).id,guest.id);
+  await request('/api/feedback',{...guest,message:'다른 내용'},409,'');
+  await request('/api/admin/feedback',undefined,403,'');
+  assert.equal((await fetch(base+'/api/admin/feedback/'+guest.id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'resolved'})})).status,403);
+  const adminHeaders={'x-admin-token':adminTestToken,'Content-Type':'application/json'};
+  const listing=async(query='')=>{
+    const response=await fetch(base+'/api/admin/feedback'+query,{headers:adminHeaders});
+    assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');return response.json();
+  };
+  let inbox=await listing();assert.equal(inbox.total,1);assert.equal(inbox.items[0].userId,null);assert.equal(inbox.items[0].message,guest.message);
+  await request('/api/auth/local/register',{loginId:'feedback_user',password:'test-only-123',displayNickname:'문의테스터'},201,'');
+  const userCookie=cookie,logged={id:randomUUID(),message:'로그인 문의'};
+  await request('/api/feedback',logged,201,userCookie);
+  inbox=await listing();assert.equal(inbox.items.find(item=>item.id===logged.id).nickname,'문의테스터');
+  const patch=async(status,origin)=>fetch(base+'/api/admin/feedback/'+guest.id,{method:'PATCH',headers:{...adminHeaders,...(origin?{Origin:origin}:{})},body:JSON.stringify({status})});
+  assert.equal((await patch('resolved','https://untrusted.example')).status,403);
+  assert.equal((await patch('invalid')).status,400);
+  assert.equal((await patch('resolved')).status,200);
+  assert.equal((await listing('?status=resolved')).filteredTotal,1);
+  assert.equal((await listing('?status=new')).filteredTotal,1);
+  assert.equal((await patch('new')).status,200);
+  assert.equal((await listing()).unread,2);
+  assert.equal((await fetch(base+'/api/admin/feedback?page=-1',{headers:adminHeaders})).status,400);
+  const deletion=await fetch(base+'/api/account',{method:'DELETE',headers:{'Content-Type':'application/json',Cookie:userCookie},body:JSON.stringify({confirmation:'DELETE'})});
+  assert.equal(deletion.status,204);
+  assert.equal((await listing()).total,1,'account-owned inquiries are deleted with the account');
+  for(let i=0;i<3;i++)await request('/api/feedback',{id:randomUUID(),message:`추가 문의 ${i}`},201,'');
+  await request('/api/feedback',{id:randomUUID(),message:'과도한 전송'},429,'');
+  await request('/api/feedback',guest,200,'');
+});

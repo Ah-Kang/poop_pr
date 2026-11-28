@@ -1,4 +1,6 @@
 import { transactGrowth, getGrowthRanking } from './growth.js';
+import { normalizeFeedback, feedbackFilters } from '../shared/feedback.js';
+import { findFeedback, saveFeedback, listFeedback, updateFeedback, purgeResolvedFeedback } from './feedback.js';
 import { GrowthError } from '../shared/growth.js';
 import { normalizeTelemetry, analyticsFilters, csvCell } from '../shared/analytics.js';
 import { recordTelemetry, getDashboardAnalytics, getAnalyticsUsers, getAnalyticsUserDetail } from './analytics.js';
@@ -394,6 +396,56 @@ const requireAdmin = (request, response, next) => {
   return next();
 };
 const adminAttempts = new Map();
+const feedbackAttempts = new Map();
+const feedbackRateSecret = crypto.randomBytes(32);
+const feedbackOriginAllowed = request => {
+  if(request.get('sec-fetch-site')==='cross-site')return false;
+  const origin=request.get('origin');
+  if(!origin)return true;
+  return origin===new URL(frontendUrl).origin || origin===`${request.protocol}://${request.get('host')}`;
+};
+app.post('/api/feedback', async (request,response) => {
+  response.set('Cache-Control','no-store');
+  if(!feedbackOriginAllowed(request))return response.status(403).json({error:'feedback_forbidden'});
+  let packet;
+  try{packet=normalizeFeedback(request.body);}catch{return response.status(400).json({error:'invalid_feedback'});}
+  try{
+    const session=await getSession(request),userId=session?.user.id||null;
+    const existing=await findFeedback(packet.id);
+    if(existing){
+      if(existing.kakao_id!==userId || existing.message!==packet.message)return response.status(409).json({error:'feedback_conflict'});
+      return response.json({id:packet.id});
+    }
+    const now=Date.now();
+    for(const [key,value] of feedbackAttempts)if(value.until<=now)feedbackAttempts.delete(key);
+    const key=crypto.createHmac('sha256',feedbackRateSecret).update(String(request.ip)).digest('hex');
+    const attempt=feedbackAttempts.get(key)||{count:0,until:now+10*60*1000};
+    if(attempt.count>=5 || (!feedbackAttempts.has(key)&&feedbackAttempts.size>=5000)){
+      response.set('Retry-After',String(Math.max(1,Math.ceil((attempt.until-now)/1000))));
+      return response.status(429).json({error:'feedback_rate_limited'});
+    }
+    feedbackAttempts.set(key,{...attempt,count:attempt.count+1});
+    return response.status(201).json(await saveFeedback(packet,userId));
+  }catch(error){
+    if(error.message==='feedback_conflict')return response.status(409).json({error:'feedback_conflict'});
+    console.error('Feedback submission failed:',error.code||'database_error');
+    return response.status(503).json({error:'feedback_unavailable'});
+  }
+});
+app.get('/api/admin/feedback',requireAdmin,async(request,response)=>{
+  let filters;
+  try{filters=feedbackFilters(request.query);}catch{return response.status(400).json({error:'invalid_feedback_filter'});}
+  try{return response.json(await listFeedback(filters));}
+  catch{ return response.status(503).json({error:'feedback_unavailable'}); }
+});
+app.patch('/api/admin/feedback/:id',requireAdmin,async(request,response)=>{
+  if(!feedbackOriginAllowed(request))return response.status(403).json({error:'feedback_forbidden'});
+  if(!['new','resolved'].includes(request.body?.status))return response.status(400).json({error:'invalid_feedback_status'});
+  try{
+    if(!await updateFeedback(request.params.id,request.body.status))return response.status(404).json({error:'feedback_not_found'});
+    return response.json({ok:true});
+  }catch{return response.status(503).json({error:'feedback_unavailable'});}
+});
 app.get('/api/admin/session', (request,response) => {
   response.set('Cache-Control','no-store');
   response.json({authenticated:adminAuthenticated(request),configured:Boolean(adminPassword)});
@@ -568,6 +620,7 @@ app.use((_request, response) => response.sendFile(path.join(distPath, 'index.htm
 
 try {
   const { mode } = await initializeDatabase();
+  setInterval(()=>purgeResolvedFeedback().catch(()=>console.error('Feedback retention cleanup failed')),60*60*1000).unref();
   app.listen(port, process.env.HOST || '0.0.0.0', () => {
     console.log(`Game server running at http://localhost:${port}`);
     console.log(`Database mode: ${mode}`);

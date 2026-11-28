@@ -22,7 +22,8 @@
     "preview": "vite preview",
     "test:cosmetics": "node --test tests/cosmetics.test.js",
     "skins:build": "python3 scripts/build-skin-assets.py",
-    "test:analytics": "node --test tests/analytics.test.js"
+    "test:analytics": "node --test tests/analytics.test.js",
+    "test:feedback": "npm run build && node --test tests/feedback.test.js tests/economy-api.test.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",

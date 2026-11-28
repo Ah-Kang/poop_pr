@@ -1,4 +1,5 @@
 import { initializeGrowth, getGrowthRanking } from './growth.js';
+import { initializeFeedback } from './feedback.js';
 import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -334,6 +335,7 @@ export const initializeDatabase = async () => {
     await initializeSqlite();
     await initializeAnalytics(null, sqliteDatabase);
     await initializeGrowth(null, sqliteDatabase);
+    await initializeFeedback(null, sqliteDatabase);
     return { mode: databaseMode };
   }
 
@@ -350,6 +352,7 @@ export const initializeDatabase = async () => {
   await postgresPool.query(postgresSchema);
   await initializeAnalytics(postgresPool, null);
   await initializeGrowth(postgresPool, null);
+  await initializeFeedback(postgresPool, null);
   databaseMode = 'postgres';
   return { mode: databaseMode };
 };
